@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CityRideTaxi | Luxe Booking</title>
+    <link rel="icon" type="image/png" href="car.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Premium CSS -->
+    <link rel="stylesheet" href="customer.css?v=2">
+    
+    <!-- CSP & JS Config -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.tile.openstreetmap.org https://unpkg.com https://ui-avatars.com https://*.basemaps.cartocdn.com https://img.icons8.com; script-src 'self' 'unsafe-inline' https://unpkg.com; connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* capacitor://* https://*.railway.app https://photon.komoot.io https://nominatim.openstreetmap.org https://router.project-osrm.org https://unpkg.com;">
+    <script src="config.js"></script>
+    
+    <!-- Leaflet Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
+
+    <style>
+        /* Specific overrides for index.html Luxe layout */
+        .luxe-booking-sheet { position: fixed; bottom: 90px; left: 16px; right: 16px; background: var(--cr-surface); border-radius: var(--cr-radius-xl); padding: 24px; box-shadow: var(--cr-shadow-floating); z-index: 100; max-height: 60vh; overflow-y: auto; }
+        /* Scrollbar restored for accessibility */
+        .map-wrapper { position: fixed; inset: 0; z-index: 0; background: #e2e8e4; }
+        .map-bg-image { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
+        @keyframes liveLocPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+            50% { transform: scale(1.15); box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+        }
+        #live-loc-btn:active { transform: scale(0.88) !important; }
+    </style>
+</head>
+
+<body>
+    <!-- SPLASH SCREEN (Required by JS) -->
+    <div id="splash-screen" style="position:fixed;inset:0;background:var(--cr-bg);z-index:9999;display:flex;align-items:center;justify-content:center;transition:0.5s;">
+        <img src="logo.png" style="width:120px;animation:pulse 2s infinite;">
+    </div>
+    
+    <!-- FAKE MAP BACKGROUND FOR AESTHETICS (since real map is in dashboard) -->
+    <div class="map-wrapper">
+        <div id="landing-map" style="width:100%; height:100%;"></div>
+    </div>
+
+
+
+    <!-- BOOKING SHEET -->
+    <main class="luxe-booking-sheet">
+        <!-- Tabs -->
+        <div id="trip-tabs" style="display:none; gap:10px; margin-bottom:16px; border-bottom:1px solid var(--cr-border-light); padding-bottom:8px;">
+            <span class="bk-tab active" data-category="local">Local</span>
+            <span class="bk-tab" data-category="outstation">Outstation</span>
+            <span class="bk-tab" data-category="rental">Rental</span>
+        </div>
+
+        <form id="booking-form" autocomplete="off">
+            <div class="timeline-inputs">
+                <div class="timeline-dot pickup"></div>
+                <div class="timeline-row">
+                    <div class="timeline-label">Pickup</div>
+                    <div class="timeline-field" style="display:flex; align-items:center; gap:6px; position:relative;">
+                        <input type="text" id="pickup" placeholder="Detecting your location..." required style="flex:1;">
+                        <button type="button" id="live-loc-btn" onclick="useLiveLocation(event)"
+                            title="Use my live location"
+                            style="flex-shrink:0; width:36px; height:36px; border:none; background:none; cursor:pointer; padding:2px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:transform 0.15s, box-shadow 0.15s;"
+                            onmouseover="this.style.boxShadow='0 0 0 3px rgba(16,185,129,0.25)'"
+                            onmouseout="this.style.boxShadow='none'">
+                            <img src="gps-icon.png" alt="Live location" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">
+                        </button>
+                    </div>
+                    <div id="pickup-suggestions" style="position:absolute; background:var(--cr-card,#181c28); width:calc(100% - 46px); z-index:100; border-radius:8px; box-shadow:var(--cr-shadow-md); display:none; max-height:160px; overflow-y:auto; margin-top:4px; font-size:0.9rem; top:100%; left:0;"></div>
+                </div>
+
+                <div class="timeline-dot drop"></div>
+                <div class="timeline-row" id="destination-group">
+                    <div class="timeline-label">Where To?</div>
+                    <div class="timeline-field">
+                        <input type="text" id="drop" placeholder="Search destination..." required autocomplete="off">
+                    </div>
+                    <div id="drop-suggestions" style="position:absolute; background:white; width:100%; z-index:100; border-radius:8px; box-shadow:var(--cr-shadow-md); display:none; max-height:150px; overflow-y:auto; margin-top:4px; font-size:0.9rem;"></div>
+                </div>
+
+                <div id="extra-drops-container" style="display: none; flex-direction: column; width: 100%;"></div>
+                
+                <div id="add-drop-btn-container" style="display: none; margin-top: 8px; padding-left: 24px; position: relative;">
+                    <button type="button" id="add-drop-btn" style="background: transparent; border: 1px dashed var(--cr-primary); color: var(--cr-primary); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">+ Add Stop</button>
+                </div>
+            </div>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;">
+                <div class="cr-input-group" id="booking-type-group" style="margin:0;">
+                    <select id="booking-type" class="cr-input" style="padding:10px;"><option value="now" selected>Ride Now</option><option value="later">Ride Later</option></select>
+                </div>
+                <div class="cr-input-group" style="margin:0; position:relative;" id="pax-dropdown-container">
+                    <input type="hidden" id="passengers" value="4">
+                    <div id="pax-display" class="cr-input" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;" onclick="togglePaxDropdown(event)">
+                        <span id="pax-text">4 Pax</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </div>
+                    <div id="pax-options" style="display:none; position:absolute; top:100%; left:0; right:0; max-height:150px; overflow-y:auto; background:var(--cr-surface-light); border:1px solid var(--cr-border-light); border-radius:var(--cr-radius-md); box-shadow:var(--cr-shadow-md); z-index:100; margin-top:4px;">
+                        <style>
+                            .pax-opt { padding:10px 16px; cursor:pointer; border-bottom:1px solid var(--cr-border-light); font-size:0.95rem; }
+                            .pax-opt:hover { background:var(--cr-bg); }
+                            .pax-opt:last-child { border-bottom:none; }
+                        </style>
+                        <script>
+                            function togglePaxDropdown(e) {
+                                e.stopPropagation();
+                                const opts = document.getElementById('pax-options');
+                                opts.style.display = opts.style.display === 'none' ? 'block' : 'none';
+                            }
+                            function selectPax(val) {
+                                document.getElementById('passengers').value = val;
+                                document.getElementById('pax-text').innerText = val + ' Pax';
+                                document.getElementById('pax-options').style.display = 'none';
+                                if(typeof calculateFare === 'function') calculateFare();
+                            }
+                            document.addEventListener('click', () => {
+                                const opts = document.getElementById('pax-options');
+                                if (opts) opts.style.display = 'none';
+                            });
+                        </script>
+                        <div class="pax-opt" onclick="selectPax(1)">1 Pax</div>
+                        <div class="pax-opt" onclick="selectPax(2)">2 Pax</div>
+                        <div class="pax-opt" onclick="selectPax(3)">3 Pax</div>
+                        <div class="pax-opt" onclick="selectPax(4)">4 Pax</div>
+                        <div class="pax-opt" onclick="selectPax(5)">5 Pax</div>
+                        <div class="pax-opt" onclick="selectPax(6)">6 Pax</div>
+                        <div class="pax-opt" onclick="selectPax(7)">7 Pax</div>
+                        <div class="pax-opt" onclick="selectPax(8)">8 Pax</div>
+                    </div>
+                </div>
+                <div class="cr-input-group" id="pickup-date-group" style="margin:0;"><input type="date" id="pickup-date" class="cr-input" style="padding:10px;" required></div>
+                <div class="cr-input-group" id="pickup-time-group" style="margin:0;"><input type="time" id="pickup-time" class="cr-input" style="padding:10px;" required></div>
+            </div>
+            
+            <div id="return-date-group" style="display:none;"><input type="date" id="return-date" class="cr-input"></div>
+            <div id="rental-package-group" style="display:none;"><select id="rental-package" class="cr-input"><option value="8-80" selected>8 Hrs</option></select></div>
+            
+            <!-- Round Trip Toggle — shown only for outstation rides (distance > 50km) -->
+            <div id="round-trip-toggle-group" style="display:none; margin-top:14px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; background:var(--cr-surface-light,rgba(255,255,255,0.05)); border:1px solid var(--cr-border-light); border-radius:14px; padding:12px 16px;">
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                        <div style="font-size:0.9rem; font-weight:700; color:var(--cr-text-main);">🔄 Round Trip</div>
+                        <div id="round-trip-toggle-sub" style="font-size:0.75rem; color:var(--cr-text-muted);">One-way outstation fare</div>
+                    </div>
+                    <label id="round-trip-label" style="position:relative; display:inline-block; width:50px; height:28px; cursor:pointer; flex-shrink:0;">
+                        <input type="checkbox" id="round-trip-toggle" style="opacity:0;width:0;height:0;position:absolute;">
+                        <span id="round-trip-slider" style="position:absolute;inset:0;border-radius:28px;background:var(--cr-border-light,#e0e0e0);transition:background 0.25s;"></span>
+                        <span id="round-trip-knob" style="position:absolute;width:22px;height:22px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform 0.25s;box-shadow:0 1px 4px rgba(0,0,0,0.18);"></span>
+                    </label>
+                </div>
+                <div id="return-date-row" style="display:none; margin-top:10px;">
+                    <label style="font-size:0.75rem; font-weight:700; color:var(--cr-text-muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px;">Return Date</label>
+                    <input type="date" id="return-date" class="cr-input" style="width:100%;">
+                </div>
+            </div>
+            <div id="special-place-group" style="display:none;"><select id="special-place-type" class="cr-input"><option value=""></option></select></div>
+            <div style="display:none;"><select id="vehicle-type"><option value="auto_select"></option></select></div>
+
+            <div id="vehicle-selection-container" style="display:none;"></div>
+            <div id="fare-estimate" class="hidden" style="display:none !important;"><span id="distance-val">0</span><span id="fare-val">₹0</span></div>
+
+            <button type="submit" class="cr-btn cr-btn-primary" id="search-vehicles-btn" style="margin-top:16px;">Find Luxe Ride</button>
+
+            <!-- Original Fare Strip for backwards compatibility (Hidden) -->
+            <div id="fare-strip" style="display:none;"><span id="fs-distance"></span><span id="fs-duration"></span><span id="fs-fare"></span><button id="fare-eye-btn"></button><button id="confirm-booking-btn"></button></div>
+        </form>
+    </main>
+
+    <!-- LUXE FLOATING BOTTOM NAV -->
+    <div class="cr-floating-nav-wrap">
+        <nav class="cr-floating-nav">
+            <a href="/" class="cr-nav-item active">
+                <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                Home
+            </a>
+            <a href="/dashboard" class="cr-nav-item">
+                <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                Activity
+            </a>
+            <a href="/active-ride.html" class="cr-nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                Track
+            </a>
+            <a href="#" class="cr-nav-item" onclick="openNavModal('profile-modal-overlay')">
+                <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                Profile
+            </a>
+        </nav>
+    </div>
+
+    <!-- MODALS -->
+    <!-- Vehicle Selection (Luxe styling applied inside JS or by overriding styles here) -->
+    <div class="modal-overlay vehicle-modal-overlay" id="vehicle-modal-overlay">
+        <div class="modal-content vehicle-modal" id="vehicle-modal">
+            <div class="modal-drag-handle"></div>
+            <div style="padding:16px 24px; display:flex; align-items:center; gap:16px;">
+                <button class="vm-close" onclick="closeVehicleModal()" style="background:none;border:none;cursor:pointer;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+                <div style="flex:1;">
+                    <h3 style="font-size:1.1rem; font-weight:700;">Booking Details</h3>
+                </div>
+            </div>
+            
+            <div style="padding:0 24px 16px; overflow-y:auto; flex:1; overflow-x:hidden; min-height:0;">
+                <div style="background:var(--cr-bg); border-radius:var(--cr-radius-md); padding:16px; margin-bottom:16px;">
+                    <div class="timeline-inputs" style="padding-left:24px; position:relative;">
+                        <div style="position:absolute; left:7px; top:12px; bottom:12px; border-left:2px dashed var(--cr-border-light); z-index:1;"></div>
+                        
+                        <div style="position:relative; margin-bottom:16px;">
+                            <div style="position:absolute; left:-23.5px; top:2.5px; width:12px; height:12px; border-radius:50%; background:var(--cr-bg); border:2.5px solid var(--cr-primary); z-index:2;"></div>
+                            <div style="font-size:0.85rem; font-weight:600; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" id="vm-pickup-text">Current Location</div>
+                        </div>
+                        
+                        <div style="position:relative;">
+                            <div style="position:absolute; left:-23.5px; top:2.5px; width:12px; height:12px; border-radius:50%; background:var(--cr-bg); border:2.5px solid var(--cr-accent-blue); z-index:2;"></div>
+                            <div style="font-size:0.85rem; font-weight:600; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" id="vm-drop-text">Destination</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h4 style="font-size:1rem; margin-bottom:4px;">Choose your ride</h4>
+                <div style="font-size:0.85rem; color:var(--cr-text-muted); margin-bottom:16px;">Arrival around <span id="vm-duration">--</span></div>
+                
+                <div id="vm-summary-bar" style="display:none;"><span id="vm-distance"></span><span id="vm-passengers"></span></div>
+                
+                <div id="vehicle-cards-grid" class="vehicle-cards-grid" style="display:flex; flex-direction:column; gap:12px; max-height:40vh; overflow-y:auto; padding-bottom:10px;">
+                    <!-- JS injects cards here. We will style them via global CSS matching Luxe -->
+                </div>
+
+                <div style="font-size:0.8rem; font-weight:700; color:var(--cr-text-main); margin-top:16px; margin-bottom:12px; border-top: 1px solid var(--cr-border-light); padding-top:16px;">Important Policies</div>
+                <div style="background:var(--cr-surface-light); padding:16px; border-radius:var(--cr-radius-md); font-size:0.75rem; color:var(--cr-text-muted); line-height:1.6; border:1px solid var(--cr-border-light);">
+                    <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
+                        <strong style="color:var(--cr-text-main);">@Additional:</strong> 
+                        <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">Toll Fees, Inter-State Permit, Airport &amp; Parking Charges (if any) are extra.</span>
+                    </div>
+                    <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
+                        <strong style="color:var(--cr-text-main);">@Driver Betta:</strong> 
+                        <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">₹400 (₹600 above 250 kms)</span>
+                    </div>
+                    <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
+                        <strong style="color:var(--cr-text-main);">@Hill Station Charges:</strong> 
+                        <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">₹400 extra</span>
+                    </div>
+                    <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
+                        <strong style="color:var(--cr-text-main);">@One Way Drop Trips:</strong> 
+                        <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">Minimum 130 km running</span>
+                    </div>
+                    <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
+                        <strong style="color:var(--cr-text-main);">@Waiting Charges:</strong> 
+                        <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">₹2/min after allowed time (distance &times; 2 min free)</span>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        <strong style="color:var(--cr-text-main);">@Max Luggage:</strong> 
+                        <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">Sedan — 2 suitcases, SUV — 3 suitcases</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sticky Bottom Confirm -->
+            <div class="sticky-payment-panel">
+                
+
+                <!-- This button replaces the function of vm-select-btn and confirm-booking-btn -->
+                <div style="display:flex; gap:12px;">
+                    <button class="cr-btn cr-btn-primary vm-select-btn" id="vm-select-btn" onclick="confirmVehicleSelection(); setTimeout(openConfirmModal, 100);" disabled>
+                        Confirm Ride <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fare Breakdown (Hidden typically, keeping for JS safety) -->
+    <div class="modal-overlay fare-modal-overlay" id="fare-modal-overlay">
+        <div class="modal-content fare-modal" style="max-width:400px; margin:auto; border-radius:var(--cr-radius-md);">
+            <div class="modal-header fm-header"><h3>Fare Breakdown</h3><button class="fm-close" onclick="closeFareModal()">×</button></div>
+            <div class="modal-body fm-body" id="fare-modal-body"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay confirm-modal-overlay" id="confirm-modal-overlay">
+        <div class="modal-content confirm-modal" style="margin:auto; max-width:400px; border-radius:var(--cr-radius-lg); padding:24px; overflow-y:auto;" onscroll="const h=document.getElementById('cm-scroll-hint'); if(h) h.style.opacity = this.scrollTop > 15 ? '0' : '1';">
+            <div style="font-size:0.85rem; font-weight:800; color:var(--cr-primary); text-transform:uppercase; margin-bottom:16px; letter-spacing:1px; text-align:center;">Trip Summary</div>
+            
+            <div id="cm-summary-grid" style="display:flex; flex-direction:column; gap:12px; margin-bottom: 24px;"></div>
+            
+            <div style="font-size:0.8rem; font-weight:700; color:var(--cr-text-main); margin-bottom:12px; border-top: 1px solid var(--cr-border-light); padding-top:16px;">Important Policies</div>
+            <div style="background:var(--cr-surface-light); padding:16px; border-radius:var(--cr-radius-md); font-size:0.75rem; color:var(--cr-text-muted); line-height:1.6; margin-bottom:24px; border:1px solid var(--cr-border-light);">
+                <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
+                    <strong style="color:var(--cr-text-main);">@Additional:</strong> 
+                    <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">Toll Fees, Inter-State Permit, Airport &amp; Parking Charges (if any) are extra.</span>
+                </div>
+                <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
+                    <strong style="color:var(--cr-text-main);">@Driver Betta:</strong> 
+                    <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">₹400 (₹600 above 250 kms)</span>
+                </div>
+                <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
+                    <strong style="color:var(--cr-text-main);">@Hill Station Charges:</strong> 
+                    <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">₹400 extra</span>
+                </div>
+                <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
+                    <strong style="color:var(--cr-text-main);">@One Way Drop Trips:</strong> 
+                    <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">Minimum 130 km running</span>
+                </div>
+                <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
+                    <strong style="color:var(--cr-text-main);">@Waiting Charges:</strong> 
+                    <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">₹2/min after allowed time (distance &times; 2 min free)</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <strong style="color:var(--cr-text-main);">@Max Luggage:</strong> 
+                    <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">Sedan — 2 suitcases, SUV — 3 suitcases</span>
+                </div>
+            </div>
+            
+            <style>
+                .scroll-hint {
+                    position: sticky;
+                    bottom: -15px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    pointer-events: none;
+                    z-index: 10;
+                    margin-top: -30px;
+                    margin-bottom: 20px;
+                    padding-bottom: 10px;
+                    background: linear-gradient(transparent, var(--cr-surface) 60%);
+                    transition: opacity 0.3s;
+                }
+                .scroll-hint-text {
+                    font-size: 0.75rem; font-weight: 700; color: #fff; background: var(--cr-primary); padding: 4px 12px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    margin-bottom: 4px;
+                }
+                @keyframes bounceDown {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(5px); }
+                }
+                .scroll-hint svg {
+                    animation: bounceDown 1.5s infinite;
+                    color: var(--cr-primary);
+                }
+            </style>
+            <div class="scroll-hint" id="cm-scroll-hint">
+                <div class="scroll-hint-text">Scroll down to book</div>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            
+            <div style="display:flex; gap:12px;">
+                <button class="cr-btn cr-btn-light cm-btn-cancel" onclick="closeConfirmModal()" style="flex:1;">Cancel</button>
+                <button class="cr-btn cr-btn-primary cm-btn-confirm" id="cm-confirm-btn" onclick="confirmBookingWithTerms()" style="flex:1;">Confirm Booking</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Picker -->
+    <div class="modal-overlay map-modal-overlay" id="map-modal-overlay">
+        <div class="modal-content map-modal-box" style="height:80vh;">
+            <div class="modal-drag-handle"></div>
+            <h3 style="text-align:center; margin-bottom:16px;">Select Location</h3>
+            <div id="map-picker" style="flex:1; width:100%;"></div>
+            <div style="padding:16px 24px; display:flex; justify-content:space-between; align-items:center;">
+                <button class="map-modal-close" onclick="closeMapPicker()" style="background:none;border:none;font-size:1rem;font-weight:600;">Cancel</button>
+                <button id="confirm-location" class="cr-btn cr-btn-primary" onclick="confirmMapPoint()" style="width:auto; padding:10px 24px;">Confirm Pin</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Support Button (Hidden) -->
+    <button id="support-btn" style="display:none;" onclick="toggleSupportWidget()"></button>
+    <div id="support-panel" style="display:none;"></div>
+
+    <!-- ADDITIONAL CUSTOMER MODALS -->
+    <!-- Wallet Modal -->
+    <div class="modal-overlay wallet-modal-overlay" id="wallet-modal-overlay">
+        <div class="modal-content" style="max-height: 70vh;">
+            <div class="modal-drag-handle" onclick="closeNavModal('wallet-modal-overlay')"></div>
+            <div style="padding:16px 24px; display:flex; align-items:center; gap:16px;">
+                <button onclick="closeNavModal('wallet-modal-overlay')" style="background:none;border:none;cursor:pointer;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+                <h3 style="font-size:1.1rem; font-weight:700;">My Wallet</h3>
+            </div>
+            <div style="padding: 24px; text-align: center;">
+                <div style="font-size: 0.85rem; color: var(--cr-text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">Current Balance</div>
+                <div style="font-size: 2.5rem; font-weight: 800; color: var(--cr-primary); margin-bottom: 32px;">₹0.00</div>
+                
+                <div style="background: var(--cr-surface-light); padding: 16px; border-radius: var(--cr-radius-md); margin-bottom: 24px;">
+                    <div style="font-size: 0.9rem; font-weight: 600; color: var(--cr-text-main);">No recent transactions</div>
+                </div>
+                
+                <button class="cr-btn cr-btn-primary" style="width: 100%;" onclick="alert('Online wallet recharge is coming soon!')">Add Funds</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offers Modal -->
+    <div class="modal-overlay offers-modal-overlay" id="offers-modal-overlay">
+        <div class="modal-content" style="max-height: 70vh;">
+            <div class="modal-drag-handle" onclick="closeNavModal('offers-modal-overlay')"></div>
+            <div style="padding:16px 24px; display:flex; align-items:center; gap:16px;">
+                <button onclick="closeNavModal('offers-modal-overlay')" style="background:none;border:none;cursor:pointer;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+                <h3 style="font-size:1.1rem; font-weight:700;">Offers & Promos</h3>
+            </div>
+            <div style="padding: 0 24px 24px;">
+                <div style="background: var(--cr-surface-light); border: 2px dashed var(--cr-border-light); padding: 16px; border-radius: var(--cr-radius-md); display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                    <div>
+                        <div style="font-weight: 700; font-size: 1rem;">WELCOME50</div>
+                        <div style="font-size: 0.8rem; color: var(--cr-text-muted);">Get 50% off your first ride</div>
+                    </div>
+                    <button class="cr-btn cr-btn-primary" style="padding: 6px 12px; font-size: 0.8rem; width: auto;" onclick="alert('Promo code applied!')">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal-overlay profile-modal-overlay" id="profile-modal-overlay">
+        <div class="modal-content" style="max-height: 80vh;">
+            <div class="modal-drag-handle" onclick="closeNavModal('profile-modal-overlay')"></div>
+            <div style="padding:16px 24px; display:flex; align-items:center; gap:16px;">
+                <button onclick="closeNavModal('profile-modal-overlay')" style="background:none;border:none;cursor:pointer;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+                <h3 style="font-size:1.1rem; font-weight:700;">My Profile</h3>
+            </div>
+            <div style="padding: 0 24px 24px; text-align: center;">
+                <img id="nav-profile-img" src="https://ui-avatars.com/api/?name=Guest&background=random" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 16px;">
+                <h2 id="nav-profile-name" style="font-size: 1.2rem; margin-bottom: 4px;">User Name</h2>
+                <div id="nav-profile-phone" style="font-size: 0.9rem; color: var(--cr-text-muted); margin-bottom: 32px;">+91 00000 00000</div>
+                
+                <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; margin-bottom: 32px;">
+                    <a href="/dashboard" class="cr-btn cr-btn-light" style="justify-content: flex-start; background: var(--cr-surface-light); text-decoration: none; color: inherit;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                        Ride History
+                    </a>
+                    <button class="cr-btn cr-btn-light" style="justify-content: flex-start; background: var(--cr-surface-light);" onclick="alert('Settings panel coming soon!')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        Settings
+                    </button>
+                    <button class="cr-btn cr-btn-light" style="justify-content: flex-start; background: var(--cr-surface-light);" onclick="alert('Support channel unavailable')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        Help & Support
+                    </button>
+                </div>
+                
+                <button class="cr-btn cr-btn-light" style="width: 100%; color: var(--cr-danger); background: rgba(239,68,68,0.1);" onclick="navLogoutUser()">Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openNavModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('open');
+            if (id === 'profile-modal-overlay') {
+                const user = JSON.parse(localStorage.getItem('cityride_member'));
+                if (user) {
+                    document.getElementById('nav-profile-name').textContent = user.name || 'User';
+                    document.getElementById('nav-profile-phone').textContent = user.phone || '';
+                    document.getElementById('nav-profile-img').src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name || 'User') + '&background=random';
+                }
+            }
+        }
+        function closeNavModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+        }
+        function closeConfirmModal() {
+            if (typeof window.closeBookingModal === 'function') {
+                window.closeBookingModal();
+            } else {
+                const newModal = document.getElementById('confirm-modal-overlay');
+                if (newModal) newModal.classList.remove('open');
+            }
+        }
+        function closeVehicleModal() {
+            const overlay = document.getElementById('vehicle-modal-overlay');
+            if (overlay) overlay.classList.remove('open');
+        }
+        function navLogoutUser() {
+            fetch('/api/auth/logout', { method: 'POST' }).then(() => {
+                localStorage.removeItem('cityride_member');
+                window.location.href = 'auth.html';
+            });
+        }
+    </script>
+
+    <!-- Scripts -->
+    <script src="alert.js"></script>
+    <script src="notifications.js?v=2"></script>
+    <script src="app.js?v=20"></script>
+    
+    <!-- Initialize landing map just for aesthetics -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                try {
+                    window.lmap = L.map('landing-map', {zoomControl: false, attributionControl: false}).setView([13.0827, 80.2707], 13);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(window.lmap);
+                } catch(e){}
+            }, 500);
+            
+            // Override vehicle card rendering to match Luxe styles
+            const originalRenderVehicles = window.renderVehicleSelection;
+            if(typeof originalRenderVehicles === 'function') {
+                // We rely on CSS to style .vc-card to look like .luxe-vehicle-card
+                // I will add overriding CSS rules for .vc-card in customer.css
+            }
+            
+            // Hide splash screen
+            const splash = document.getElementById('splash-screen');
+            if (splash) {
+                setTimeout(() => splash.classList.add('splash-hidden'), 800);
+            }
+        });
+    </script>
+</body>
+</html>

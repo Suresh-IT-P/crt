@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /vendor/
+Disallow: /api/
+
+Sitemap: https://cityridetaxi.com/sitemap.xml

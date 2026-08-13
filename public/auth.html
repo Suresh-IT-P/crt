@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CityRideTaxi | Luxe Auth</title>
+    <link rel="icon" type="image/png" href="car.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Premium CSS -->
+    <link rel="stylesheet" href="customer.css?v=2">
+    <script src="config.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" crossorigin="anonymous" defer></script>
+
+    <style>
+        body {
+            background: #F4F7F4; /* Light green background */
+            font-family: 'Inter', sans-serif;
+            color: var(--cr-text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Generic Header */
+        .auth-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px 24px 16px;
+            z-index: 10;
+        }
+        .back-arrow {
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 1.2rem;
+            color: var(--cr-text-main); text-decoration: none;
+        }
+        .logo-small {
+            width: 32px; height: 32px;
+            background: white; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            font-weight: 800; color: var(--cr-primary); font-size: 1.1rem;
+            font-family: serif; font-style: italic;
+        }
+        .header-title {
+            font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--cr-text-muted);
+            flex: 1; text-align: right; margin-right: 12px;
+        }
+        .header-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* Main View Containers */
+        .view-container {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .view-container.active {
+            display: flex;
+        }
+
+        /* Login Specifics */
+        .login-logo-large {
+            width: 64px; height: 64px; margin: 24px auto 16px;
+            background: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            font-weight: 800; color: var(--cr-primary); font-size: 1.8rem;
+            font-family: serif; font-style: italic;
+        }
+        .auth-title { text-align: center; font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; }
+        .auth-subtitle { text-align: center; font-size: 0.9rem; color: var(--cr-text-muted); margin-bottom: 32px; padding: 0 24px; }
+        
+        .auth-card {
+            background: white;
+            border-radius: 40px;
+            padding: 32px 24px;
+            margin: 0 16px 32px;
+            box-shadow: 0 20px 40px rgba(0, 107, 58, 0.05);
+        }
+
+        /* Input Fields */
+        .auth-input-group { margin-bottom: 20px; }
+        .auth-label-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .auth-label { font-size: 0.75rem; font-weight: 700; color: var(--cr-text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .auth-link { font-size: 0.75rem; font-weight: 700; color: var(--cr-primary); text-decoration: none; }
+        
+        .input-wrapper {
+            position: relative;
+            background: #F4F7F4;
+            border-radius: 16px;
+            display: flex; align-items: center;
+            padding: 4px 16px;
+        }
+        .input-icon { color: var(--cr-text-muted); margin-right: 12px; flex-shrink: 0; }
+        .auth-input {
+            flex: 1; border: none; background: transparent;
+            padding: 12px 0; font-size: 1rem; font-weight: 500;
+            color: var(--cr-text-main); outline: none; width: 100%;
+        }
+        .auth-input::placeholder { color: #A0AAB2; }
+
+        .auth-btn {
+            background: var(--cr-primary); color: white;
+            border: none; border-radius: 16px; width: 100%;
+            padding: 16px; font-size: 1rem; font-weight: 700;
+            cursor: pointer; box-shadow: 0 8px 24px rgba(0, 107, 58, 0.2);
+            display: flex; justify-content: center; align-items: center; gap: 8px;
+            margin-top: 12px;
+        }
+
+        .divider {
+            display: flex; align-items: center; gap: 12px;
+            margin: 24px 0; font-size: 0.7rem; font-weight: 700;
+            color: var(--cr-text-muted); letter-spacing: 1px;
+        }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--cr-border-light); }
+
+        .social-btns { display: flex; gap: 16px; }
+        .social-btn {
+            flex: 1; background: white; border: 1px solid var(--cr-border-light);
+            border-radius: 16px; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 0.9rem; font-weight: 600; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            color: var(--cr-text-main);
+        }
+        .social-btn img { width: 20px; height: 20px; }
+
+        .auth-footer-text { text-align: center; font-size: 0.9rem; color: var(--cr-text-muted); margin-top: auto; padding-bottom: 32px; }
+        
+        /* Registration Specifics */
+        .reg-hero {
+            position: relative; height: 220px;
+            background: url('https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&q=80&w=1200') center/cover;
+            border-radius: 0 0 40px 40px; margin-top: -88px; /* overlap header */
+            z-index: 1; display: flex; flex-direction: column; justify-content: flex-end;
+            padding: 24px; color: white;
+        }
+        .reg-hero::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(to bottom, rgba(244, 247, 244, 0.95) 0%, rgba(244, 247, 244, 0.6) 50%, rgba(244, 247, 244, 1) 100%);
+            border-radius: 0 0 40px 40px;
+        }
+        .reg-hero-content { position: relative; z-index: 2; color: var(--cr-text-main); text-align: center; }
+        .reg-hero-title { font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; }
+        .reg-hero-sub { font-size: 0.85rem; opacity: 0.8; margin-bottom: 16px; padding: 0 16px; }
+        
+        .reg-card {
+            background: white; border-radius: 40px;
+            padding: 32px 24px; margin: -40px 16px 24px;
+            position: relative; z-index: 10;
+            box-shadow: 0 20px 40px rgba(0, 107, 58, 0.05);
+        }
+
+        .terms-checkbox {
+            display: flex; gap: 12px; margin: 24px 0;
+            font-size: 0.75rem; color: var(--cr-text-muted); align-items: flex-start;
+        }
+        .terms-checkbox input { margin-top: 2px; }
+
+        .bonus-banner {
+            background: linear-gradient(135deg, #A6732B, #734c16);
+            border-radius: 24px; padding: 20px; margin: 0 16px 32px;
+            color: white; display: flex; justify-content: space-between; align-items: center;
+        }
+        .bonus-icon { width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink:0; }
+        .bonus-title { font-size: 1rem; font-weight: 800; margin-bottom: 4px; }
+        .bonus-sub { font-size: 0.75rem; opacity: 0.9; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    
+    <!-- LOGIN VIEW -->
+    <div id="login-view" class="view-container active">
+        <header class="auth-header">
+            <a href="/" class="back-arrow"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
+            <div class="logo-small"><img src="car.png" style="width: 70%; height: 70%; object-fit: contain;"></div>
+            <div class="header-title">LOGIN</div>
+        </header>
+
+        <div class="login-logo-large"><img src="car.png" style="width: 65%; height: 65%; object-fit: contain;"></div>
+        <h1 class="auth-title">Welcome Back</h1>
+        <p class="auth-subtitle">Experience the tranquility of premium travel.</p>
+
+        <div class="auth-card">
+            <form id="login-form">
+                <div class="auth-input-group">
+                    <div class="auth-label-row">
+                        <span class="auth-label">Phone Number</span>
+                    </div>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        <input type="tel" id="login-identifier" class="auth-input" placeholder="+1 (555) 000-0000" required>
+                    </div>
+                </div>
+                
+                <div class="auth-input-group">
+                    <div class="auth-label-row">
+                        <span class="auth-label">Password</span>
+                        <a href="#" class="auth-link">Forgot Password?</a>
+                    </div>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <input type="password" id="login-password" class="auth-input" placeholder="••••••••" required>
+                        <svg style="color:var(--cr-text-muted); cursor:pointer; flex-shrink:0;" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </div>
+                </div>
+
+                <button type="submit" class="auth-btn">SIGN IN</button>
+            </form>
+        </div>
+
+        <div class="auth-footer-text">
+            Don't have an account? <a href="#" class="auth-link" onclick="toggleView('register-view')">Sign Up</a>
+        </div>
+    </div>
+
+
+    <!-- REGISTER VIEW -->
+    <div id="register-view" class="view-container">
+        <header class="auth-header" style="position:relative; z-index:10; background:transparent;">
+            <a href="#" class="back-arrow" onclick="toggleView('login-view')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
+            <div class="logo-small"><img src="car.png" style="width: 70%; height: 70%; object-fit: contain;"></div>
+            <div class="header-title">REGISTRATION</div>
+        </header>
+
+        <div class="reg-hero">
+            <div class="reg-hero-content">
+                <h1 class="reg-hero-title">Join the Luxe Experience</h1>
+                <p class="reg-hero-sub">Elegance in every mile, reliability in every turn.</p>
+            </div>
+        </div>
+
+        <div class="reg-card">
+            <form id="register-form">
+                <div class="auth-input-group">
+                    <div class="auth-label-row"><span class="auth-label">FULL NAME</span></div>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <input type="text" id="reg-name" class="auth-input" placeholder="Alexander Wright" required>
+                    </div>
+                </div>
+
+                <div class="auth-input-group">
+                    <div class="auth-label-row"><span class="auth-label">EMAIL ADDRESS</span></div>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        <input type="email" id="reg-email" class="auth-input" placeholder="alexander.w@luxeride.com" required>
+                    </div>
+                </div>
+
+                <div class="auth-input-group">
+                    <div class="auth-label-row"><span class="auth-label">PHONE NUMBER</span></div>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        <input type="tel" id="reg-phone" class="auth-input" placeholder="+1 (555) 000-0000" required>
+                    </div>
+                </div>
+
+                <div class="auth-input-group">
+                    <div class="auth-label-row"><span class="auth-label">PASSWORD</span></div>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <input type="password" id="reg-password" class="auth-input" placeholder="••••••••" required>
+                    </div>
+                </div>
+
+                <label class="terms-checkbox">
+                    <input type="checkbox" id="reg-terms" required>
+                    <span>I agree to the <a href="#" class="auth-link" onclick="showTermsModal(event, 'terms')">Terms of Service</a> and <a href="#" class="auth-link" onclick="showTermsModal(event, 'privacy')">Privacy Policy</a>.</span>
+                </label>
+
+                <button type="submit" class="auth-btn">CREATE ACCOUNT <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:4px;"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></button>
+            </form>
+        </div>
+
+        <div class="bonus-banner">
+            <div>
+                <div style="font-size: 0.65rem; font-weight:700; opacity:0.8; letter-spacing:1px; margin-bottom:4px;">WELCOME GIFT</div>
+                <div class="bonus-title">Earn 500 bonus points</div>
+                <div class="bonus-sub">Redeemable on your first premium ride booking.</div>
+            </div>
+            <div class="bonus-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            </div>
+        </div>
+
+        <div class="auth-footer-text">
+            Already a member?<br>
+            <button class="social-btn" style="width:120px; margin:12px auto 0; padding:8px; border-radius:20px; color:var(--cr-primary);" onclick="toggleView('login-view')">SIGN IN</button>
+        </div>
+    </div>
+
+
+    <!-- Javascript Auth Logic -->
+    <script>
+        function showTermsModal(e, type) {
+            e.preventDefault();
+            const title = type === 'terms' ? 'Terms of Service' : 'Privacy Policy';
+            const text = type === 'terms' 
+                ? 'By using CityRide Taxis, you agree to our terms. 1. You must be 18 years or older. 2. Any damage caused to the vehicle by you will result in a penalty fee. 3. Drivers reserve the right to refuse service if passenger behavior is abusive. 4. Cancellations after a driver has arrived will incur a cancellation fee. 5. Fares must be settled in full directly to the driver or vendor at the end of the trip.'
+                : 'Your privacy is important to us. 1. We collect your phone number and location solely for the purpose of connecting you with drivers. 2. We do not sell your personal data to third parties. 3. Trip history is securely stored on our servers. 4. OTPs are used to secure your rides and prevent fraud.';
+            
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'info',
+                confirmButtonColor: 'var(--cr-primary)'
+            });
+        }
+
+        function toggleView(viewId) {
+            document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        // Check if there is a query param to open register by default
+        if(window.location.search.includes('register')) {
+            toggleView('register-view');
+        }
+
+        // Login Logic
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Signing In...';
+            btn.disabled = true;
+
+            const identifier = document.getElementById('login-identifier').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            // API allows email or phone natively
+            const data = {
+                phone: identifier.includes('@') ? null : identifier,
+                email: identifier.includes('@') ? identifier : null,
+                password: password
+            };
+            if(!data.phone) delete data.phone;
+            if(!data.email) delete data.email;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('cityride_member', JSON.stringify(result.user));
+                    window.location.href = '/';
+                } else {
+                    Swal.fire('Login Failed', result.error || 'Invalid credentials', 'error');
+                }
+            } catch (err) { 
+                Swal.fire('Error', 'Network error. Please try again.', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // Register Logic
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const password = document.getElementById('reg-password').value;
+            if (password.length < 6) {
+                Swal.fire('Weak Password', 'Password must be at least 6 characters.', 'warning');
+                return;
+            }
+            if (!document.getElementById('reg-terms').checked) {
+                Swal.fire('Terms Required', 'Please accept the terms and conditions.', 'warning');
+                return;
+            }
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Creating Account...';
+            btn.disabled = true;
+
+            const data = {
+                name: document.getElementById('reg-name').value.trim(),
+                email: document.getElementById('reg-email').value.trim(),
+                phone: document.getElementById('reg-phone').value.trim(),
+                password: password,
+                role: 'user'
+            };
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('cityride_member', JSON.stringify(result.user));
+                    Swal.fire({
+                        title: 'Welcome to LuxeRide!',
+                        text: 'Your account has been created.',
+                        icon: 'success',
+                        confirmButtonColor: '#006B3A'
+                    }).then(() => {
+                        window.location.href = '/';
+                    });
+                } else {
+                    Swal.fire('Registration Failed', result.error, 'error');
+                }
+            } catch (err) { 
+                Swal.fire('Error', 'Network error. Please try again.', 'error'); 
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
