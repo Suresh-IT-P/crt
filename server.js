@@ -26,7 +26,7 @@ const app = express();
 const httpServer = http.createServer(app);
 const isDev = process.env.NODE_ENV !== 'production';
 
-// --- SOCKET.IO SETUP ---
+// --- SOCKET.IO SETUP -
 const allowedSocketOrigins = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
