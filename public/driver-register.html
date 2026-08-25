@@ -175,7 +175,7 @@
     <div class="reg-container">
         <div class="reg-card">
             <div class="reg-header">
-                <img src="logo.png" alt="CityRide" style="height: 50px; margin-bottom: 1rem;">
+                <img src="logo.png" alt="CityRide" style="height: 50px; margin-bottom: 1rem; cursor: pointer;" onclick="window.location.href='driver-login.html'">
                 <h1 style="font-size: 1.8rem;">Fleet Partner Application</h1>
                 <p style="opacity: 0.6; font-size: 0.9rem;">Join the elite CityRideTaxi pilot network.</p>
             </div>
@@ -213,7 +213,7 @@
                         </div>
                         <div class="input-group">
                             <label>Contact Number</label>
-                            <input type="tel" name="phone" placeholder="+91 99887 76655" required>
+                            <input type="tel" name="phone" placeholder="" required>
                         </div>
                         <div class="input-group">
                             <label>Portal Access Password</label>
@@ -280,14 +280,28 @@
                         </div>
                         <div class="input-group">
                             <label>Vehicle Class</label>
-                            <select name="vehicle_type">
-                                <option value="bike">Classy Bike+</option>
-                                <option value="auto">Auto (3+1)</option>
+                            <select name="vehicle_type" id="vehicle-type-select" onchange="autoUpdateSeatingCapacity(this.value)">
                                 <option value="hatchback">Hatchback (4+1)</option>
                                 <option value="sedan">Sedan (Standard)</option>
-                                <option value="suv">SUV (Premium)</option>
-                                <option value="8plus1">Tempo Traveller (8+1)</option>
+                                <option value="suv">SUV (5 / 6 / 7 / 8 Seater)</option>
+                                <option value="auto">Auto (3+1)</option>
+                                <option value="bike">Classy Bike+</option>
+                                <option value="8plus1">Tempo Traveller (8+1 / 12)</option>
                                 <option value="van24">Omni Bus (24+1)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Vehicle Seating Capacity</label>
+                            <select name="seating_capacity" id="seating-capacity-select" required>
+                                <option value="1">1 Seater (Bike)</option>
+                                <option value="3">3 Seater (Auto)</option>
+                                <option value="4">4 Seater</option>
+                                <option value="5" selected>5 Seater</option>
+                                <option value="6">6 Seater</option>
+                                <option value="7">7 Seater</option>
+                                <option value="8">8 Seater</option>
+                                <option value="12">12 Seater</option>
+                                <option value="24">24 Seater</option>
                             </select>
                         </div>
                     </div>
@@ -406,6 +420,21 @@
 
         window.addEventListener('DOMContentLoaded', setupPersistence);
 
+        function autoUpdateSeatingCapacity(vType) {
+            const capSelect = document.getElementById('seating-capacity-select');
+            if (!capSelect) return;
+            switch(vType) {
+                case 'bike': capSelect.value = '1'; break;
+                case 'auto': capSelect.value = '3'; break;
+                case 'hatchback': capSelect.value = '4'; break;
+                case 'sedan': capSelect.value = '5'; break;
+                case 'suv': capSelect.value = '7'; break; // Default SUV to 7 seater
+                case '8plus1': capSelect.value = '8'; break;
+                case 'van24': capSelect.value = '24'; break;
+                default: capSelect.value = '5'; break;
+            }
+        }
+
 
 
         function isPasswordStrong(password) {
@@ -504,7 +533,7 @@
                 if (res.ok) {
                     alert('APPLICATION TRANSMITTED!\nYour documents have been received by Ground Control. We will notify you via email once your identity is authorized.');
                     localStorage.removeItem(REG_KEY);
-                    window.location.href = '/driver-login';
+                    window.location.href = 'driver-login.html';
                 } else {
                     alert('System Error: ' + result.error);
                 }

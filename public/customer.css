@@ -1,26 +1,28 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-    /* Luxe Color Palette */
-    --cr-bg: #E8EFE8;
-    --cr-surface: #F5F8F4;
+    /* Luxe Color Palette — White & Pista Green */
+    --cr-bg: #F7FAF6;
+    --cr-surface: #FFFFFF;
     --cr-surface-light: #FFFFFF;
+    --cr-card-glass: #FFFFFF;
     
     --cr-primary: #006B3A;
+    --cr-primary-pista: #70C157;
     --cr-primary-hover: #00562e;
     
-    --cr-text-main: #1C2B23;
-    --cr-text-muted: #64746B;
+    --cr-text-main: #000000;
+    --cr-text-muted: #1C2B23;
     
     --cr-accent-blue: #2563EB;
-    --cr-accent-green: #22C55E;
-    --cr-accent-light: #BBF7D0;
+    --cr-accent-green: #70C157;
+    --cr-accent-light: #EBF6E9;
     --cr-accent-red: #FECACA;
     --cr-danger: #DC2626;
 
     /* Border & Radii */
-    --cr-border: rgba(0, 107, 58, 0.1);
-    --cr-border-light: rgba(0, 0, 0, 0.05);
+    --cr-border: rgba(0, 107, 58, 0.12);
+    --cr-border-light: rgba(112, 193, 87, 0.2);
     
     --cr-radius-sm: 8px;
     --cr-radius-md: 16px;
@@ -29,9 +31,9 @@
     --cr-radius-pill: 9999px;
 
     /* Shadows */
-    --cr-shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+    --cr-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.04);
     --cr-shadow-md: 0 8px 24px rgba(0, 107, 58, 0.08);
-    --cr-shadow-floating: 0 12px 32px rgba(0, 0, 0, 0.12);
+    --cr-shadow-floating: 0 12px 32px rgba(0, 0, 0, 0.10);
     
     /* Transitions */
     --cr-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -69,9 +71,12 @@ body {
 }
 .cr-input-group {
     background: var(--cr-surface-light);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: var(--cr-radius-md);
     margin-bottom: 12px;
-    border: 1px solid var(--cr-border-light);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
     transition: var(--cr-transition);
 }
 .cr-input-group:focus-within {
@@ -163,25 +168,30 @@ body {
 }
 .modal-content {
     background: var(--cr-surface);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(255, 255, 255, 0.6);
     border-radius: var(--cr-radius-xl) var(--cr-radius-xl) 0 0;
     width: 100%;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
     animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.12);
 }
 .modal-drag-handle { width: 40px; height: 4px; background: var(--cr-border-light); border-radius: 2px; margin: 12px auto; }
 
 /* Vehicle Cards (Luxe style overrides for app.js injected classes) */
 .vc-card {
-    background: var(--cr-bg);
+    background: rgba(245, 248, 244, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border-radius: var(--cr-radius-lg);
     padding: 16px;
     display: flex;
     align-items: center;
     gap: 16px;
-    border: 2px solid transparent;
+    border: 1px solid rgba(255, 255, 255, 0.5);
     cursor: pointer;
     transition: var(--cr-transition);
     position: relative;
@@ -189,7 +199,9 @@ body {
 .vc-card:hover { transform: translateY(-2px); box-shadow: var(--cr-shadow-md); }
 .vc-card.selected {
     border-color: var(--cr-primary);
-    background: white;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 .vc-card.selected::after {
     content: '✓';

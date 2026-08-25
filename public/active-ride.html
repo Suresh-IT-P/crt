@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CityRideTaxi | Active Ride Tracking</title>
     <link rel="icon" type="image/png" href="car.png">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org https://unpkg.com https://ui-avatars.com https://img.icons8.com; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* capacitor://* https://*.railway.app https://unpkg.com https://cdn.jsdelivr.net https://router.project-osrm.org https://nominatim.openstreetmap.org https://photon.komoot.io;">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,6 +23,99 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" crossorigin="anonymous" defer></script>
 
     <style>
+        /* ===== RAPIDO-STYLE DRIVER ETA CARD ===== */
+        #driver-eta-card {
+            position: fixed;
+            top: 72px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            display: none;
+            background: var(--cr-surface-light, #fff);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+            padding: 12px 20px;
+            min-width: 260px;
+            max-width: 340px;
+            width: calc(100% - 40px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0,107,58,0.12);
+            animation: etaSlideDown 0.4s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        #driver-eta-card.visible { display: flex; align-items: center; gap: 14px; }
+        @keyframes etaSlideDown {
+            from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+            to   { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        /* Premium Invoice Modal Overlay & Z-Index Fix */
+        .swal2-container {
+            z-index: 99999 !important;
+        }
+        .swal2-popup.premium-invoice-modal {
+            padding: 1.25rem !important;
+            border-radius: 20px !important;
+            background: #14161d !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8) !important;
+            max-width: 92vw !important;
+            width: 460px !important;
+        }
+        .swal2-html-container {
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow-x: hidden !important;
+            text-align: left !important;
+            width: 100% !important;
+            display: block !important;
+        }
+        #cityride-invoice-wrapper * {
+            box-sizing: border-box !important;
+        }
+        .eta-car-icon {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--cr-primary, #006B3A), #009954);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; position: relative;
+            box-shadow: 0 4px 14px rgba(0,107,58,0.3);
+        }
+        .eta-car-icon::after {
+            content: '';
+            position: absolute; inset: -5px;
+            border: 2px solid rgba(0,107,58,0.3);
+            border-radius: 50%;
+            animation: etaPulse 1.8s infinite ease-out;
+        }
+        @keyframes etaPulse {
+            0%   { transform: scale(0.88); opacity: 0.7; }
+            100% { transform: scale(1.3);  opacity: 0; }
+        }
+        .eta-info { flex: 1; min-width: 0; }
+        .eta-status-label {
+            font-size: 0.68rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.6px;
+            color: var(--cr-primary, #006B3A);
+            margin-bottom: 3px;
+        }
+        .eta-main-row { display: flex; align-items: baseline; gap: 6px; }
+        .eta-time {
+            font-size: 1.5rem; font-weight: 800;
+            color: var(--cr-text-main, #1a1a1a);
+            line-height: 1;
+        }
+        .eta-time-unit { font-size: 0.8rem; font-weight: 600; color: var(--cr-text-muted); }
+        .eta-divider {
+            width: 1px; height: 28px;
+            background: var(--cr-border-light, #e5e5e5);
+            flex-shrink: 0;
+        }
+        .eta-dist-col { text-align: right; flex-shrink: 0; }
+        .eta-dist-val {
+            font-size: 1.1rem; font-weight: 800;
+            color: var(--cr-text-main, #1a1a1a);
+        }
+        .eta-dist-unit { font-size: 0.7rem; font-weight: 600; color: var(--cr-text-muted); margin-top: 1px; }
+
         .chat-unread-badge {
             position: absolute;
             top: -5px;
@@ -54,12 +148,15 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: var(--cr-surface-light);
+            background: rgba(255, 255, 255, 0.86);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-top: 1px solid rgba(255, 255, 255, 0.7);
             border-radius: var(--cr-radius-xl) var(--cr-radius-xl) 0 0;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.12);
             z-index: 20;
-            padding: 24px 24px 120px 24px;
-            max-height: 85vh;
+            padding: 24px 24px 32px 24px;
+            max-height: 58vh;
             overflow-y: auto;
             transform: translateY(0);
             transition: transform 0.3s ease-out;
@@ -73,7 +170,7 @@
         .history-panel.hidden { display: none; }
         
         .cr-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-        .cr-stat-card { background: var(--cr-surface-light); border-radius: var(--cr-radius-lg); padding: 16px; box-shadow: var(--cr-shadow-sm); }
+        .cr-stat-card { background: rgba(255, 255, 255, 0.82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.6); border-radius: var(--cr-radius-lg); padding: 16px; box-shadow: var(--cr-shadow-sm); }
         
         .rides-table { width: 100%; display: flex; flex-direction: column; gap: 16px; }
         .rides-table tr { background: var(--cr-surface-light); border-radius: var(--cr-radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: var(--cr-shadow-sm); }
@@ -147,7 +244,7 @@
 
     <!-- Active Ride Top Bar -->
     <div class="luxe-top-bar" id="active-top-bar" style="display:none;">
-        <div class="back-btn" onclick="document.getElementById('history-panel').classList.remove('hidden'); document.getElementById('active-top-bar').style.display='none';">
+        <div class="back-btn" onclick="handleBackNavigation()">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
         </div>
         <img src="logo.png" alt="Logo" style="height:24px;">
@@ -166,6 +263,27 @@
             <span style="font-size:1.1rem;">🔔</span>
             <span class="cr-notif-badge"></span>
         </button>
+    </div>
+
+    <!-- Rapido-Style Driver ETA Card -->
+    <div id="driver-eta-card">
+        <div class="eta-car-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="26" height="26" fill="white">
+                <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+            </svg>
+        </div>
+        <div class="eta-info">
+            <div class="eta-status-label" id="eta-status-label">Driver on the way</div>
+            <div class="eta-main-row">
+                <span class="eta-time" id="eta-time-val">--</span>
+                <span class="eta-time-unit">min away</span>
+            </div>
+        </div>
+        <div class="eta-divider"></div>
+        <div class="eta-dist-col">
+            <div class="eta-dist-val" id="eta-dist-val">--</div>
+            <div class="eta-dist-unit">km</div>
+        </div>
     </div>
 
     <!-- Floating Map Pill -->
@@ -339,6 +457,102 @@
                 }
             }
 
+            let customerPreRideTimerInterval = null;
+
+            function startCustomerPreRideTimer(reachedPickupTime, baseElapsedSecsFromServer = 0) {
+                let baseElapsedSecs = 0;
+                if (typeof baseElapsedSecsFromServer === 'number' && baseElapsedSecsFromServer > 0) {
+                    baseElapsedSecs = baseElapsedSecsFromServer;
+                } else if (reachedPickupTime) {
+                    const parsed = new Date(reachedPickupTime);
+                    if (!isNaN(parsed.getTime())) {
+                        baseElapsedSecs = Math.max(0, Math.floor((new Date() - parsed) / 1000));
+                    }
+                }
+
+                let currentElapsedSecs = baseElapsedSecs;
+                const allowedSecs = 300;
+
+                function updateCustomerTimer() {
+                    const elapsedSecs = currentElapsedSecs;
+                    const panel = document.getElementById('customer-waiting-timer-panel');
+                    if (panel) {
+                        panel.style.display = 'block';
+                        const badge = document.getElementById('cust-timer-status-badge');
+                        const bar = document.getElementById('cust-timer-progress-bar');
+                        const elapsedDisplay = document.getElementById('cust-timer-elapsed-display');
+                        const waitingTimeEl = document.getElementById('cust-timer-waiting-time');
+                        const waitingChargeEl = document.getElementById('cust-timer-waiting-charge');
+
+                        if (elapsedSecs <= allowedSecs) {
+                            const remainingSecs = allowedSecs - elapsedSecs;
+                            const rM = Math.floor(remainingSecs / 60);
+                            const rS = remainingSecs % 60;
+                            if (elapsedDisplay) {
+                                elapsedDisplay.textContent = `00:${String(rM).padStart(2,'0')}:${String(rS).padStart(2,'0')}`;
+                                elapsedDisplay.style.color = '#006B3A';
+                            }
+                            if (badge) {
+                                badge.textContent = 'GRACE PERIOD';
+                                badge.style.background = 'rgba(0, 107, 58, 0.12)';
+                                badge.style.color = '#006B3A';
+                            }
+                            if (bar) {
+                                bar.style.background = '#006B3A';
+                                const pct = Math.min(100, (elapsedSecs / allowedSecs) * 100);
+                                bar.style.width = `${pct}%`;
+                            }
+                            if (waitingTimeEl) waitingTimeEl.textContent = "0:00";
+                            if (waitingChargeEl) waitingChargeEl.textContent = "₹0";
+                        } else {
+                            const waitingSecs = elapsedSecs - allowedSecs;
+                            const wH = Math.floor(waitingSecs / 3600);
+                            const wM = Math.floor((waitingSecs % 3600) / 60);
+                            const wS = waitingSecs % 60;
+                            const waitingMinsFloat = waitingSecs / 60;
+                            const waitingCharge = Math.ceil(waitingMinsFloat * 2);
+
+                            if (elapsedDisplay) {
+                                const totalH = Math.floor(elapsedSecs / 3600);
+                                const totalM = Math.floor((elapsedSecs % 3600) / 60);
+                                const totalS = elapsedSecs % 60;
+                                elapsedDisplay.textContent = `${String(totalH).padStart(2,'0')}:${String(totalM).padStart(2,'0')}:${String(totalS).padStart(2,'0')}`;
+                                elapsedDisplay.style.color = '#dc2626';
+                            }
+                            if (badge) {
+                                badge.textContent = 'WAITING CHARGES';
+                                badge.style.background = 'rgba(220, 38, 38, 0.12)';
+                                badge.style.color = '#dc2626';
+                            }
+                            if (bar) {
+                                bar.style.background = '#dc2626';
+                                bar.style.width = '100%';
+                            }
+
+                            const wTimeStr = wH > 0 ? `${wH}:${String(wM).padStart(2,'0')}:${String(wS).padStart(2,'0')}` : `${wM}:${String(wS).padStart(2,'0')}`;
+                            if (waitingTimeEl) waitingTimeEl.textContent = wTimeStr;
+                            if (waitingChargeEl) waitingChargeEl.textContent = `₹${waitingCharge}`;
+                        }
+                    }
+                    currentElapsedSecs++;
+                }
+
+                if (customerPreRideTimerInterval) {
+                    clearInterval(customerPreRideTimerInterval);
+                }
+                updateCustomerTimer();
+                customerPreRideTimerInterval = setInterval(updateCustomerTimer, 1000);
+            }
+
+            function stopCustomerPreRideTimer() {
+                if (customerPreRideTimerInterval) {
+                    clearInterval(customerPreRideTimerInterval);
+                    customerPreRideTimerInterval = null;
+                }
+                const panel = document.getElementById('customer-waiting-timer-panel');
+                if (panel) panel.style.display = 'none';
+            }
+
             // Passenger waiting timer interval
             setInterval(() => {
                 const timerEl = document.getElementById('passenger-waiting-timer');
@@ -366,6 +580,9 @@
                         document.getElementById('active-top-bar').style.display = 'none';
                         document.getElementById('gps-tracking-pill').style.display = 'none';
                         document.getElementById('active-map-tools').style.display = 'none';
+                        // Hide ETA card when no active ride
+                        const etaCard = document.getElementById('driver-eta-card');
+                        if (etaCard) etaCard.classList.remove('visible');
                     }
                 });
             });
@@ -405,7 +622,16 @@
                 
                 // If assigned or ongoing
                 const am = window._currentActiveMission;
-                if (am && (am.status === 'assigned' || am.status === 'ongoing')) {
+                if (am && (am.status === 'assigned' || am.status === 'ongoing' || am.status === 'pending')) {
+                    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CustomerBackgroundPlugin) {
+                        try {
+                            const statusLabel = am.status === 'pending' ? 'Searching for nearby drivers...' : (am.status === 'assigned' ? `Driver assigned: ${am.driver_name || 'Driver'}` : 'On Trip — En route');
+                            window.Capacitor.Plugins.CustomerBackgroundPlugin.startKeepAlive({
+                                label: `CityRide — ${statusLabel}`,
+                                bookingId: String(am.id)
+                            }).catch(() => {});
+                        } catch(e) {}
+                    }
                     const otp = am.journey_otp || '----';
                     const driverName = am.driver_name || 'Driver';
                     const carModel = am.car_model || 'Premium Vehicle';
@@ -436,6 +662,7 @@
                                 <div class="otp-val">${otp}</div>
                             </div>
                         `;
+                        startCustomerPreRideTimer(am.reached_pickup_time, am.reached_elapsed_seconds);
                     } else if (am.status === 'assigned') {
                         otpBlock = `
                             <div class="ar-otp-badge">
@@ -443,9 +670,11 @@
                                 <div class="otp-val">${otp}</div>
                             </div>
                         `;
+                        stopCustomerPreRideTimer();
                     } else if (am.status === 'ongoing') {
                         etaText = 'On Trip';
                         subText = `<span style="color:var(--cr-primary);">En route to destination</span>`;
+                        stopCustomerPreRideTimer();
                     }
 
                     const pickup = am.pickup_loc || 'Pickup Location';
@@ -462,13 +691,41 @@
                             ${otpBlock}
                         </div>
                         
+                        <!-- Live Pre-Ride Grace / Waiting Timer Card Box for Customer -->
+                        <div id="customer-waiting-timer-panel" style="display:${(am.status === 'assigned' && am.reached_pickup_time) ? 'block' : 'none'}; margin-bottom:16px; padding:14px; background:rgba(0,107,58,0.04); border:1px solid rgba(0,107,58,0.14); border-radius:14px; box-shadow:0 4px 12px rgba(0,0,0,0.03);">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                                <span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; color:var(--cr-text-muted);">PRE-RIDE GRACE / WAITING TIMER</span>
+                                <span id="cust-timer-status-badge" style="font-size:0.65rem; padding:3px 10px; border-radius:20px; font-weight:800; background:rgba(0,107,58,0.12); color:#006B3A;">GRACE PERIOD</span>
+                            </div>
+                            <div style="display:flex; justify-content:center; align-items:baseline; gap:6px; margin:8px 0;">
+                                <span id="cust-timer-elapsed-display" style="font-size:2.2rem; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:-1px; color:#006B3A;">00:05:00</span>
+                            </div>
+                            <div id="cust-timer-stats-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;">
+                                <div style="background:#ffffff; border:1px solid rgba(0,107,58,0.1); padding:6px 4px; border-radius:10px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+                                    <div style="font-size:0.65rem; color:var(--cr-text-muted); margin-bottom:2px; font-weight:600;">Allowed</div>
+                                    <div id="cust-timer-allowed-time" style="font-size:0.88rem; font-weight:800; color:#006B3A;">5m 00s</div>
+                                </div>
+                                <div style="background:#ffffff; border:1px solid rgba(0,107,58,0.1); padding:6px 4px; border-radius:10px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+                                    <div style="font-size:0.65rem; color:var(--cr-text-muted); margin-bottom:2px; font-weight:600;">Waiting</div>
+                                    <div id="cust-timer-waiting-time" style="font-size:0.88rem; font-weight:800; color:#ff9500;">0:00</div>
+                                </div>
+                                <div style="background:#ffffff; border:1px solid rgba(0,107,58,0.1); padding:6px 4px; border-radius:10px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+                                    <div style="font-size:0.65rem; color:var(--cr-text-muted); margin-bottom:2px; font-weight:600;">W. Charge</div>
+                                    <div id="cust-timer-waiting-charge" style="font-size:0.88rem; font-weight:800; color:#dc2626;">₹0</div>
+                                </div>
+                            </div>
+                            <div id="cust-timer-progress-wrapper" style="margin-top:10px; height:6px; background:rgba(0,107,58,0.1); border-radius:3px; overflow:hidden;">
+                                <div id="cust-timer-progress-bar" style="height:100%; width:0%; background:#006B3A; border-radius:3px; transition:width 1s linear, background 0.3s;"></div>
+                            </div>
+                        </div>
+
                         <div style="background:var(--cr-bg); padding:12px; border-radius:12px; margin-bottom:16px;">
-                            <div style="display:flex; align-items:start; gap:8px; margin-bottom:8px;">
-                                <div style="width:8px; height:8px; border-radius:50%; background:var(--cr-primary); margin-top:6px; flex-shrink:0;"></div>
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                                <div style="width:8px; height:8px; border-radius:50%; background:var(--cr-primary); flex-shrink:0;"></div>
                                 <div style="font-size:0.85rem; color:var(--cr-text-main); font-weight:500; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${pickup}">${pickup}</div>
                             </div>
-                            <div style="display:flex; align-items:start; gap:8px;">
-                                <div style="width:8px; height:8px; border-radius:0; background:var(--cr-accent-red); margin-top:6px; flex-shrink:0;"></div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <div style="width:8px; height:8px; border-radius:0; background:var(--cr-accent-red); flex-shrink:0;"></div>
                                 <div style="font-size:0.85rem; color:var(--cr-text-main); font-weight:500; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${dropoff}">${dropoff}</div>
                             </div>
                         </div>
@@ -521,8 +778,10 @@
                             <button class="ar-action-btn" onclick="triggerSOS()"><div class="ar-action-icon sos">✱</div><span class="ar-action-label">SOS</span></button>
                         </div>
                         
-                        ${am.status === 'assigned' ? `
-                        <button class="cr-btn cancel-trip-btn" onclick="cancelRide(${currentBookingId}, ${JSON.parse(localStorage.getItem('cityride_member'))?.id || 1})">Cancel Trip</button>
+                        ${(am.status === 'assigned' || am.status === 'pending') ? `
+                        <button onclick="cancelRide(${currentBookingId}, ${JSON.parse(localStorage.getItem('cityride_member'))?.id || 1})" style="width:100%; margin-top:14px; background:rgba(255, 59, 48, 0.12); border:1px solid rgba(255, 59, 48, 0.3); color:#ff3b30; font-weight:800; font-size:0.92rem; padding:12px; border-radius:12px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s ease;">
+                            🚫 Cancel Ride
+                        </button>
                         ` : ''}
                     `;
                 }
@@ -534,15 +793,16 @@
     <script>(function() {
 const originalFetch = window.fetch;
 function getLoginRedirect(url) {
-if (typeof url === 'string' && url.includes('/api/')) {
-if (url.includes('/api/admin/')) return 'admin-login.html';
-if (url.includes('/api/vendor/')) return 'vendor-login.html';
-if (url.includes('/api/driver/') || url.includes('/api/bookings/')) {
-return window.location.pathname.includes('driver') ? 'driver-login.html' : 'auth.html';
-}
-return 'auth.html';
-}
-return null;
+    const path = (window.location.pathname || '').toLowerCase();
+    if (path.includes('vendor')) return 'vendor-login.html';
+    if (path.includes('driver')) return 'driver-login.html';
+    if (path.includes('admin')) return 'admin-login.html';
+    if (typeof url === 'string' && url.includes('/api/')) {
+        if (url.includes('/api/admin/') || url.includes('role=admin')) return 'admin-login.html';
+        if (url.includes('/api/vendor/') || url.includes('role=vendor')) return 'vendor-login.html';
+        if (url.includes('/api/driver/') || url.includes('role=driver')) return 'driver-login.html';
+    }
+    return 'auth.html';
 }
 window.fetch = async function (...args) {
 const response = await originalFetch(...args);
@@ -566,6 +826,21 @@ let initialLoadDone = false;
 let currentActiveIndex = 0;
 let loadedRides = [];
 let currentDriverCoords = null;
+
+if (typeof window.startCustomerPreRideTimer !== 'function') {
+    window.startCustomerPreRideTimer = function(reachedTime) {
+        if (typeof startCustomerPreRideTimer === 'function' && startCustomerPreRideTimer !== window.startCustomerPreRideTimer) {
+            startCustomerPreRideTimer(reachedTime);
+        }
+    };
+}
+if (typeof window.stopCustomerPreRideTimer !== 'function') {
+    window.stopCustomerPreRideTimer = function() {
+        if (typeof stopCustomerPreRideTimer === 'function' && stopCustomerPreRideTimer !== window.stopCustomerPreRideTimer) {
+            stopCustomerPreRideTimer();
+        }
+    };
+}
 
 let playedReachedSounds = new Set();
 let dashboardAudioCtx = null;
@@ -685,10 +960,34 @@ function initUserSocket(user) {
         );
     }
 
+    // Incoming chat message — trigger strong notification & pulsing badge
+    const handleCustomerIncomingChat = (data) => {
+        if (data && data.senderRole !== 'user') {
+            if (window.CustomerNotifications && window.CustomerNotifications.showChatNotification) {
+                window.CustomerNotifications.showChatNotification(data, 'user');
+            }
+            const unreadBadge = document.getElementById('chat-unread-badge');
+            if (unreadBadge) {
+                unreadBadge.style.display = 'block';
+                unreadBadge.classList.add('active', 'chat-pulse-ring');
+            }
+        }
+    };
+    userSocket.on('chat_message', handleCustomerIncomingChat);
+    userSocket.on('chat_notification', handleCustomerIncomingChat);
+
+    window._userSocket = userSocket;
+
     // Booking status changed (assigned, ongoing, finished, cancelled) — notify & refresh immediately
     userSocket.on('booking_status_update', (data) => {
         if (window.CustomerNotifications) {
             window.CustomerNotifications.processSocketActivity(data);
+        }
+        if (data && (data.status === 'completed' || data.status === 'finished')) {
+            const bId = data.bookingId || data.id;
+            if (bId && typeof openTripInvoice === 'function') {
+                openTripInvoice(bId);
+            }
         }
         if (typeof loadDashboardData === 'function') loadDashboardData(user);
     });
@@ -751,41 +1050,84 @@ function updateDriverMarkerOnMap(lat, lng) {
     } else {
         const driverIcon = L.divIcon({
             className: 'driver-marker-wrap',
-            html: `<div style="background: var(--cr-primary); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); border: 2px solid white; position: relative;">
+            html: `<div style="background: linear-gradient(135deg, var(--cr-primary, #006B3A), #009954); width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 18px rgba(0,107,58,0.5); border: 3px solid white; position: relative;">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="white">
                     <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
                 </svg>
-                <div style="position:absolute; top:-6px; left:-6px; right:-6px; bottom:-6px; border:3px solid var(--cr-primary); border-radius:50%; animation:pulse 1.5s infinite; opacity: 0.6;"></div>
+                <div style="position:absolute; top:-8px; left:-8px; right:-8px; bottom:-8px; border:2px solid rgba(0,107,58,0.4); border-radius:50%; animation:pulse 1.5s infinite; opacity:0.7;"></div>
+                <div style="position:absolute; top:-14px; left:-14px; right:-14px; bottom:-14px; border:2px solid rgba(0,107,58,0.2); border-radius:50%; animation:pulse 1.5s 0.5s infinite; opacity:0.5;"></div>
             </div>`,
-            iconSize: [44, 44],
-            iconAnchor: [22, 22]
+            iconSize: [48, 48],
+            iconAnchor: [24, 24]
         });
-        driverMarker = L.marker([lat, lng], { icon: driverIcon }).addTo(trackerMap).bindPopup('<b>Driver Location</b>');
+        driverMarker = L.marker([lat, lng], { icon: driverIcon }).addTo(trackerMap).bindPopup('<b>🚗 Driver Location</b>');
     }
-    trackerMap.setView([lat, lng]);
-
-    // Update GPS tracking pill with dynamic distance
+    // Pan map to show both driver and destination/pickup if possible
     const am = window._currentActiveMission;
+    let targetCoords = null;
     if (am) {
-        let targetCoords = null;
         if (am.status === 'assigned' && am.pickup_coords) {
             targetCoords = am.pickup_coords.split(',').map(Number);
         } else if (am.status === 'ongoing' && am.drop_coords) {
             targetCoords = am.drop_coords.split(',').map(Number);
         }
-        
-        if (targetCoords && targetCoords.length === 2) {
-            // Note: DB stores coords as lng,lat
+    }
+    if (targetCoords && targetCoords.length === 2) {
+        // Fit map to show both driver and target (DB stores as lng,lat)
+        try {
+            const bounds = L.latLngBounds([[lat, lng], [targetCoords[1], targetCoords[0]]]);
+            trackerMap.fitBounds(bounds, { padding: [60, 60] });
+        } catch(e) {
+            trackerMap.setView([lat, lng], 14);
+        }
+    } else {
+        trackerMap.setView([lat, lng], 14);
+    }
+
+    // ===== UPDATE RAPIDO-STYLE ETA CARD =====
+    if (am) {
+        const etaCard = document.getElementById('driver-eta-card');
+        const etaTimeEl = document.getElementById('eta-time-val');
+        const etaDistEl = document.getElementById('eta-dist-val');
+        const etaLabelEl = document.getElementById('eta-status-label');
+
+        if (etaCard && targetCoords && targetCoords.length === 2) {
+            // Distance in meters from driver to target (DB stores as lng,lat)
             const distMeters = trackerMap.distance([lat, lng], [targetCoords[1], targetCoords[0]]);
-            const distKm = (distMeters / 1000).toFixed(1);
-            const pillEl = document.querySelector('#gps-tracking-pill .map-pill');
-            if (pillEl) {
+            const distKm = (distMeters / 1000);
+            const distDisplay = distKm < 1
+                ? `${Math.round(distMeters)}`
+                : `${distKm.toFixed(1)}`;
+
+            // ETA estimate: assume avg speed 25 km/h in city
+            const avgSpeedKmh = 25;
+            const etaMins = Math.max(1, Math.round((distKm / avgSpeedKmh) * 60));
+
+            if (etaDistEl) etaDistEl.textContent = distKm < 1 ? `${Math.round(distMeters)}m` : `${distKm.toFixed(1)}`;
+            if (etaTimeEl) etaTimeEl.textContent = etaMins;
+
+            // Update unit label for meters vs km
+            const distUnitEl = etaCard.querySelector('.eta-dist-unit');
+            if (distUnitEl) distUnitEl.textContent = distKm < 1 ? 'meters' : 'km';
+
+            if (etaLabelEl) {
                 if (am.status === 'ongoing') {
-                    pillEl.innerHTML = `<span style="display:inline-block; width:8px; height:8px; background:var(--cr-primary); border-radius:50%; margin-right:6px;"></span>Destination is ${distKm} KM away`;
+                    etaLabelEl.textContent = '🟢 En route to destination';
                 } else {
-                    pillEl.innerHTML = `<span style="display:inline-block; width:8px; height:8px; background:var(--cr-primary); border-radius:50%; margin-right:6px;"></span>Driver is ${distKm} KM away`;
+                    etaLabelEl.textContent = '🚗 Driver on the way';
                 }
             }
+            etaCard.classList.add('visible');
+
+            // Also update GPS pill
+            const pillEl = document.querySelector('#gps-tracking-pill .map-pill');
+            if (pillEl) {
+                const label = am.status === 'ongoing' ? 'Destination' : 'Driver';
+                pillEl.innerHTML = `<span style="display:inline-block;width:8px;height:8px;background:var(--cr-primary);border-radius:50%;margin-right:6px;animation:pulse 1.5s infinite;"></span>${label} ${distKm.toFixed(1)} km • ${etaMins} min`;
+            }
+        } else if (etaCard) {
+            // No target coords yet, still show card with live updating
+            etaCard.classList.add('visible');
         }
     }
 }
@@ -812,6 +1154,105 @@ console.error('Error fetching driver location:', e);
 fetchLoc();
 driverLocationInterval = setInterval(fetchLoc, 15000);
 }
+window._selectedActiveRideId = null;
+
+function selectActiveRideToTrack(rideId) {
+    window._selectedActiveRideId = rideId;
+    const user = JSON.parse(localStorage.getItem('cityride_member'));
+    if (user) loadDashboardData(user);
+}
+
+function deselectActiveRide() {
+    window._selectedActiveRideId = null;
+    const user = JSON.parse(localStorage.getItem('cityride_member'));
+    if (user) loadDashboardData(user);
+}
+
+function handleBackNavigation() {
+    if (window._selectedActiveRideId && Array.isArray(loadedRides) && loadedRides.filter(r => r.status === 'pending' || r.status === 'assigned' || r.status === 'ongoing' || r.status === 'finished').length >= 2) {
+        deselectActiveRide();
+        return;
+    }
+    const hp = document.getElementById('history-panel');
+    if (hp) {
+        hp.classList.remove('hidden');
+    } else {
+        window.location.href = 'index.html';
+    }
+    const tb = document.getElementById('active-top-bar');
+    if (tb) tb.style.display = 'none';
+}
+
+function showActiveRidesSelectorView(activeMissions) {
+    let selectorEl = document.getElementById('active-rides-selector-container');
+    if (!selectorEl) {
+        selectorEl = document.createElement('div');
+        selectorEl.id = 'active-rides-selector-container';
+        selectorEl.style.cssText = 'position:fixed; inset:0; z-index:90; background:var(--cr-bg); padding:80px 20px 100px; overflow-y:auto; font-family:Inter,sans-serif;';
+        document.body.appendChild(selectorEl);
+    } else {
+        selectorEl.style.display = 'block';
+    }
+
+    // Hide active tracking drawer & top bar
+    const container = document.getElementById('active-mission-container');
+    if (container) container.classList.add('hidden');
+    const topBar = document.getElementById('active-top-bar');
+    if (topBar) topBar.style.display = 'none';
+
+    selectorEl.innerHTML = `
+        <div style="max-width:550px; margin:0 auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+                <div>
+                    <h2 style="margin:0; font-size:1.4rem; font-weight:800; color:var(--cr-text-main);">Active Rides</h2>
+                    <div style="font-size:0.85rem; color:var(--cr-text-muted); font-weight:600; margin-top:2px;">Select an active ride below to view live GPS tracking</div>
+                </div>
+                <span style="background:var(--cr-primary); color:#fff; padding:6px 14px; border-radius:20px; font-weight:800; font-size:0.8rem;">${activeMissions.length} Active</span>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:16px;">
+                ${activeMissions.map((m) => {
+                    const statusText = m.status === 'assigned' && m.reached_pickup_time ? 'ARRIVED' : m.status.toUpperCase();
+                    const driverName = m.driver_name || 'Finding nearby driver...';
+                    const liveFare = m.live_fare || m.estimated_price || '0';
+                    return `
+                        <div style="background:var(--cr-surface-light); border:1px solid var(--cr-border-light); border-radius:20px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,0.06); transition:transform 0.2s;" onclick="selectActiveRideToTrack(${m.id})">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span style="font-weight:800; font-size:1.05rem; color:var(--cr-text-main);">Ride #B${m.id}</span>
+                                    <span style="font-size:0.75rem; color:var(--cr-text-muted); font-weight:600;">• ${m.trip_type ? m.trip_type.toUpperCase() : 'LOCAL'}</span>
+                                </div>
+                                <span class="status-pill status-${m.status}" style="font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:8px;">${statusText}</span>
+                            </div>
+
+                            <div style="background:var(--cr-bg); padding:12px; border-radius:14px; margin-bottom:14px;">
+                                <div style="display:flex; align-items:start; gap:8px; margin-bottom:8px;">
+                                    <div style="width:8px; height:8px; border-radius:50%; background:var(--cr-primary); margin-top:5px; flex-shrink:0;"></div>
+                                    <div style="font-size:0.85rem; font-weight:600; color:var(--cr-text-main); line-clamp:2;">${m.pickup_loc}</div>
+                                </div>
+                                <div style="display:flex; align-items:start; gap:8px;">
+                                    <div style="width:8px; height:8px; border-radius:0; background:var(--cr-accent-red); margin-top:5px; flex-shrink:0;"></div>
+                                    <div style="font-size:0.85rem; font-weight:600; color:var(--cr-text-main); line-clamp:2;">${m.drop_loc}</div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding-top:12px; border-top:1px dashed var(--cr-border-light);">
+                                <div>
+                                    <div style="font-size:0.75rem; color:var(--cr-text-muted); font-weight:600;">DRIVER</div>
+                                    <div style="font-weight:700; font-size:0.9rem; color:var(--cr-text-main);">${driverName}</div>
+                                </div>
+                                <button class="cr-btn cr-btn-primary" style="width:auto; padding:8px 20px; font-size:0.85rem; font-weight:700; border-radius:12px;" onclick="event.stopPropagation(); selectActiveRideToTrack(${m.id})">
+                                    Track Ride →
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+}
+
 function showToast(title, message, type = 'info') {
     if (window.CustomerNotifications) {
         window.CustomerNotifications.notify(type, title, message);
@@ -834,32 +1275,100 @@ async function loadDashboardData(user) {
         }
         if (initialLoadDone) {
             rides.forEach(ride => {
+                const prevStatus = lastSeenStatuses.get(ride.id);
+                const isArrived = ride.status === 'assigned' && ride.reached_pickup_time;
+                const currentCompositeStatus = isArrived ? 'reached_pickup' : ride.status;
+                const payload = {
+                    bookingId: ride.id,
+                    status: currentCompositeStatus,
+                    driverName: ride.driver_name,
+                    carModel: ride.car_model,
+                    carNumber: ride.car_number,
+                    otp: ride.journey_otp,
+                    dropLoc: ride.drop_loc,
+                    fare: ride.fare || ride.estimated_price
+                };
+
                 if (!lastSeenStatuses.has(ride.id)) {
-                    if (window.CustomerNotifications) {
-                        window.CustomerNotifications.processSocketActivity({ bookingId: ride.id, status: ride.status });
-                    } else {
-                        showToast('New Ride Booked', `Your trip to ${ride.drop_loc.split(',')[0]} has been registered.`, 'success');
+                    // Initial load: ONLY notify if this is an currently active ride (pending, assigned, ongoing)
+                    if (['pending', 'assigned', 'ongoing'].includes(ride.status) && window.CustomerNotifications) {
+                        window.CustomerNotifications.processSocketActivity(payload);
                     }
-                } else if (lastSeenStatuses.get(ride.id) !== ride.status) {
+                } else if (prevStatus !== currentCompositeStatus) {
                     if (window.CustomerNotifications) {
-                        window.CustomerNotifications.processSocketActivity({ bookingId: ride.id, status: ride.status });
-                    } else {
-                        showToast('Ride Update', `Trip #B${ride.id} is now ${ride.status.toUpperCase()}.`, 'info');
+                        window.CustomerNotifications.processSocketActivity(payload);
                     }
-                    if (ride.status === 'completed') {
-                        setTimeout(() => window.location.reload(), 2000);
+                    if (ride.status === 'completed' || ride.status === 'finished') {
+                        showFareCompletedModal(ride);
                     }
                 }
             });
         }
-        lastSeenStatuses = new Map(rides.map(r => [r.id, r.status]));
+        lastSeenStatuses = new Map(rides.map(r => [r.id, (r.status === 'assigned' && r.reached_pickup_time) ? 'reached_pickup' : r.status]));
         
-        const activeMissions = rides.filter(r => r.status === 'pending' || r.status === 'assigned' || r.status === 'ongoing' || r.status === 'finished');
+        const activeMissions = rides.filter(r => r.status === 'pending' || r.status === 'assigned' || r.status === 'ongoing');
         
+        if (activeMissions.length === 0) {
+            // Check if there is a recently completed / finished ride to show invoice popup
+            const completedRides = rides.filter(r => r.status === 'completed' || r.status === 'finished');
+            if (completedRides.length > 0) {
+                const latestCompleted = completedRides[0];
+                const shownRaw = localStorage.getItem('cityride_shown_fare_popups') || '[]';
+                let shownList = [];
+                try { shownList = JSON.parse(shownRaw); } catch(e) {}
+                if (!shownList.includes(latestCompleted.id)) {
+                    showFareCompletedModal(latestCompleted);
+                    return; // Pause execution while invoice modal is open
+                }
+            }
+
+            // Do not auto-redirect if invoice popup is active
+            if (window._isInvoicePopupShowing) {
+                return;
+            }
+
+            // Un-hide active tracking container so user is never stuck on empty map
+            const container = document.getElementById('active-mission-container');
+            if (container) container.classList.remove('hidden');
+            const selectorEl = document.getElementById('active-rides-selector-container');
+            if (selectorEl) selectorEl.style.display = 'none';
+
+            const details = document.getElementById('active-details');
+            if (details) {
+                details.innerHTML = `
+                    <div style="text-align:center; padding:30px 20px;">
+                        <div style="font-size:3rem; margin-bottom:12px;">🚕</div>
+                        <h3 style="font-size:1.2rem; font-weight:800; color:var(--cr-text-main, #fff); margin-bottom:6px;">No Active Rides</h3>
+                        <p style="font-size:0.85rem; color:var(--cr-text-muted, #aaa); margin-bottom:20px;">Your ride was completed. Return to home to book a new ride.</p>
+                        <a href="dashboard.html" style="display:inline-block; background:var(--cr-primary, #006B3A); color:#fff; font-weight:700; padding:12px 28px; border-radius:12px; text-decoration:none; box-shadow:0 4px 14px rgba(0,107,58,0.4);">Book a New Ride</a>
+                    </div>
+                `;
+            }
+            return;
+        }
+
         if (activeMissions.length > 0) {
-            if (currentActiveIndex >= activeMissions.length) currentActiveIndex = 0;
-            const activeMission = activeMissions[currentActiveIndex];
+            // If customer has 2 or more active rides and hasn't picked one yet, show Active Rides Selector list
+            if (activeMissions.length >= 2 && !window._selectedActiveRideId) {
+                showActiveRidesSelectorView(activeMissions);
+                return;
+            }
+
+            // Hide active rides selector view if open
+            const selectorEl = document.getElementById('active-rides-selector-container');
+            if (selectorEl) selectorEl.style.display = 'none';
+
+            let activeMission = activeMissions[0];
+            if (window._selectedActiveRideId) {
+                const found = activeMissions.find(m => m.id === window._selectedActiveRideId);
+                if (found) activeMission = found;
+                else window._selectedActiveRideId = null;
+            }
+
             window._currentActiveMission = activeMission;
+            if (window._userSocket && activeMission.id) {
+                window._userSocket.emit('track_booking', activeMission.id);
+            }
             const container = document.getElementById('active-mission-container');
             const details = document.getElementById('active-details');
             const statusTag = document.getElementById('active-status');
@@ -868,25 +1377,25 @@ async function loadDashboardData(user) {
             if (statusTag) {
                 statusTag.className = `status-pill status-${activeMission.status}`;
                 if (activeMission.status === 'assigned' && activeMission.reached_pickup_time) {
-                    statusTag.textContent = 'ARRIVED';
+                    statusTag.textContent = 'ARRIVED AT PICKUP';
                     statusTag.className = `status-pill status-ongoing`;
                     if (!playedReachedSounds.has(activeMission.id)) {
                         playedReachedSounds.add(activeMission.id);
                         playReachedSoundFor5Seconds();
                     }
+                    startCustomerPreRideTimer(activeMission.reached_pickup_time);
                 } else {
                     statusTag.textContent = activeMission.status.toUpperCase();
+                    stopCustomerPreRideTimer();
                 }
             }
 
             let switcherUI = '';
             if (activeMissions.length > 1) {
                 switcherUI = `
-                <div style="display: flex; align-items: center; gap: 1rem; background: rgba(0,0,0,0.05); padding: 5px 15px; border-radius: 20px;">
-                    <button onclick="changeActiveRide(-1, ${activeMissions.length})" style="background:none; border:none; cursor:pointer; font-weight:bold; font-size:1.2rem; color:var(--primary-red); padding:0 5px;">&lsaquo;</button>
-                    <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted)">Ride ${currentActiveIndex + 1} of ${activeMissions.length}</span>
-                    <button onclick="changeActiveRide(1, ${activeMissions.length})" style="background:none; border:none; cursor:pointer; font-weight:bold; font-size:1.2rem; color:var(--primary-red); padding:0 5px;">&rsaquo;</button>
-                </div>
+                <button onclick="deselectActiveRide()" style="background:rgba(0,107,58,0.1); border:1px solid var(--cr-primary); color:var(--cr-primary); font-weight:700; font-size:0.75rem; padding:6px 12px; border-radius:20px; cursor:pointer;">
+                    ← Active Rides (${activeMissions.length})
+                </button>
                 `;
             }
             const headerContainer = container ? container.querySelector('div[style*="display: flex"]') : null;
@@ -955,13 +1464,52 @@ async function loadDashboardData(user) {
                     
                     <div id="${mapId}" style="width:100%; height:220px; border-radius:12px; margin-bottom:15px; border:1px solid rgba(255,255,255,0.05); z-index:1; overflow:hidden;"></div>
 
+                    ${(activeMission.status === 'assigned' && activeMission.reached_pickup_time) ? `
+                        <!-- PRE-RIDE GRACE / WAITING TIMER (REAL-TIME) -->
+                        <div id="customer-pre-ride-waiting-panel" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:18px; padding:18px; margin-bottom:1.5rem; font-family:Inter,sans-serif;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <div style="font-size:0.72rem; text-transform:uppercase; color:var(--text-muted, #aaa); font-weight:800; letter-spacing:0.5px;">
+                                    PRE-RIDE GRACE / WAITING TIMER
+                                </div>
+                                <span id="cust-grace-badge" style="background:rgba(255,159,10,0.15); color:#ff9f0a; font-size:0.68rem; font-weight:800; padding:4px 10px; border-radius:12px; text-transform:uppercase; letter-spacing:0.5px;">
+                                    GRACE PERIOD
+                                </span>
+                            </div>
+
+                            <div id="cust-grace-timer-display" style="font-size:2.8rem; font-weight:900; color:#ff9f0a; text-align:center; line-height:1; margin:8px 0 16px; font-variant-numeric:tabular-nums; letter-spacing:1px;">
+                                00:05:00
+                            </div>
+
+                            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px;">
+                                <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:10px 8px; text-align:center;">
+                                    <div style="font-size:0.65rem; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:3px;">Allowed</div>
+                                    <div style="font-size:0.95rem; font-weight:800; color:#00ff66;" id="cust-grace-allowed-val">5m 00s</div>
+                                </div>
+                                <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:10px 8px; text-align:center;">
+                                    <div style="font-size:0.65rem; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:3px;">Waiting</div>
+                                    <div style="font-size:0.95rem; font-weight:800; color:#ff9f0a;" id="cust-grace-waiting-val">0:00</div>
+                                </div>
+                                <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:10px 8px; text-align:center;">
+                                    <div style="font-size:0.65rem; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:3px;">W. Charge</div>
+                                    <div style="font-size:0.95rem; font-weight:800; color:#ff0040;" id="cust-grace-charge-val">₹0</div>
+                                </div>
+                            </div>
+
+                            <div style="width:100%; height:4px; background:rgba(255,255,255,0.08); border-radius:4px; overflow:hidden;">
+                                <div id="cust-grace-progress-bar" style="height:100%; width:0%; background:#ff9f0a; transition:width 0.3s ease, background 0.3s ease;"></div>
+                            </div>
+                        </div>
+                    ` : ''}
+
                     <div style="display:flex; gap:10px; margin-bottom:1.5rem; align-items:center;">
                         <span style="font-size:0.75rem; font-weight:800; background:rgba(183, 28, 28, 0.15); color:var(--primary-red); padding:4px 12px; border-radius:8px; text-transform:uppercase; letter-spacing:0.5px;">${tripTypeName}</span>
                         <span style="font-size:0.75rem; font-weight:800; background:rgba(255, 255, 255, 0.08); color:var(--text-main); padding:4px 12px; border-radius:8px; text-transform:uppercase; letter-spacing:0.5px;">🚗 ${activeMission.vehicle_type || 'Premium'}</span>
                     </div>
-                    <div style="margin-bottom:1.5rem;">
-                        <div style="font-size:0.7rem; text-transform:uppercase; color:var(--text-muted); font-weight:700;">From:</div>
-                        <div style="font-weight:700; font-size:1.1rem;">${activeMission.pickup_loc}</div>
+                    <div style="margin-bottom:1.5rem; background:rgba(255,255,255,0.03); padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,0.06);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <div style="font-size:0.7rem; text-transform:uppercase; color:var(--text-muted); font-weight:700;">From (Pickup):</div>
+                        </div>
+                        <div style="font-weight:700; font-size:1.05rem; color:var(--text-main);">${activeMission.pickup_loc}</div>
                     </div>
                     ${(() => {
                         let stopsHtml = '';
@@ -1135,8 +1683,12 @@ async function loadDashboardData(user) {
                     setTimeout(async () => {
                         try {
                             if (trackerMap) trackerMap.remove();
-                            trackerMap = L.map('mission-map').setView([13.08, 80.27], 13);
-                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(trackerMap);
+                            trackerMap = L.map('mission-map', { zoomControl: false }).setView([13.08, 80.27], 13);
+                            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                                attribution: '© OpenStreetMap © CARTO',
+                                subdomains: 'abcd',
+                                maxZoom: 20
+                            }).addTo(trackerMap);
                             const getCoords = async (addr, storedCoords) => {
                                 if (storedCoords) return storedCoords.split(',').map(Number);
                                 if (!addr || addr.trim() === '') return null;
@@ -1284,48 +1836,102 @@ Swal.fire('Error', 'Network error occurred.', 'error');
 }
 }
 }
-//  Cancel Ride
+// 🚫 Cancel Ride (Before Driver Starts Journey)
 async function cancelRide(bookingId, userId) {
-if (!confirm('Are you sure you want to cancel this ride?')) return;
-try {
-const res = await fetch(`${API_BASE_URL}/api/user/cancel-ride`, {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ bookingId, userId })
-});
-const result = await res.json();
-if (res.ok) {
-if (result.banned) {
-showBanBanner(result.banned_until);
-hideCancelWarn();
-alert('Account temporarily suspended for excessive cancellations.');
-} else {
-const remaining = 3 - result.cancelCount;
-if (result.cancelCount > 0) showCancelWarn(result.cancelCount, remaining);
-else hideCancelWarn();
-}
-const user = JSON.parse(localStorage.getItem('cityride_member'));
-loadDashboardData(user);
-} else {
-if (result.banned) {
-showBanBanner(result.banned_until);
-}
-alert(' ' + result.error);
-}
-} catch (err) {
-alert('Cancel failed: ' + err.message);
-}
+    if (!bookingId) return;
+    if (!userId) {
+        const u = JSON.parse(localStorage.getItem('cityride_member'));
+        if (u) userId = u.id;
+    }
+
+    let isConfirmed = false;
+    if (window.Swal) {
+        const res = await Swal.fire({
+            title: 'Cancel Ride?',
+            text: 'Are you sure you want to cancel this ride assignment?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Cancel Ride',
+            cancelButtonText: 'Keep Ride',
+            confirmButtonColor: '#ff3b30',
+            cancelButtonColor: '#333333',
+            background: '#14161d',
+            color: '#ffffff'
+        });
+        isConfirmed = res.isConfirmed;
+    } else {
+        isConfirmed = confirm('Are you sure you want to cancel this ride?');
+    }
+
+    if (!isConfirmed) return;
+
+    try {
+        if (window.Swal) Swal.showLoading();
+        const token = localStorage.getItem('cityride_user_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`${API_BASE_URL}/api/user/cancel-ride`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ bookingId, userId })
+        });
+
+        const result = await res.json();
+        if (res.ok) {
+            if (result.banned) {
+                showBanBanner(result.banned_until);
+                hideCancelWarn();
+                if (window.Swal) Swal.fire({ icon: 'error', title: 'Suspended', text: 'Account temporarily suspended for excessive cancellations.', confirmButtonColor: '#ff3b30', background: '#14161d', color: '#fff' });
+                else alert('Account temporarily suspended for excessive cancellations.');
+            } else {
+                const remaining = 3 - (result.cancelCount || 0);
+                if (result.cancelCount > 0) showCancelWarn(result.cancelCount, remaining);
+                else hideCancelWarn();
+
+                if (window.Swal) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Ride Cancelled',
+                        text: 'Your ride assignment has been cancelled.',
+                        timer: 2000,
+                        showConfirmButton: false,
+                        background: '#14161d',
+                        color: '#fff'
+                    });
+                }
+            }
+
+            const user = JSON.parse(localStorage.getItem('cityride_member'));
+            if (user && typeof loadDashboardData === 'function') {
+                loadDashboardData(user);
+            } else {
+                window.location.href = 'dashboard.html';
+            }
+        } else {
+            if (result.banned) {
+                showBanBanner(result.banned_until);
+            }
+            if (window.Swal) Swal.fire({ icon: 'error', title: 'Cancel Failed', text: result.error || 'Could not cancel ride.', confirmButtonColor: '#ff3b30', background: '#14161d', color: '#fff' });
+            else alert('Cancel failed: ' + result.error);
+        }
+    } catch (err) {
+        if (window.Swal) Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'Network error occurred.', confirmButtonColor: '#ff3b30', background: '#14161d', color: '#fff' });
+        else alert('Cancel failed: ' + err.message);
+    }
 }
 //  Ban Banner
 let banCountdownInterval = null;
 function showBanBanner(banUntil) {
-document.getElementById('ban-banner').classList.add('active');
+const banner = document.getElementById('ban-banner');
+if (banner) banner.classList.add('active');
 updateBanCountdown(new Date(banUntil));
 if (banCountdownInterval) clearInterval(banCountdownInterval);
 banCountdownInterval = setInterval(() => updateBanCountdown(new Date(banUntil)), 60000);
 }
 function hideBanBanner() {
-document.getElementById('ban-banner').classList.remove('active');
+const banner = document.getElementById('ban-banner');
+if (banner) banner.classList.remove('active');
 if (banCountdownInterval) clearInterval(banCountdownInterval);
 }
 function updateBanCountdown(banEnd) {
@@ -1334,17 +1940,20 @@ if (banEnd <= now) { hideBanBanner(); return; }
 const diff = banEnd - now;
 const hrs = Math.floor(diff / 3600000);
 const mins = Math.floor((diff % 3600000) / 60000);
-document.getElementById('ban-countdown').textContent =
-` Suspension lifts in: ${hrs}h ${mins}m`;
+const countdownEl = document.getElementById('ban-countdown');
+if (countdownEl) countdownEl.textContent = ` Suspension lifts in: ${hrs}h ${mins}m`;
 }
 function showCancelWarn(count, remaining) {
 const warn = document.getElementById('cancel-warn');
+if (warn) {
 warn.classList.add('active');
-document.getElementById('cancel-warn-text').textContent =
-`You have cancelled ${count} ride(s) today. ${remaining > 0 ? `${remaining} cancellation(s) remaining before a 24-hour suspension.` : 'Next cancellation will result in a 24-hour ban.'}`;
+const textEl = document.getElementById('cancel-warn-text');
+if (textEl) textEl.textContent = `You have cancelled ${count} ride(s) today. ${remaining > 0 ? `${remaining} cancellation(s) remaining before a 24-hour suspension.` : 'Next cancellation will result in a 24-hour ban.'}`;
+}
 }
 function hideCancelWarn() {
-document.getElementById('cancel-warn').classList.remove('active');
+const warn = document.getElementById('cancel-warn');
+if (warn) warn.classList.remove('active');
 }
 //  Check ban on page load
 async function checkBanStatus(userId) {
@@ -1717,72 +2326,100 @@ Swal.fire('Error', 'A network error occurred.', 'error');
 }
 });
 }
+
+function getCustomerAuthToken() {
+    let token = localStorage.getItem('cityride_user_token');
+    if (!token) {
+        try {
+            const member = JSON.parse(localStorage.getItem('cityride_member'));
+            token = member?.token;
+        } catch(e) {}
+    }
+    return token || '';
+}
+
+async function openTripInvoice(bookingId) {
+    if (!bookingId) return;
+    let tripObj = typeof bookingId === 'object' ? bookingId : { id: bookingId };
+    return showInvoiceModal(tripObj);
+}
+window.openTripInvoice = openTripInvoice;
+window.showFareCompletedModal = function(b) { openTripInvoice(b.id || b); };
+
 async function showInvoiceModal(trip) {
-        // Show a premium loading indicator
+    if (!trip) return;
+    if (typeof trip === 'number' || typeof trip === 'string') {
+        trip = { id: trip };
+    }
+
+    // Show a premium loading indicator
+    Swal.fire({
+        title: '<div style="font-weight:800; color:var(--text-main); font-size:1.3rem;">Loading Invoice</div>',
+        html: '<div style="margin: 2rem 0;"><div class="spinner-border text-danger" role="status" style="width: 3rem; height: 3rem; border-color: var(--primary-red) transparent var(--primary-red) transparent;"><span class="visually-hidden"></span></div><p style="margin-top: 1.5rem; font-size: 0.95rem; color: var(--text-muted);">Fetching secure billing details...</p></div>',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        background: '#14161d',
+        color: '#fff',
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    let breakdown = null;
+    try {
+        const token = getCustomerAuthToken();
+        const headers = {};
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        const breakdownRes = await fetch(`${API_BASE_URL}/api/bookings/fare-breakdown/${trip.id}`, { headers });
+        if (!breakdownRes.ok) {
+            throw new Error('Failed to fetch fare breakdown.');
+        }
+        breakdown = await breakdownRes.json();
+    } catch (err) {
+        console.error('Error fetching fare breakdown:', err);
         Swal.fire({
-            title: '<div style="font-weight:800; color:var(--text-main); font-size:1.3rem;">Loading Invoice</div>',
-            html: '<div style="margin: 2rem 0;"><div class="spinner-border text-danger" role="status" style="width: 3rem; height: 3rem; border-color: var(--primary-red) transparent var(--primary-red) transparent;"><span class="visually-hidden"></span></div><p style="margin-top: 1.5rem; font-size: 0.95rem; color: var(--text-muted);">Fetching secure billing details...</p></div>',
-            allowOutsideClick: false,
-            showConfirmButton: false,
+            title: 'Error',
+            text: 'Could not retrieve trip invoice. Please check your network connection.',
+            icon: 'error',
             background: '#14161d',
             color: '#fff',
-            didOpen: () => {
-                Swal.showLoading();
-            }
+            confirmButtonColor: '#B71C1C'
         });
+        return;
+    }
 
-        let breakdown = null;
-        try {
-            const token = localStorage.getItem('cityride_user_token');
-            const headers = {};
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-            const breakdownRes = await fetch(`${API_BASE_URL}/api/bookings/fare-breakdown/${trip.id}`, { headers });
-            if (!breakdownRes.ok) {
-                throw new Error('Failed to fetch fare breakdown.');
-            }
-            breakdown = await breakdownRes.json();
-        } catch (err) {
-            console.error('Error fetching fare breakdown:', err);
-            Swal.fire({
-                title: 'Error',
-                text: 'Could not retrieve trip invoice. Please check your network connection.',
-                icon: 'error',
-                background: '#14161d',
-                color: '#fff',
-                confirmButtonColor: '#B71C1C'
-            });
-            return;
-        }
+    // Close the loading modal
+    Swal.close();
 
-        // Close the loading modal
-        Swal.close();
+    const isRental = breakdown.tripType === 'rental';
+    const unit = isRental ? 'Hours' : 'Mins';
+    const distStr = breakdown.distance || '0.000';
+    const coveredDist = parseFloat(distStr) || 0;
 
-        const isRental = breakdown.tripType === 'rental';
-        const unit = isRental ? 'Hours' : 'Mins';
-        const distStr = breakdown.distance || '0.000';
-        const coveredDist = parseFloat(distStr) || 0;
+    const pickupText = trip.pickup_loc || breakdown.pickup_loc || 'Pickup Location';
+    const dropText = trip.drop_loc || breakdown.drop_loc || 'Dropoff Location';
 
-        let elapsedMins = 0;
-        if (trip.journey_start_time) {
-            const startTime = new Date(trip.journey_start_time);
-            const endTime = trip.journey_end_time ? new Date(trip.journey_end_time) : new Date();
-            elapsedMins = Math.max(0, Math.floor((endTime - startTime) / 60000));
-        }
+    let elapsedMins = 0;
+    if (trip.journey_start_time) {
+        const startTime = new Date(trip.journey_start_time);
+        const endTime = trip.journey_end_time ? new Date(trip.journey_end_time) : new Date();
+        elapsedMins = Math.max(0, Math.floor((endTime - startTime) / 60000));
+    }
 
-        const formatDateTime = (dateStr) => {
-            if (!dateStr) return 'N/A';
-            const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return 'N/A';
-            const datePart = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-            const timePart = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-            return `${datePart} • ${timePart}`;
-        };
+    const formatDateTime = (dateStr) => {
+        if (!dateStr) return 'N/A';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return 'N/A';
+        const datePart = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        const timePart = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        return `${datePart} • ${timePart}`;
+    };
 
-        const startTimeStr = trip.journey_start_time ? formatDateTime(trip.journey_start_time) : 'Awaiting Start';
-        const endTimeStr = trip.journey_end_time ? formatDateTime(trip.journey_end_time) : (trip.status === 'ongoing' ? 'In Progress' : (trip.status === 'cancelled' ? 'Cancelled' : 'Not Ended'));
-        const durationText = isRental ? (elapsedMins / 60).toFixed(2) : elapsedMins.toFixed(1);
+    const startTimeStr = trip.journey_start_time ? formatDateTime(trip.journey_start_time) : 'Awaiting Start';
+    const endTimeStr = trip.journey_end_time ? formatDateTime(trip.journey_end_time) : (trip.status === 'ongoing' ? 'In Progress' : (trip.status === 'cancelled' ? 'Cancelled' : 'Not Ended'));
+    const durationText = isRental ? (elapsedMins / 60).toFixed(2) : elapsedMins.toFixed(1);
 
         let fareBreakdownHtml = '';
 
@@ -1859,163 +2496,187 @@ async function showInvoiceModal(trip) {
             const extraDropsCharge = breakdown.extraDropsCharge || 0;
             const subtotal = distanceFare + peakCharge + driverAllowance + waitingCharge + extraDropsCharge;
             const gst = Math.max(0, breakdown.totalFare - subtotal);
+            const pickupText = trip.pickup_loc || breakdown.pickup_loc || breakdown.pickupLoc || 'Pickup Location';
+            const dropText = trip.drop_loc || breakdown.drop_loc || breakdown.dropLoc || 'Dropoff Location';
 
             fareBreakdownHtml = `
-                <div style="margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.2rem;">
-                    <div style="font-weight:800; font-size:0.75rem; color:var(--text-muted); margin-bottom:1rem; text-transform:uppercase; letter-spacing:1px;">Fare Breakdown</div>
-                    
-                    <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
-                        <span style="color:var(--text-muted);">Base Fare</span>
-                        <span style="font-weight:600;">₹${baseFare}</span>
-                    </div>
-                    
-                    ${minKmVal > 0 ? `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
-                        <span style="color:var(--text-muted);">Min. Charge (${minKmVal} KM)</span>
-                        <span style="font-weight:600;">₹${minKmCharge}</span>
-                    </div>
-                    ` : ''}
-                    
-                    ${extraDistanceCharge > 0 ? `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
-                        <span style="color:var(--text-muted);">Distance Charge (${coveredDist.toFixed(3)} km × ₹${perKmRate})</span>
-                        <span style="font-weight:600;">₹${extraDistanceCharge}</span>
-                    </div>
-                    ` : ''}
+            <div style="font-weight:800; font-size:0.75rem; color:var(--text-muted, #aaa); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;">Fare Breakdown</div>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:0.5rem; font-size:0.9rem;">
+                <span style="color:var(--text-muted, #aaa);">Base Fare</span>
+                <span style="font-weight:700; color:#fff;">₹${baseFare}</span>
+            </div>
+            
+            ${minKmVal > 0 ? `
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:0.5rem; font-size:0.9rem;">
+                <span style="color:var(--text-muted, #aaa);">Min. Charge (${minKmVal} KM)</span>
+                <span style="font-weight:700; color:#fff;">₹${minKmCharge}</span>
+            </div>
+            ` : ''}
+            
+            ${extraDistanceCharge > 0 ? `
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:0.5rem; font-size:0.9rem;">
+                <span style="color:var(--text-muted, #aaa);">Distance Charge (${coveredDist.toFixed(3)} km × ₹${perKmRate})</span>
+                <span style="font-weight:700; color:#fff;">₹${extraDistanceCharge}</span>
+            </div>
+            ` : ''}
 
-                    ${peakCharge > 0 ? `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
-                        <span style="color:var(--warning-amber);">Peak Surcharge (${breakdown.peakPercent || 0}%)</span>
-                        <span style="font-weight:600; color:var(--warning-amber);">₹${peakCharge}</span>
-                    </div>` : ''}
+            ${peakCharge > 0 ? `
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:0.5rem; font-size:0.9rem;">
+                <span style="color:#ff9f0a;">Peak Surcharge (${breakdown.peakPercent || 0}%)</span>
+                <span style="font-weight:700; color:#ff9f0a;">₹${peakCharge}</span>
+            </div>` : ''}
 
-                    ${driverAllowance > 0 ? `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
-                        <span style="color:#0a84ff;">Driver Allowance</span>
-                        <span style="font-weight:600; color:#0a84ff;">₹${driverAllowance}</span>
-                    </div>` : ''}
+            ${driverAllowance > 0 ? `
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:0.5rem; font-size:0.9rem;">
+                <span style="color:#0a84ff;">Driver Allowance</span>
+                <span style="font-weight:700; color:#0a84ff;">₹${driverAllowance}</span>
+            </div>` : ''}
 
-                    ${extraDropsCharge > 0 ? `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
-                        <span style="color:var(--text-muted);">Extra Stops Charge (${breakdown.extraDropsCount || 0} stop(s))</span>
-                        <span style="font-weight:600;">₹${extraDropsCharge}</span>
-                    </div>` : ''}
+            ${extraDropsCharge > 0 ? `
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:0.5rem; font-size:0.9rem;">
+                <span style="color:var(--text-muted, #aaa);">Extra Stops Charge (${breakdown.extraDropsCount || 0} stop(s))</span>
+                <span style="font-weight:700; color:#fff;">₹${extraDropsCharge}</span>
+            </div>` : ''}
 
-                    ${waitingCharge > 0 ? `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
-                        <span style="color:var(--danger-red);">Waiting Charges</span>
-                        <span style="font-weight:600; color:var(--danger-red);">₹${waitingCharge}</span>
-                    </div>` : ''}
+            ${waitingCharge > 0 ? `
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:0.5rem; font-size:0.9rem;">
+                <span style="color:#ff3b30;">Waiting Charges</span>
+                <span style="font-weight:700; color:#ff3b30;">₹${waitingCharge}</span>
+            </div>` : ''}
 
-                    <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
-                        <span style="color:var(--text-muted);">GST (5%)</span>
-                        <span style="font-weight:600;">₹${gst}</span>
-                    </div>
-                    
-                    <div style="display:flex; justify-content:space-between; margin-top:1rem; padding-top:1rem; border-top:1px dashed rgba(255,255,255,0.1); font-size:1.1rem; font-weight:800; color:var(--primary-red);">
-                        <span>Total Amount</span>
-                        <span>₹${breakdown.totalFare}</span>
-                    </div>
-                </div>
-            `;
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:0.5rem; font-size:0.9rem;">
+                <span style="color:var(--text-muted, #aaa);">GST (5%)</span>
+                <span style="font-weight:700; color:#fff;">₹${gst}</span>
+            </div>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-top:0.8rem; padding-top:0.8rem; border-top:1px dashed rgba(255,255,255,0.12); font-size:1.15rem; font-weight:900; color:#B71C1C;">
+                <span>Total Amount</span>
+                <span style="font-size:1.3rem; color:#00ff66;">₹${breakdown.totalFare}</span>
+            </div>
+        `;
         }
 
+        let odoSectionHtml = '';
+        if (trip.trip_type !== 'local' && trip.start_odometer) {
+            let closingHtml = '';
+            if (trip.end_odometer) {
+                closingHtml = `<div style="display:flex; justify-content:space-between; font-size:0.9rem;"><span style="color:var(--text-muted);">Closing</span><span style="font-weight:700;">${trip.end_odometer}</span></div>`;
+            }
+            odoSectionHtml = `
+            <div style="background:rgba(10,132,255,0.05); border:1px solid rgba(10,132,255,0.2); border-radius:12px; padding:1rem; margin-bottom:1.2rem;">
+                <div style="font-weight:800; font-size:0.75rem; color:#0a84ff; margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;">Odometer Readings</div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem; font-size:0.9rem;">
+                    <span style="color:var(--text-muted);">Opening</span>
+                    <span style="font-weight:700;">${trip.start_odometer}</span>
+                </div>
+                ${closingHtml}
+            </div>`;
+        }
+
+        window._isInvoicePopupShowing = true;
         Swal.fire({
-            title: '<div style="font-weight:800; color:var(--text-main); font-size:1.3rem; margin-bottom:-0.5rem;">Trip Invoice</div>',
+            title: '',
             html: `
-                <div style="text-align:left; font-family:\'Outfit\', sans-serif;">
+                <div id="cityride-invoice-wrapper" style="text-align:left; font-family:'Outfit', 'Inter', sans-serif; color:#fff; width:100%; box-sizing:border-box;">
                     
                     <!-- Header Strip -->
-                    <div style="background:var(--primary-red); margin:-1rem -1rem 1.5rem -1rem; padding:1.5rem; text-align:center; position:relative; border-radius:0 0 20px 20px;">
-                        <div style="font-size:0.8rem; text-transform:uppercase; font-weight:800; letter-spacing:1.5px; color:rgba(255,255,255,0.8); margin-bottom:0.5rem;">Final Fare</div>
-                        <div style="font-size:2.8rem; font-weight:800; color:#fff; line-height:1; text-shadow:0 2px 10px rgba(0,0,0,0.3);">₹${breakdown.totalFare}</div>
-                        <div style="position:absolute; top:1rem; right:1rem; background:rgba(0,0,0,0.2); padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:700; color:#fff;">#B${trip.id}</div>
+                    <div style="background:linear-gradient(135deg, #006B3A 0%, #004D25 100%); margin:-1.25rem -1.25rem 1.5rem -1.25rem; padding:1.5rem 1rem; text-align:center; position:relative; border-radius:16px 16px 20px 20px;">
+                        <div style="font-size:0.75rem; text-transform:uppercase; font-weight:800; letter-spacing:1.5px; color:rgba(255,255,255,0.85); margin-bottom:0.4rem;">Final Fare Invoice</div>
+                        <div style="font-size:2.8rem; font-weight:900; color:#ffffff; line-height:1; text-shadow:0 2px 10px rgba(0,0,0,0.3);">₹${breakdown.totalFare}</div>
+                        <div style="position:absolute; top:1rem; right:1rem; background:rgba(0,0,0,0.25); padding:4px 10px; border-radius:8px; font-size:0.75rem; font-weight:800; color:#fff;">#B${trip.id}</div>
                     </div>
 
-                    <!-- Locations -->
-                    <div style="display:flex; flex-direction:column; gap:1rem; margin-bottom:1.5rem; position:relative;">
-                        <div style="position:absolute; left:7px; top:12px; bottom:12px; width:2px; background:rgba(255,255,255,0.1); z-index:1;"></div>
-                        
-                        <div style="display:flex; gap:15px; align-items:flex-start; position:relative; z-index:2;">
-                            <div style="width:16px; height:16px; border-radius:50%; background:var(--white); border:4px solid #34c759; margin-top:3px; flex-shrink:0;"></div>
-                            <div>
-                                <div style="font-size:0.7rem; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Pickup</div>
-                                <div style="font-weight:600; font-size:0.95rem; line-height:1.4;">${trip.pickup_loc}</div>
+                    <!-- Pickup & Dropoff Route -->
+                    <div style="display:flex; flex-direction:column; gap:0.9rem; margin-bottom:1.2rem; position:relative; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); padding:1rem; border-radius:14px;">
+                        <div style="display:flex; gap:12px; align-items:flex-start;">
+                            <div style="width:12px; height:12px; border-radius:50%; background:#34c759; margin-top:3px; flex-shrink:0; box-shadow:0 0 8px rgba(52,199,89,0.5);"></div>
+                            <div style="flex:1; overflow:hidden;">
+                                <div style="font-size:0.68rem; text-transform:uppercase; color:var(--text-muted, #aaa); font-weight:800; letter-spacing:0.5px;">Pickup</div>
+                                <div style="font-weight:600; font-size:0.92rem; color:#fff; line-height:1.3; word-break:break-word;">${pickupText}</div>
                             </div>
                         </div>
 
-                        <div style="display:flex; gap:15px; align-items:flex-start; position:relative; z-index:2;">
-                            <div style="width:16px; height:16px; background:var(--white); border:4px solid var(--primary-red); margin-top:3px; flex-shrink:0;"></div>
-                            <div>
-                                <div style="font-size:0.7rem; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Dropoff</div>
-                                <div style="font-weight:600; font-size:0.95rem; line-height:1.4;">${trip.drop_loc}</div>
+                        <div style="display:flex; gap:12px; align-items:flex-start;">
+                            <div style="width:12px; height:12px; border-radius:2px; background:#B71C1C; margin-top:3px; flex-shrink:0; box-shadow:0 0 8px rgba(183,28,28,0.5);"></div>
+                            <div style="flex:1; overflow:hidden;">
+                                <div style="font-size:0.68rem; text-transform:uppercase; color:var(--text-muted, #aaa); font-weight:800; letter-spacing:0.5px;">Dropoff</div>
+                                <div style="font-weight:600; font-size:0.92rem; color:#fff; line-height:1.3; word-break:break-word;">${dropText}</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Timeline (Start / End) -->
-                    <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:12px; padding:1rem; margin-bottom:1.5rem; display:flex; flex-direction:column; gap:0.5rem;">
+                    <!-- Timeline Grid (Start / End) -->
+                    <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:0.9rem 1rem; margin-bottom:1.2rem; display:flex; flex-direction:column; gap:0.5rem;">
                         <div style="display:flex; justify-content:space-between; font-size:0.85rem; align-items:center;">
-                            <span style="color:var(--text-muted); font-weight:700; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.5px;">Trip Started</span>
-                            <span style="font-weight:700; color:var(--text-main); font-size:0.85rem;">${startTimeStr}</span>
+                            <span style="color:var(--text-muted, #aaa); font-weight:700; font-size:0.7rem; text-transform:uppercase;">Trip Started</span>
+                            <span style="font-weight:700; color:#fff; font-size:0.85rem;">${startTimeStr}</span>
                         </div>
                         <div style="display:flex; justify-content:space-between; font-size:0.85rem; align-items:center; border-top:1px solid rgba(255,255,255,0.04); padding-top:0.5rem;">
-                            <span style="color:var(--text-muted); font-weight:700; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.5px;">Trip Ended</span>
-                            <span style="font-weight:700; color:var(--text-main); font-size:0.85rem;">${endTimeStr}</span>
+                            <span style="color:var(--text-muted, #aaa); font-weight:700; font-size:0.7rem; text-transform:uppercase;">Trip Ended</span>
+                            <span style="font-weight:700; color:#fff; font-size:0.85rem;">${endTimeStr}</span>
                         </div>
                     </div>
 
-                    <!-- Stats Grid -->
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:1rem;">
-                            <div style="font-size:0.7rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; margin-bottom:0.3rem;">Distance</div>
-                            <div style="font-weight:800; font-size:1.1rem; color:var(--text-main);">${coveredDist.toFixed(3)} KM</div>
+                    <!-- 4-Card Stats Grid -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:1.2rem;">
+                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:0.8rem 1rem;">
+                            <div style="font-size:0.68rem; text-transform:uppercase; color:var(--text-muted, #aaa); font-weight:700; margin-bottom:0.2rem;">Distance</div>
+                            <div style="font-weight:800; font-size:1.05rem; color:#fff;">${coveredDist.toFixed(3)} KM</div>
                         </div>
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:1rem;">
-                            <div style="font-size:0.7rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; margin-bottom:0.3rem;">Duration</div>
-                            <div style="font-weight:800; font-size:1.1rem; color:var(--text-main);">${durationText} ${unit}</div>
+                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:0.8rem 1rem;">
+                            <div style="font-size:0.68rem; text-transform:uppercase; color:var(--text-muted, #aaa); font-weight:700; margin-bottom:0.2rem;">Duration</div>
+                            <div style="font-weight:800; font-size:1.05rem; color:#fff;">${durationText} ${unit}</div>
                         </div>
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:1rem;">
-                            <div style="font-size:0.7rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; margin-bottom:0.3rem;">Category</div>
-                            <div style="font-weight:800; font-size:1.1rem; color:var(--text-main); text-transform:capitalize;">${trip.trip_type || 'Local'}</div>
+                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:0.8rem 1rem;">
+                            <div style="font-size:0.68rem; text-transform:uppercase; color:var(--text-muted, #aaa); font-weight:700; margin-bottom:0.2rem;">Category</div>
+                            <div style="font-weight:800; font-size:1.05rem; color:#fff; text-transform:capitalize;">${trip.trip_type || 'Local'}</div>
                         </div>
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:1rem;">
-                            <div style="font-size:0.7rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; margin-bottom:0.3rem;">Vehicle</div>
-                            <div style="font-weight:800; font-size:1.1rem; color:var(--text-main); text-transform:capitalize;">${trip.vehicle_type || 'SUV'}</div>
+                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:0.8rem 1rem;">
+                            <div style="font-size:0.68rem; text-transform:uppercase; color:var(--text-muted, #aaa); font-weight:700; margin-bottom:0.2rem;">Vehicle</div>
+                            <div style="font-weight:800; font-size:1.05rem; color:#fff; text-transform:capitalize;">${trip.vehicle_type || 'SUV'}</div>
                         </div>
                     </div>
 
-                    ${(trip.trip_type !== 'local' && trip.start_odometer) ? `
-                    <div style="background:rgba(10,132,255,0.05); border:1px solid rgba(10,132,255,0.2); border-radius:12px; padding:1rem; margin-bottom:1.5rem;">
-                        <div style="font-weight:800; font-size:0.75rem; color:#0a84ff; margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;">Odometer Readings</div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem; font-size:0.9rem;">
-                            <span style="color:var(--text-muted);">Opening</span>
-                            <span style="font-weight:700;">${trip.start_odometer}</span>
-                        </div>
-                        ${trip.end_odometer ? `
-                        <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
-                            <span style="color:var(--text-muted);">Closing</span>
-                            <span style="font-weight:700;">${trip.end_odometer}</span>
-                        </div>
-                        ` : ''}
-                    </div>
-                    ` : ''}
+                    ${odoSectionHtml}
 
-                    ${fareBreakdownHtml}
+                    <!-- Full Width Fare Breakdown -->
+                    <div style="width:100%; clear:both; margin-top:1.2rem; border-top:1px solid rgba(255,255,255,0.08); padding-top:1rem;">
+                        ${fareBreakdownHtml}
+                    </div>
                     
+                    <!-- Full Width Rating Section -->
+                    <div style="width:100%; clear:both; margin-top:1.5rem; padding-top:1.2rem; border-top:1px dashed rgba(255,255,255,0.12); text-align:center;">
+                        <div style="font-size:0.95rem; font-weight:800; color:#fff; margin-bottom:8px;">Rate your experience</div>
+                        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:14px;" id="invoice-modal-stars">
+                            <span onclick="setInvoiceRating(1)" class="invoice-star" data-rating="1" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
+                            <span onclick="setInvoiceRating(2)" class="invoice-star" data-rating="2" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
+                            <span onclick="setInvoiceRating(3)" class="invoice-star" data-rating="3" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
+                            <span onclick="setInvoiceRating(4)" class="invoice-star" data-rating="4" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
+                            <span onclick="setInvoiceRating(5)" class="invoice-star" data-rating="5" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
+                        </div>
+                        <textarea id="invoice-modal-comment" placeholder="Optional feedback for driver..." style="width:100%; height:55px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.15); border-radius:12px; color:#fff; padding:10px; font-size:0.85rem; resize:none; box-sizing:border-box; outline:none; margin-bottom:14px;"></textarea>
+                        <button onclick="submitInvoiceRating(${trip.id})" style="width:100%; height:48px; background:linear-gradient(135deg, #006B3A 0%, #004D25 100%); color:#fff; border:none; border-radius:12px; font-weight:800; font-size:1.0rem; cursor:pointer; box-shadow:0 4px 14px rgba(0,107,58,0.5);">
+                            Agree & Close Invoice
+                        </button>
+                    </div>
+
                 </div>
             `,
             background: '#14161d',
             color: '#fff',
             customClass: { popup: 'premium-invoice-modal' },
-            showCloseButton: true,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showCloseButton: false,
             showConfirmButton: false,
-            showCancelButton: true,
-            cancelButtonText: 'Close',
-            cancelButtonColor: 'rgba(255,255,255,0.1)',
-            width: '450px'
+            showCancelButton: false,
+            width: '460px'
         });
-}</script>
+}
+window.openTripInvoice = openTripInvoice;
+window.showInvoiceModal = showInvoiceModal;
+</script>
     <script src="alert.js?v=2"></script>
     <script>window.addEventListener('load', () => {
 const splash = document.getElementById('splash-screen');
@@ -2028,8 +2689,21 @@ document.body.style.setProperty('overflow', 'auto', 'important');
 });</script>
     <!-- Socket.IO Client -->
     <script src="/socket.io/socket.io.js"></script>
-
     <script>
+    // ─── CHANGE PICKUP LOCATION (DIRECT INTERACTIVE MAP PICKER) ───
+    async function promptChangePickupLocation(bookingId, currentLoc, usedCount, currentCoords) {
+        const used = parseInt(usedCount) || 0;
+        if (used >= 3) {
+            if (window.Swal) Swal.fire({ icon: 'warning', title: 'Limit Reached', text: 'You have reached the maximum limit of 3 pickup location changes for this ride.', confirmButtonColor: '#B71C1C', background: '#14161d', color: '#fff' });
+            else alert('You have reached the maximum limit of 3 pickup location changes for this ride.');
+            return;
+        }
+        if (typeof openMapPickupPicker === 'function') {
+            openMapPickupPicker(bookingId, currentLoc, currentCoords, used);
+        }
+    }
+    window.promptChangePickupLocation = promptChangePickupLocation;
+
     // ─── SHARE TRIP ───
     function shareTrip(bookingId) {
         const text = `I'm on my way! Tracking my CityRide trip #B${bookingId}. 🚖`;
@@ -2043,21 +2717,332 @@ document.body.style.setProperty('overflow', 'auto', 'important');
         }
     }
 
-    // ─── SOS ───
-    function triggerSOS() {
+    // ─── FARE INVOICE & RATING MODAL ───
+    let currentInvoiceRating = 5;
+    function setInvoiceRating(rating) {
+        currentInvoiceRating = rating;
+        const stars = document.querySelectorAll('#invoice-modal-stars .invoice-star');
+        stars.forEach((s, idx) => {
+            if (idx < rating) {
+                s.style.color = '#ffcc00';
+                s.style.opacity = '1';
+            } else {
+                s.style.color = '#555555';
+                s.style.opacity = '0.5';
+            }
+        });
+    }
+
+    async function submitInvoiceRating(bookingId) {
+        const comment = (document.getElementById('invoice-modal-comment')?.value || '').trim();
+        try {
+            await fetch('/api/user/rate-ride', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bookingId: bookingId,
+                    rating: currentInvoiceRating,
+                    comment: comment
+                })
+            });
+        } catch (e) {}
+
+        if (bookingId) {
+            const shownRaw = localStorage.getItem('cityride_shown_fare_popups') || '[]';
+            let shownList = [];
+            try { shownList = JSON.parse(shownRaw); } catch(e) {}
+            if (!shownList.includes(bookingId)) {
+                shownList.push(bookingId);
+                localStorage.setItem('cityride_shown_fare_popups', JSON.stringify(shownList));
+            }
+        }
+
+        window._isInvoicePopupShowing = false;
+
         if (window.Swal) {
+            Swal.close();
             Swal.fire({
-                title: '🆘 Emergency SOS',
-                html: '<div style="text-align:left;font-size:0.9rem;"><b>Call Emergency Services:</b><br><a href="tel:112" style="color:#DC2626;font-weight:700;font-size:1.1rem;">📞 112 — Emergency</a><br><br><b>Share your trip info:</b><br>Your driver and trip details are logged in the system.</div>',
-                confirmButtonText: 'Call 112',
-                confirmButtonColor: '#DC2626',
-                showCancelButton: true,
-                cancelButtonText: 'Close'
-            }).then(r => { if (r.isConfirmed) window.location.href = 'tel:112'; });
-        } else {
-            if (confirm('Call emergency services (112)?')) window.location.href = 'tel:112';
+                icon: 'success',
+                title: 'Feedback Submitted!',
+                text: 'Thank you for riding with CityRide. Returning to home...',
+                timer: 1500,
+                showConfirmButton: false,
+                background: '#14161d',
+                color: '#fff'
+            });
+        }
+
+        setTimeout(() => {
+            window.location.href = 'dashboard.html';
+        }, 1200);
+    }
+
+    function showFareCompletedModal(ride) {
+        if (!ride || !ride.id) return;
+        const shownRaw = localStorage.getItem('cityride_shown_fare_popups') || '[]';
+        let shownList = [];
+        try { shownList = JSON.parse(shownRaw); } catch(e) {}
+        if (shownList.includes(ride.id)) return; // Already shown before
+
+        shownList.push(ride.id);
+        localStorage.setItem('cityride_shown_fare_popups', JSON.stringify(shownList));
+
+        if (window.CustomerNotifications && window.CustomerNotifications.playChime) {
+            window.CustomerNotifications.playChime('ride_completed');
+        }
+
+        openTripInvoice(ride.id);
+    }
+
+    // ⏱️ CUSTOMER PRE-RIDE GRACE / WAITING TIMER (REALTIME SECONDS TICK)
+    let _customerPreRideInterval = null;
+
+    function startCustomerPreRideTimer(reachedPickupTimeStr) {
+        if (_customerPreRideInterval) {
+            clearInterval(_customerPreRideInterval);
+            _customerPreRideInterval = null;
+        }
+
+        if (!reachedPickupTimeStr) return;
+
+        const reachedMs = new Date(reachedPickupTimeStr).getTime();
+        if (isNaN(reachedMs)) return;
+
+        const allowedSecs = 300; // 5 minutes grace
+
+        function tick() {
+            const nowMs = Date.now();
+            const elapsedSecs = Math.max(0, Math.floor((nowMs - reachedMs) / 1000));
+
+            const displayEl = document.getElementById('cust-grace-timer-display');
+            const badgeEl = document.getElementById('cust-grace-badge');
+            const waitingValEl = document.getElementById('cust-grace-waiting-val');
+            const chargeValEl = document.getElementById('cust-grace-charge-val');
+            const progressBarEl = document.getElementById('cust-grace-progress-bar');
+
+            if (elapsedSecs < allowedSecs) {
+                // GRACE PERIOD (< 5 MINS)
+                const remainingSecs = allowedSecs - elapsedSecs;
+                const rM = Math.floor(remainingSecs / 60);
+                const rS = remainingSecs % 60;
+                const formattedTime = `00:${String(rM).padStart(2, '0')}:${String(rS).padStart(2, '0')}`;
+
+                if (displayEl) {
+                    displayEl.textContent = formattedTime;
+                    displayEl.style.color = '#006B3A';
+                }
+                if (badgeEl) {
+                    badgeEl.textContent = 'GRACE PERIOD';
+                    badgeEl.style.background = 'rgba(0, 107, 58, 0.12)';
+                    badgeEl.style.color = '#006B3A';
+                }
+                if (progressBarEl) {
+                    const pct = Math.min(100, (elapsedSecs / allowedSecs) * 100);
+                    progressBarEl.style.width = `${pct}%`;
+                    progressBarEl.style.background = '#006B3A';
+                }
+                if (waitingValEl) waitingValEl.textContent = '0:00';
+                if (chargeValEl) chargeValEl.textContent = '₹0';
+            } else {
+                // GRACE EXPIRED -> WAITING CHARGES APPLY (₹2/MIN)
+                const waitingSecs = elapsedSecs - allowedSecs;
+                const wH = Math.floor(waitingSecs / 3600);
+                const wM = Math.floor((waitingSecs % 3600) / 60);
+                const wS = waitingSecs % 60;
+                const waitingCharge = Math.ceil((waitingSecs / 60) * 2);
+
+                const totalH = Math.floor(elapsedSecs / 3600);
+                const totalM = Math.floor((elapsedSecs % 3600) / 60);
+                const totalS = elapsedSecs % 60;
+                const formattedTime = `${String(totalH).padStart(2, '0')}:${String(totalM).padStart(2, '0')}:${String(totalS).padStart(2, '0')}`;
+
+                if (displayEl) {
+                    displayEl.textContent = formattedTime;
+                    displayEl.style.color = '#DC2626';
+                }
+                if (badgeEl) {
+                    badgeEl.textContent = 'WAITING CHARGES APPLY';
+                    badgeEl.style.background = 'rgba(220, 38, 38, 0.12)';
+                    badgeEl.style.color = '#DC2626';
+                }
+                if (progressBarEl) {
+                    progressBarEl.style.width = '100%';
+                    progressBarEl.style.background = '#DC2626';
+                }
+
+                const wTimeStr = wH > 0 ? `${wH}:${String(wM).padStart(2, '0')}:${String(wS).padStart(2, '0')}` : `${wM}:${String(wS).padStart(2, '0')}`;
+                if (waitingValEl) waitingValEl.textContent = wTimeStr;
+                if (chargeValEl) chargeValEl.textContent = `₹${waitingCharge}`;
+            }
+        }
+
+        tick();
+        _customerPreRideInterval = setInterval(tick, 1000);
+    }
+
+    function stopCustomerPreRideTimer() {
+        if (_customerPreRideInterval) {
+            clearInterval(_customerPreRideInterval);
+            _customerPreRideInterval = null;
         }
     }
+    window.startCustomerPreRideTimer = startCustomerPreRideTimer;
+    window.stopCustomerPreRideTimer = stopCustomerPreRideTimer;
+
+    // ⚡ REALTIME WEBSOCKET LISTENER (0 DELAY)
+    (function initCustomerSocket() {
+        try {
+            const user = JSON.parse(localStorage.getItem('cityride_member'));
+            if (!user || (!user.id && !user.user_id)) return;
+            const userId = user.id || user.user_id;
+
+            if (typeof io === 'undefined') return;
+
+            const socket = io({
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: Infinity,
+                reconnectionDelay: 1000
+            });
+
+            socket.on('connect', () => {
+                console.log('⚡ [CustomerSocket] Connected:', socket.id);
+                if (window._currentActiveMission && window._currentActiveMission.id) {
+                    socket.emit('track_booking', window._currentActiveMission.id);
+                }
+            });
+
+            // 🔴 REALTIME RIDE STATUS UPDATE (COMPLETED, FINISHED, CANCELLED, ONGOING, ASSIGNED)
+            const handleCustomerStatusUpdate = (data) => {
+                console.log('⚡ [CustomerSocket] Realtime Status Update:', data);
+                if (!data) return;
+                const bId = data.bookingId || data.id;
+                const status = (data.status || '').toLowerCase();
+
+                // Notify activity toasts & audio chimes immediately
+                if (window.CustomerNotifications) {
+                    window.CustomerNotifications.processSocketActivity(data);
+                }
+
+                // INSTANT ACTION FOR COMPLETED / FINISHED RIDES
+                if (status === 'completed' || status === 'finished') {
+                    console.log('⚡ [CustomerSocket] Ride completed! Opening trip invoice immediately without delay.');
+                    if (typeof openTripInvoice === 'function' && bId) {
+                        openTripInvoice(bId);
+                    }
+                } else if (status === 'reached_pickup') {
+                    console.log('⚡ [CustomerSocket] Driver reached pickup location! Reloading customer panel immediately.');
+                    window.location.reload();
+                    return;
+                } else if (status === 'cancelled' || status === 'cancel_requested') {
+                    console.log('⚡ [CustomerSocket] Ride cancelled! Returning to dashboard.');
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Ride Cancelled',
+                            text: 'This ride has been cancelled. Returning to dashboard...',
+                            timer: 2000,
+                            showConfirmButton: false,
+                            background: '#14161d',
+                            color: '#fff'
+                        });
+                    }
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1500);
+                    return;
+                }
+
+                // Instantly re-fetch dashboard data without delay
+                if (typeof loadDashboardData === 'function' && user) {
+                    loadDashboardData(user);
+                }
+            };
+
+            socket.on('booking_status_update', handleCustomerStatusUpdate);
+            socket.on('booking_confirmed', handleCustomerStatusUpdate);
+            socket.on('booking_assigned', handleCustomerStatusUpdate);
+            socket.on('reached_pickup', handleCustomerStatusUpdate);
+
+            // 🔴 REALTIME PICKUP LOCATION UPDATED BY CUSTOMER
+            socket.on('pickup_location_updated', (data) => {
+                console.log('⚡ [CustomerSocket] Pickup Location Updated:', data);
+                if (typeof loadDashboardData === 'function' && user) {
+                    loadDashboardData(user);
+                }
+            });
+
+            window._customerSocket = socket;
+        } catch(e) {
+            console.warn('Customer socket init error:', e.message);
+        }
+    })();
     </script>
+
+    <!-- TRIP COMPLETED FARE INVOICE MODAL -->
+    <div id="fare-completed-modal" class="map-modal" style="display:none; z-index:99999; position:fixed; inset:0; background:rgba(0,0,0,0.8); align-items:center; justify-content:center;">
+        <div class="map-modal-content" style="max-width:480px; width:92%; background:#0f1118; border-radius:24px; border:1px solid rgba(255,255,255,0.12); overflow:hidden; box-shadow:0 25px 60px rgba(0,0,0,0.85); font-family:Inter,sans-serif; text-align:center;">
+            
+            <!-- Header banner -->
+            <div style="background:linear-gradient(135deg, #006B3A 0%, #004D25 100%); padding:28px 20px 20px; position:relative;">
+                <div style="width:64px; height:64px; background:rgba(255,255,255,0.15); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-size:2rem; backdrop-filter:blur(10px);">
+                    🎉
+                </div>
+                <h2 style="color:#ffffff; font-size:1.4rem; font-weight:800; margin:0 0 4px;">Trip Completed!</h2>
+                <p style="color:rgba(255,255,255,0.85); font-size:0.85rem; margin:0;">Thank you for riding with CityRide</p>
+            </div>
+
+            <div style="padding:24px 20px;">
+                <!-- Fare Display Box -->
+                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:18px; padding:18px; margin-bottom:20px;">
+                    <div style="font-size:0.75rem; text-transform:uppercase; color:#888; font-weight:700; letter-spacing:0.5px; margin-bottom:6px;">Total Fare Amount</div>
+                    <div style="font-size:2.4rem; font-weight:900; color:#00ff66; line-height:1;" id="fare-modal-amount">₹0</div>
+                    <div style="font-size:0.8rem; color:#aaa; font-weight:600; margin-top:6px;" id="fare-modal-payment-status">Payment Received</div>
+                </div>
+
+                <!-- Ride Summary details -->
+                <div style="text-align:left; background:rgba(255,255,255,0.02); border-radius:14px; padding:14px 16px; margin-bottom:20px; display:flex; flex-direction:column; gap:10px; font-size:0.85rem; border:1px solid rgba(255,255,255,0.04);">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:#888;">Booking ID:</span>
+                        <strong style="color:#fff;" id="fare-modal-id">#B0000</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:#888;">Distance:</span>
+                        <strong style="color:#fff;" id="fare-modal-dist">0.0 KM</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:#888;">Captain:</span>
+                        <strong style="color:#fff;" id="fare-modal-driver">CityRide Captain</strong>
+                    </div>
+                    <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:8px; margin-top:4px;">
+                        <div style="color:#888; font-size:0.75rem;">Pickup Location:</div>
+                        <div style="color:#ddd; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="fare-modal-pickup">-</div>
+                    </div>
+                    <div>
+                        <div style="color:#888; font-size:0.75rem;">Drop Destination:</div>
+                        <div style="color:#ddd; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="fare-modal-drop">-</div>
+                    </div>
+                </div>
+
+                <!-- Driver Rating Section -->
+                <div style="margin-bottom:20px;">
+                    <div style="font-size:0.9rem; font-weight:700; color:#fff; margin-bottom:8px;">Rate your experience</div>
+                    <div style="display:flex; justify-content:center; gap:8px; margin-bottom:12px;" id="fare-modal-stars">
+                        <span onclick="setFareModalRating(1)" class="fare-star" data-rating="1" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
+                        <span onclick="setFareModalRating(2)" class="fare-star" data-rating="2" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
+                        <span onclick="setFareModalRating(3)" class="fare-star" data-rating="3" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
+                        <span onclick="setFareModalRating(4)" class="fare-star" data-rating="4" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
+                        <span onclick="setFareModalRating(5)" class="fare-star" data-rating="5" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
+                    </div>
+                    <textarea id="fare-modal-comment" placeholder="Optional feedback for your driver..." style="width:100%; height:60px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; padding:10px; font-size:0.85rem; resize:none; box-sizing:border-box; outline:none;"></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <button onclick="submitFareModalRating()" style="width:100%; height:48px; background:linear-gradient(135deg, #006B3A 0%, #004D25 100%); color:#fff; border:none; border-radius:14px; font-weight:800; font-size:1rem; cursor:pointer; box-shadow:0 4px 15px rgba(0,107,58,0.4);">
+                    Submit Rating & Done
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

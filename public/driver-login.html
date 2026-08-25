@@ -47,7 +47,7 @@
         <div class="auth-card">
             <div style="text-align: center; margin-bottom: 2.5rem;">
                 <div class="partner-badge">Partner Portal</div>
-                <div class="logo" style="display: flex; justify-content: center; margin-top: 10px; cursor: pointer;" onclick="window.location.href='/'">
+                <div class="logo" style="display: flex; justify-content: center; margin-top: 10px; cursor: pointer;" onclick="window.location.href='driver-login.html'">
                     <img src="logo.png" alt="CityRideTaxi" width="83" height="60" style="height: 60px; width: auto; filter: drop-shadow(0 0 10px rgba(183, 28, 28, 0.3));">
                 </div>
                 <h2 style="margin-top: 1.5rem; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">Partner Driver Login</h2>
@@ -56,7 +56,7 @@
             <form id="driver-login-form">
                 <div class="input-group">
                     <label style="color: #ffffff; font-weight: 600; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase;">Phone Number</label>
-                    <input type="tel" id="login-phone" placeholder="9876543210" required style="padding: 1rem; border-radius: 12px; font-size: 1.1rem; letter-spacing: 1px;">
+                    <input type="tel" id="login-phone" placeholder="" required style="padding: 1rem; border-radius: 12px; font-size: 1.1rem; letter-spacing: 1px;">
                 </div>
                 <div class="input-group" style="margin-top: 1.5rem; margin-bottom: 2rem;">
                     <label style="color: #ffffff; font-weight: 600; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase;">Access Key</label>
@@ -72,11 +72,11 @@
 
             <div style="margin-top: 2rem; text-align: center; font-size: 0.9rem; color: rgba(255,255,255,0.6);">
                 Not a partner yet? 
-                <a href="/driver-register" style="color: var(--primary-red); font-weight: 700; text-decoration: none; margin-left: 5px; transition: 0.3s;">Register as Partner</a>
+                <a href="driver-register.html" style="color: var(--primary-red); font-weight: 700; text-decoration: none; margin-left: 5px; transition: 0.3s;">Register as Partner</a>
             </div>
 
             <div style="margin-top: 2.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem; display: flex; justify-content: center;">
-                <a href="/" class="btn-back" style="color:white; display: flex; align-items: center; justify-content: center;" title="Return to Main Hub">
+                <a href="driver-login.html" class="btn-back" style="color:white; display: flex; align-items: center; justify-content: center;" title="CityRide Pilot Hub">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                 </a>
             </div>
@@ -115,7 +115,7 @@ const result = await res.json();
 if (res.ok) {
 localStorage.setItem('cityride_pilot', JSON.stringify(result.user));
 localStorage.removeItem(LOGIN_KEY);
-window.location.href = '/driver';
+window.location.href = 'driver.html';
 } else {
 alert(result.error);
 }

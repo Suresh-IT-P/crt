@@ -34,7 +34,7 @@
     <!-- API Config -->
     <script src="config.js" defer></script>
 
-    <style>:root{--bg-dark:#090a0f;--bg-card:#14161d;--accent-brand:#B71C1C;--accent-brand-glow:rgba(183,28,28,0.2);--text-white:#ffffff;--text-gray:#8e9297;--text-muted:#53575d;--border-color:rgba(255,255,255,0.06);--danger-red:#ff3b30;--warning-amber:#ff9f0a;--success-green:#34c759;--font-family:'Outfit',sans-serif;}*{box-sizing:border-box;margin:0;padding:0;font-family:var(--font-family);}[class^="ph-"],[class*=" ph-"]{font-family:"Phosphor-Bold","Phosphor-Fill","Phosphor-Regular","Phosphor" !important;}body{background-color:var(--bg-dark);color:var(--text-white);overflow:hidden;height:100vh;height:100dvh;}#splash-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:#090a0f;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.25s ease,visibility 0.25s ease;}#splash-screen.splash-hidden{opacity:0;visibility:hidden;pointer-events:none;}.splash-logo{width:80px;margin-bottom:20px;filter:drop-shadow(0 0 15px rgba(183,28,28,0.4));animation:pulse 1s infinite;}.splash-status{color:var(--text-gray);font-size:0.9rem;margin-top:20px;font-weight:500;letter-spacing:1px;}@keyframes pulse{0%{transform:scale(0.95);opacity:0.8;}50%{transform:scale(1.05);opacity:1;}100%{transform:scale(0.95);opacity:0.8;}}.app-container{max-width:480px;margin:0 auto;height:100%;background:var(--bg-dark);display:flex;flex-direction:column;position:relative;box-shadow:0 0 40px rgba(0,0,0,0.8);border-left:1px solid rgba(255,255,255,0.05);border-right:1px solid rgba(255,255,255,0.05);overflow:hidden;}.top-header{background:rgba(14,16,22,0.95);backdrop-filter:blur(10px);padding:15px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);position:sticky;top:0;z-index:100;}.logo-wrap{display:flex;align-items:center;gap:8px;}.logo-img{height:32px;width:auto;}.logo-text{font-weight:800;font-size:1.1rem;letter-spacing:0.5px;}.logo-text span{color:var(--accent-brand);}.profile-btn{background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-white);padding:6px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.1s ease;}.profile-btn:hover{border-color:var(--accent-brand);}.duty-status-bar{background:#101115;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);}.driver-info-badge{display:flex;flex-direction:column;gap:2px;min-width:120px;}.driver-info-name{font-weight:700;font-size:0.95rem;}.driver-info-car{font-size:0.75rem;color:var(--text-gray);}.duty-toggle{display:flex;align-items:center;gap:8px;padding:6px 16px;border-radius:30px;cursor:pointer;font-weight:800;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.8px;transition:all 0.15s cubic-bezier(0.4,0,0.2,1);user-select:none;}.duty-toggle.offline{background:#20222b;color:var(--text-gray);border:1px solid var(--border-color);}.duty-toggle.online{background:var(--accent-brand);color:#000000;box-shadow:0 0 15px var(--accent-brand-glow);}.duty-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}.offline .duty-dot{background:var(--text-muted);}.online .duty-dot{background:#000;animation:pulse-dot 0.75s infinite;}@keyframes pulse-dot{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:0.5;}}.online-scanning-bar{background:rgba(183,28,28,0.06);border-bottom:1px solid rgba(183,28,28,0.2);padding:8px 20px;font-size:0.75rem;font-weight:600;color:var(--accent-brand);display:flex;align-items:center;gap:10px;justify-content:center;}.scanning-radar{width:10px;height:10px;border-radius:50%;background:var(--accent-brand);position:relative;}.scanning-radar::after{content:'';position:absolute;top:-5px;left:-5px;right:-5px;bottom:-5px;border:1.5px solid var(--accent-brand);border-radius:50%;animation:pulse-radar 0.75s infinite;}@keyframes pulse-radar{0%{transform:scale(0.6);opacity:1;}100%{transform:scale(1.8);opacity:0;}}.radar-container{width:120px;height:120px;margin:0 auto;position:relative;background:radial-gradient(circle,rgba(183,28,28,0.05) 0%,rgba(0,0,0,0) 70%);border-radius:50%;}.radar-ring{position:absolute;top:0;left:0;right:0;bottom:0;border:1px solid rgba(183,28,28,0.15);border-radius:50%;transform:scale(0.1);opacity:0;}.ripple-1{animation:radar-ripple 2s infinite linear;}.ripple-2{animation:radar-ripple 2s infinite linear;animation-delay:0.665s;}.ripple-3{animation:radar-ripple 2s infinite linear;animation-delay:1.33s;}.radar-sweep{position:absolute;top:0;left:0;right:0;bottom:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(183,28,28,0.25) 0deg,rgba(183,28,28,0) 120deg);animation:radar-sweep 1.25s infinite linear;}.radar-beacon{position:absolute;top:calc(50% - 6px);left:calc(50% - 6px);width:12px;height:12px;background:var(--accent-brand);border-radius:50%;box-shadow:0 0 15px var(--accent-brand);animation:beacon-pulse 0.75s infinite ease-in-out;}@keyframes radar-ripple{0%{transform:scale(0.1);opacity:0.8;}100%{transform:scale(1.1);opacity:0;}}@keyframes radar-sweep{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}@keyframes beacon-pulse{0%,100%{transform:scale(0.85);opacity:0.8;}50%{transform:scale(1.15);opacity:1;}}.view-content{flex:1;display:flex;flex-direction:column;padding:12px;gap:12px;overflow-y:auto;min-height:0;padding-bottom:85px;scrollbar-width:none;-ms-overflow-style:none;}.view-content::-webkit-scrollbar{display:none;}.tab-view{display:flex;flex-direction:column;gap:12px;width:100%;}.hidden{display:none !important;}.offline-hero{background:linear-gradient(180deg,var(--bg-card) 0%,rgba(20,22,29,0.5) 100%);border-radius:24px;padding:30px 20px;text-align:center;border:1px solid var(--border-color);margin-top:10px;}.offline-hero-icon{font-size:3.5rem;color:var(--text-muted);margin-bottom:15px;animation:bounce-soft 1.5s infinite ease-in-out;}@keyframes bounce-soft{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}.offline-hero-title{font-size:1.3rem;font-weight:800;margin-bottom:8px;}.offline-hero-desc{font-size:0.85rem;color:var(--text-gray);line-height:1.4;max-width:280px;margin:0 auto;}.glass-card{background:var(--bg-card);border-radius:16px;border:1px solid var(--border-color);padding:14px 16px;display:flex;flex-direction:column;position:relative;}.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}.card-title{font-size:0.85rem;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-gray);display:flex;align-items:center;gap:6px;}.card-title i{font-size:1.1rem;color:var(--accent-brand);}.quick-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}.quick-stat-card{background:rgba(255,255,255,0.02);border:1px solid var(--border-color);border-radius:12px;padding:10px 8px;text-align:center;display:flex;flex-direction:column;gap:2px;}.quick-stat-val{font-size:1.05rem;font-weight:800;color:var(--text-white);}.quick-stat-lbl{font-size:0.6rem;color:var(--text-gray);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;}.map-section{position:relative;border-radius:24px;overflow:hidden;border:1px solid var(--border-color);box-shadow:0 10px 35px rgba(0,0,0,0.5);background:#111;}#dashboard-map{height:250px;width:100%;z-index:10;}.gps-status-overlay{position:absolute;top:15px;right:15px;z-index:100;background:rgba(13,14,18,0.85);backdrop-filter:blur(8px);border:1px solid var(--border-color);padding:6px 14px;border-radius:30px;display:flex;align-items:center;gap:8px;font-size:0.7rem;font-weight:700;}.gps-status-indicator{width:6px;height:6px;border-radius:50%;}.gps-status-indicator.searching{background:var(--warning-amber);animation:pulse-dot 0.5s infinite;}.gps-status-indicator.locked{background:var(--success-green);}.gps-status-indicator.disabled{background:var(--danger-red);}.map-floating-btn{position:absolute;bottom:15px;right:15px;z-index:100;background:var(--danger-red);color:var(--text-white);border:none;width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;cursor:pointer;box-shadow:0 4px 20px rgba(255,59,48,0.4);transition:all 0.1s ease;}.map-floating-btn:hover{transform:scale(1.05);}.ping-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(9,10,15,0.98);z-index:2000;display:flex;flex-direction:column;justify-content:space-between;padding:30px 24px;animation:slideInUp 0.175s cubic-bezier(0.16,1,0.3,1);}@keyframes slideInUp{from{transform:translateY(100%);}to{transform:translateY(0);}}.ping-header{text-align:center;margin-top:10px;}.ping-subtitle{font-size:0.75rem;color:var(--accent-brand);text-transform:uppercase;letter-spacing:2px;font-weight:800;margin-bottom:6px;}.ping-title{font-size:1.6rem;font-weight:800;}.ping-timer-wrap{display:flex;justify-content:center;align-items:center;margin:25px 0;position:relative;}.ping-timer-svg{transform:rotate(-90deg);}.ping-timer-circle-bg{fill:none;stroke:rgba(255,255,255,0.05);stroke-width:8;}.ping-timer-circle-val{fill:none;stroke:var(--accent-brand);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.5s linear;}.ping-timer-number{position:absolute;font-size:2.8rem;font-weight:800;color:var(--text-white);}.ping-details-card{background:#181a20;border-radius:20px;border:1px solid var(--border-color);padding:20px;display:flex;flex-direction:column;gap:15px;}.ping-metrics-row{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:12px;}.ping-metric{display:flex;flex-direction:column;gap:4px;}.ping-metric-label{font-size:0.65rem;color:var(--text-gray);font-weight:600;text-transform:uppercase;}.ping-metric-val{font-size:1.2rem;font-weight:800;}.ping-metric-val.fare{color:var(--accent-brand);}.ping-route-flow{display:flex;flex-direction:column;gap:12px;position:relative;padding-left:20px;}.ping-route-flow::before{content:'';position:absolute;top:6px;left:5px;bottom:6px;width:1px;border-left:2px dashed var(--text-muted);}.ping-route-node{position:relative;}.ping-route-dot{position:absolute;left:-20px;top:5px;width:10px;height:10px;border-radius:50%;}.ping-route-dot.pickup{background:var(--accent-brand);border:2.5px solid #000;}.ping-route-dot.drop{background:var(--danger-red);border:2.5px solid #000;}.ping-route-lbl{font-size:0.65rem;color:var(--text-gray);text-transform:uppercase;font-weight:600;}.ping-route-val{font-size:0.9rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}.ping-passenger-row{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.02);padding:10px 14px;border-radius:12px;font-size:0.8rem;border:1px solid var(--border-color);}.ping-btn-group{display:grid;grid-template-columns:1fr 2.5fr;gap:12px;margin-bottom:10px;}.btn{border-radius:16px;padding:16px;font-weight:800;font-size:0.95rem;text-transform:uppercase;letter-spacing:0.8px;cursor:pointer;border:none;text-align:center;transition:all 0.1s cubic-bezier(0.4,0,0.2,1);}.btn:hover{transform:translateY(-2px);}.btn-secondary{background:#20222b;color:var(--text-gray);border:1px solid var(--border-color);}.btn-primary{background:var(--accent-brand);color:#000;box-shadow:0 6px 20px var(--accent-brand-glow);}.active-ride-card{background:#131418;border-left:4px solid var(--accent-brand);border-radius:16px;}.active-ride-status{font-size:0.7rem;background:rgba(183,28,28,0.1);color:var(--accent-brand);padding:3px 8px;border-radius:5px;font-weight:800;display:inline-block;margin-bottom:8px;text-transform:uppercase;}.active-metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;background:rgba(255,255,255,0.02);padding:10px;border-radius:12px;border:1px solid var(--border-color);margin:10px 0;}.active-metric-box{display:flex;flex-direction:column;gap:2px;}.active-metric-lbl{font-size:0.6rem;color:var(--text-gray);font-weight:500;text-transform:uppercase;}.active-metric-val{font-size:0.85rem;font-weight:800;color:var(--text-white);}.active-metric-val.green{color:var(--accent-brand);}.navigation-row{display:flex;gap:6px;margin-top:8px;}.nav-btn{flex:1;padding:6px 10px;font-size:0.7rem;font-weight:700;border-radius:8px;background:#20222b;color:var(--text-white);border:1px solid var(--border-color);display:inline-flex;align-items:center;justify-content:center;gap:4px;text-decoration:none;}.nav-btn.pickup{border-color:rgba(183,28,28,0.3);color:var(--accent-brand);}.nav-btn.drop{border-color:rgba(255,59,48,0.3);color:var(--danger-red);}.chart-container{position:relative;height:140px;width:100%;margin-top:8px;}.performance-rings{display:flex;justify-content:space-around;margin-top:8px;}.perf-item{text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;}.perf-circle{width:50px;height:50px;border-radius:50%;border:3px solid var(--border-color);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;position:relative;}.perf-circle.rating{border-color:var(--accent-brand);color:var(--accent-brand);}.perf-circle.accept{border-color:var(--success-green);color:var(--success-green);}.perf-circle.cancel{border-color:var(--danger-red);color:var(--danger-red);}.perf-label{font-size:0.6rem;color:var(--text-gray);font-weight:600;text-transform:uppercase;}.wallet-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}.wallet-bal-wrap{display:flex;flex-direction:column;gap:2px;}.wallet-bal-num{font-size:1.8rem;font-weight:800;color:var(--text-white);}.wallet-bal-num span{color:var(--accent-brand);}.payout-btn{background:var(--accent-brand);color:#000;font-weight:800;font-size:0.8rem;padding:8px 16px;border-radius:20px;border:none;cursor:pointer;transition:all 0.1s ease;box-shadow:0 4px 12px var(--accent-brand-glow);}.payout-btn:hover{transform:translateY(-1px);}.ledger-list{display:flex;flex-direction:column;gap:12px;margin-top:10px;}.ledger-item{background:rgba(255,255,255,0.02);border:1px solid var(--border-color);border-radius:14px;padding:12px;display:flex;justify-content:space-between;align-items:center;}.ledger-info{display:flex;flex-direction:column;gap:2px;}.ledger-desc{font-size:0.8rem;font-weight:700;}.ledger-date{font-size:0.65rem;color:var(--text-gray);}.ledger-amount{font-weight:800;font-size:0.95rem;}.ledger-amount.credit{color:var(--success-green);}.ledger-amount.debit{color:var(--danger-red);}.doc-list{display:flex;flex-direction:column;gap:10px;}.doc-item{background:rgba(255,255,255,0.01);border:1px solid var(--border-color);border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}.doc-label{font-size:0.85rem;font-weight:700;display:flex;align-items:center;gap:10px;}.doc-label i{font-size:1.15rem;color:var(--accent-brand);}.doc-status-badge{font-size:0.65rem;font-weight:800;padding:3px 8px;border-radius:6px;text-transform:uppercase;}.doc-status-badge.verified{background:rgba(52,199,89,0.1);color:var(--success-green);}.doc-status-badge.pending{background:rgba(255,159,10,0.1);color:var(--warning-amber);}.history-card{background:rgba(255,255,255,0.02);border:1px solid var(--border-color);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:transform 0.2s ease;}.history-card:hover{transform:translateY(-2px);}.history-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.04);padding-bottom:8px;}.history-id{font-size:0.8rem;font-weight:800;color:var(--text-white);}.history-status{font-size:0.65rem;font-weight:800;padding:3px 8px;border-radius:6px;text-transform:uppercase;}.history-status.completed{background:rgba(52,199,89,0.1);color:var(--success-green);}.history-status.finished{background:rgba(183,28,28,0.1);color:var(--accent-brand);}.history-status.cancelled{background:rgba(255,59,48,0.1);color:var(--danger-red);}.history-datetime{font-size:0.7rem;color:var(--text-gray);display:flex;align-items:center;gap:4px;}.history-route{display:flex;flex-direction:column;gap:6px;font-size:0.75rem;padding-left:4px;}.history-node{display:flex;align-items:flex-start;gap:8px;}.history-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;}.history-dot.pickup{background:var(--success-green);}.history-dot.drop{background:var(--danger-red);}.history-addr{color:var(--text-white);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:calc(100% - 20px);}.history-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid rgba(255,255,255,0.04);padding-top:8px;margin-top:2px;}.history-metrics{display:flex;gap:12px;font-size:0.75rem;color:var(--text-gray);font-weight:600;}.history-metrics span span{color:var(--text-white);font-weight:700;}.history-fare{font-size:1rem;font-weight:800;color:var(--accent-brand);}.bottom-nav{position:absolute;bottom:0;left:0;right:0;height:70px;background:rgba(14,16,22,0.96);backdrop-filter:blur(12px);border-top:1px solid var(--border-color);display:flex;justify-content:space-around;align-items:center;z-index:1000;}.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text-gray);cursor:pointer;text-decoration:none;transition:all 0.1s ease;width:20%;}.nav-item i{font-size:1.3rem;}.nav-item-lbl{font-size:0.65rem;font-weight:700;}.nav-item.active{color:var(--accent-brand);}.offline-notice-banner{background:rgba(255,59,48,0.08);border:1px solid rgba(255,59,48,0.2);color:var(--danger-red);border-radius:16px;padding:12px 16px;font-size:0.8rem;font-weight:700;display:flex;align-items:center;gap:10px;}.swal2-popup.dark-popup{background:var(--bg-card) !important;color:var(--text-white) !important;border:1px solid var(--border-color) !important;border-radius:24px !important;}.swal2-title.dark-popup-title{color:var(--text-white) !important;font-family:var(--font-family) !important;}.swal2-html-container.dark-popup-html{color:var(--text-gray) !important;font-family:var(--font-family) !important;}.swal2-confirm.dark-popup-confirm{background-color:var(--accent-brand) !important;color:#ffffff !important;font-weight:700 !important;border-radius:12px !important;padding:12px 28px !important;font-size:1rem !important;border:none !important;box-shadow:0 4px 15px rgba(183,28,28,0.3) !important;transition:all 0.3s ease !important;margin:5px !important;}.swal2-cancel.dark-popup-cancel{background-color:#20222b !important;color:var(--text-gray) !important;border-radius:12px !important;padding:12px 28px !important;font-size:1rem !important;border:none !important;transition:all 0.3s ease !important;margin:5px !important;}.map-marker-pulse{width:14px;height:14px;border-radius:50%;border:2.5px solid white;box-shadow:0 0 10px rgba(0,0,0,0.5);position:relative;}.map-marker-pulse.driver{background:var(--accent-brand);}.map-marker-pulse.driver::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid var(--accent-brand);border-radius:50%;animation:pulse-radar 1s infinite;}.opp-card-list{display:flex;flex-direction:column;gap:12px;}.opp-card{background:#181a20;border-radius:18px;border:1px solid var(--border-color);padding:16px;display:flex;flex-direction:column;gap:12px;}.opp-card-row{display:flex;justify-content:space-between;align-items:center;}.opp-badge-row{display:flex;gap:6px;}.opp-badge{font-size:0.65rem;padding:3px 8px;border-radius:6px;font-weight:800;text-transform:uppercase;}.opp-badge.vehicle{background:rgba(255,255,255,0.05);color:var(--text-gray);}.opp-badge.type{background:rgba(183,28,28,0.1);color:var(--accent-brand);}.opp-badge.vendor{background:rgba(52,199,89,0.1);color:var(--success-green);}.opp-fare{font-size:1.15rem;font-weight:800;color:var(--accent-brand);}.opp-loc-line{display:flex;flex-direction:column;gap:4px;font-size:0.8rem;}.opp-dist{font-size:0.75rem;color:var(--text-gray);}.ride-stats-floating{display:flex;flex-direction:row;justify-content:space-between;gap:12px;margin-bottom:15px;width:100%;pointer-events:none;}.ride-stat-float-card{pointer-events:auto;background:rgba(20,22,29,0.85);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:10px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px 0 rgba(0,0,0,0.4);min-width:140px;transition:all 0.15s cubic-bezier(0.4,0,0.2,1);}.ride-stat-float-card:hover{border-color:var(--accent-brand);transform:translateY(-2px);}.ride-stat-float-card .icon-wrap{width:36px;height:36px;border-radius:50%;background:rgba(183,28,28,0.15);border:1px solid rgba(183,28,28,0.35);display:flex;align-items:center;justify-content:center;font-size:1.15rem;}.ride-stat-float-card.dist-card .icon-wrap{background:rgba(52,199,89,0.15);border-color:rgba(52,199,89,0.35);}.ride-stat-float-card .stat-content{display:flex;flex-direction:column;align-items:flex-start;}.ride-stat-float-card .value{font-size:1.5rem;font-weight:800;color:#ffffff;line-height:1.1;}.ride-stat-float-card .unit{font-size:0.65rem;color:var(--text-gray);font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}#processing-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(9,10,15,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:20000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity 0.15s ease,visibility 0.15s ease;}#processing-overlay.visible{opacity:1;visibility:visible;}.processing-content{background:var(--bg-card);border:1px solid rgba(255,255,255,0.08);border-radius:24px;padding:30px 40px;width:90%;max-width:360px;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.05);}.hourglass-wrapper{margin-bottom:20px;filter:drop-shadow(0 0 15px rgba(255,159,10,0.3));}.hourglass-svg{animation:hourglass-flip 1.25s cubic-bezier(0.77,0,0.175,1) infinite;transform-origin:50% 50%;}.sand-top{animation:sand-empty 1.25s cubic-bezier(0.77,0,0.175,1) infinite;transform-origin:50% 49px;}.sand-bottom{animation:sand-fill 1.25s cubic-bezier(0.77,0,0.175,1) infinite;transform-origin:50% 80px;}.sand-drip{stroke-dasharray:4,6;animation:drip-flow 0.2s linear infinite;}.processing-title{font-size:0.75rem;font-weight:800;color:var(--accent-brand);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;}.processing-message{font-size:0.9rem;font-weight:500;color:var(--text-white);line-height:1.4;}@keyframes hourglass-flip{0%,85%{transform:rotate(0deg);}100%{transform:rotate(180deg);}}@keyframes sand-empty{0%{transform:scaleY(1) scaleX(1);opacity:1;}45%,100%{transform:scaleY(0) scaleX(0.4);opacity:0;}}@keyframes sand-fill{0%{transform:scaleY(0);}45%,100%{transform:scaleY(1);}}@keyframes drip-flow{from{stroke-dashoffset:0;}to{stroke-dashoffset:10;}}</style>
+    <style>:root{--bg-dark:#F7FAF6;--bg-card:#FFFFFF;--accent-brand:#006B3A;--accent-brand-pista:#70C157;--accent-brand-glow:rgba(0,107,58,0.18);--text-white:#000000;--text-gray:#1C2B23;--text-muted:#2C3E35;--border-color:rgba(0,107,58,0.12);--danger-red:#DC2626;--warning-amber:#D97706;--success-green:#006B3A;--font-family:'Outfit','Inter',sans-serif;}*{box-sizing:border-box;margin:0;padding:0;font-family:var(--font-family);}[class^="ph-"],[class*=" ph-"]{font-family:"Phosphor-Bold","Phosphor-Fill","Phosphor-Regular","Phosphor" !important;}body{background-color:var(--bg-dark);color:#000000;overflow:hidden;height:100vh;height:100dvh;}.swal2-popup,.swal2-popup.dark-popup{background:#FFFFFF !important;color:#000000 !important;border:1px solid var(--border-color) !important;border-radius:24px !important;box-shadow:0 20px 50px rgba(0,0,0,0.12) !important;}.swal2-title,.swal2-title.dark-popup-title{color:#000000 !important;font-family:var(--font-family) !important;font-weight:800 !important;}.swal2-html-container,.swal2-html-container.dark-popup-html{color:#1C2B23 !important;font-family:var(--font-family) !important;font-weight:600 !important;}.swal2-input,.swal2-textarea,.swal2-select{background:#F7FAF6 !important;color:#000000 !important;border:1px solid rgba(0,107,58,0.2) !important;color-scheme:light !important;font-weight:700 !important;}input,select,textarea{background:#F7FAF6 !important;color:#000000 !important;border:1px solid rgba(0,107,58,0.2) !important;color-scheme:light !important;font-weight:700 !important;}label{color:#000000 !important;font-weight:800 !important;}#splash-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:#F7FAF6;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.25s ease,visibility 0.25s ease;}#splash-screen.splash-hidden{opacity:0;visibility:hidden;pointer-events:none;}.splash-logo{width:80px;margin-bottom:20px;filter:drop-shadow(0 0 15px rgba(0,107,58,0.3));animation:pulse 1s infinite;}.splash-status{color:var(--text-gray);font-size:0.9rem;margin-top:20px;font-weight:500;letter-spacing:1px;}@keyframes pulse{0%{transform:scale(0.95);opacity:0.8;}50%{transform:scale(1.05);opacity:1;}100%{transform:scale(0.95);opacity:0.8;}}.app-container{max-width:480px;margin:0 auto;height:100%;background:var(--bg-dark);display:flex;flex-direction:column;position:relative;box-shadow:0 10px 40px rgba(0,107,58,0.1);border-left:1px solid var(--border-color);border-right:1px solid var(--border-color);overflow:hidden;}.top-header{background:rgba(255,255,255,0.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:15px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);position:sticky;top:0;z-index:100;color:var(--text-white);}.logo-wrap{display:flex;align-items:center;gap:8px;}.logo-img{height:32px;width:auto;}.logo-text{font-weight:800;font-size:1.1rem;letter-spacing:0.5px;color:var(--text-white);}.logo-text span{color:var(--accent-brand);}.profile-btn{background:rgba(255,255,255,0.8);border:1px solid var(--border-color);color:var(--text-white);padding:6px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.1s ease;}.profile-btn:hover{border-color:var(--accent-brand);}.duty-status-bar{background:rgba(245,248,244,0.9);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);color:var(--text-white);}.driver-info-badge{display:flex;flex-direction:column;gap:2px;min-width:120px;}.driver-info-name{font-weight:700;font-size:0.95rem;color:var(--text-white);}.driver-info-car{font-size:0.75rem;color:var(--text-gray);}.duty-toggle{display:flex;align-items:center;gap:8px;padding:6px 16px;border-radius:30px;cursor:pointer;font-weight:800;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.8px;transition:all 0.15s cubic-bezier(0.4,0,0.2,1);user-select:none;}.duty-toggle.offline{background:rgba(0,0,0,0.05);color:var(--text-gray);border:1px solid var(--border-color);}.duty-toggle.online{background:var(--accent-brand);color:#ffffff;box-shadow:0 4px 15px var(--accent-brand-glow);}.duty-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}.offline .duty-dot{background:var(--text-muted);}.online .duty-dot{background:#fff;animation:pulse-dot 0.75s infinite;}@keyframes pulse-dot{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:0.5;}}.online-scanning-bar{background:rgba(0,107,58,0.08);border-bottom:1px solid rgba(0,107,58,0.2);padding:8px 20px;font-size:0.75rem;font-weight:600;color:var(--accent-brand);display:flex;align-items:center;gap:10px;justify-content:center;}.scanning-radar{width:10px;height:10px;border-radius:50%;background:var(--accent-brand);position:relative;}.scanning-radar::after{content:'';position:absolute;top:-5px;left:-5px;right:-5px;bottom:-5px;border:1.5px solid var(--accent-brand);border-radius:50%;animation:pulse-radar 0.75s infinite;}@keyframes pulse-radar{0%{transform:scale(0.6);opacity:1;}100%{transform:scale(1.8);opacity:0;}}.radar-container{width:120px;height:120px;margin:0 auto;position:relative;background:radial-gradient(circle,rgba(0,107,58,0.08) 0%,rgba(0,0,0,0) 70%);border-radius:50%;}.radar-ring{position:absolute;top:0;left:0;right:0;bottom:0;border:1px solid rgba(0,107,58,0.18);border-radius:50%;transform:scale(0.1);opacity:0;}.ripple-1{animation:radar-ripple 2s infinite linear;}.ripple-2{animation:radar-ripple 2s infinite linear;animation-delay:0.665s;}.ripple-3{animation:radar-ripple 2s infinite linear;animation-delay:1.33s;}.radar-sweep{position:absolute;top:0;left:0;right:0;bottom:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(0,107,58,0.25) 0deg,rgba(0,107,58,0) 120deg);animation:radar-sweep 1.25s infinite linear;}.radar-beacon{position:absolute;top:calc(50% - 6px);left:calc(50% - 6px);width:12px;height:12px;background:var(--accent-brand);border-radius:50%;box-shadow:0 0 15px var(--accent-brand);animation:beacon-pulse 0.75s infinite ease-in-out;}@keyframes radar-ripple{0%{transform:scale(0.1);opacity:0.8;}100%{transform:scale(1.1);opacity:0;}}@keyframes radar-sweep{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}@keyframes beacon-pulse{0%,100%{transform:scale(0.85);opacity:0.8;}50%{transform:scale(1.15);opacity:1;}}.view-content{flex:1 1 auto;display:flex;flex-direction:column;padding:12px;gap:12px;overflow-y:auto !important;overflow-x:hidden !important;max-width:100%;min-height:0;height:auto;padding-bottom:120px !important;-webkit-overflow-scrolling:touch !important;touch-action:pan-y !important;overscroll-behavior-y:contain;scrollbar-width:none;-ms-overflow-style:none;}.view-content::-webkit-scrollbar{display:none;}.tab-view{display:flex;flex-direction:column;gap:12px;width:100%;max-width:100%;overflow-x:hidden !important;touch-action:pan-y !important;flex-shrink:0 !important;height:auto !important;}.hidden{display:none !important;}.offline-hero{background:rgba(255,255,255,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:24px;padding:30px 20px;text-align:center;border:1px solid rgba(255,255,255,0.7);margin-top:10px;box-shadow:0 4px 16px rgba(0,0,0,0.03);}.offline-hero-icon{font-size:3.5rem;color:var(--accent-brand);margin-bottom:15px;animation:bounce-soft 1.5s infinite ease-in-out;}@keyframes bounce-soft{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}.offline-hero-title{font-size:1.3rem;font-weight:800;margin-bottom:8px;color:var(--text-white);}.offline-hero-desc{font-size:0.85rem;color:var(--text-gray);line-height:1.4;max-width:280px;margin:0 auto;}.glass-card{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:16px;border:1px solid rgba(255,255,255,0.7);padding:14px 16px;display:flex;flex-direction:column;position:relative;box-shadow:0 4px 16px rgba(0,0,0,0.03);max-width:100%;box-sizing:border-box;flex-shrink:0 !important;height:auto !important;}.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}.card-title{font-size:0.85rem;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-gray);display:flex;align-items:center;gap:6px;}.card-title i{font-size:1.1rem;color:var(--accent-brand);}.quick-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}.quick-stat-card{background:rgba(0,107,58,0.04);border:1px solid var(--border-color);border-radius:12px;padding:10px 8px;text-align:center;display:flex;flex-direction:column;gap:2px;}.quick-stat-val{font-size:1.05rem;font-weight:800;color:var(--text-white);}.quick-stat-lbl{font-size:0.6rem;color:var(--text-gray);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;}.map-section{position:relative;border-radius:24px;overflow:hidden;border:1px solid var(--border-color);box-shadow:0 8px 30px rgba(0,107,58,0.08);background:#f0f4f1;}#dashboard-map{height:250px;width:100%;z-index:10;}.gps-status-overlay{position:absolute;top:15px;right:15px;z-index:100;background:rgba(255,255,255,0.9);backdrop-filter:blur(12px);border:1px solid var(--border-color);padding:6px 14px;border-radius:30px;display:flex;align-items:center;gap:8px;font-size:0.7rem;font-weight:700;color:var(--text-white);}.gps-status-indicator{width:6px;height:6px;border-radius:50%;}.gps-status-indicator.searching{background:var(--warning-amber);animation:pulse-dot 0.5s infinite;}.gps-status-indicator.locked{background:var(--success-green);}.gps-status-indicator.disabled{background:var(--danger-red);}.map-floating-btn{position:absolute;bottom:15px;right:15px;z-index:100;background:var(--danger-red);color:#ffffff;border:none;width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;cursor:pointer;box-shadow:0 4px 20px rgba(220,38,38,0.35);transition:all 0.1s ease;}.map-floating-btn:hover{transform:scale(1.05);}.ping-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(240,244,241,0.98);backdrop-filter:blur(14px);z-index:2000;display:flex;flex-direction:column;justify-content:space-between;padding:30px 24px;animation:slideInUp 0.175s cubic-bezier(0.16,1,0.3,1);color:var(--text-white);}@keyframes slideInUp{from{transform:translateY(100%);}to{transform:translateY(0);}}.ping-header{text-align:center;margin-top:10px;}.ping-subtitle{font-size:0.75rem;color:var(--accent-brand);text-transform:uppercase;letter-spacing:2px;font-weight:800;margin-bottom:6px;}.ping-title{font-size:1.6rem;font-weight:800;color:var(--text-white);}.ping-timer-wrap{display:flex;justify-content:center;align-items:center;margin:25px 0;position:relative;}.ping-timer-svg{transform:rotate(-90deg);}.ping-timer-circle-bg{fill:none;stroke:rgba(0,107,58,0.1);stroke-width:8;}.ping-timer-circle-val{fill:none;stroke:var(--accent-brand);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.5s linear;}.ping-timer-number{position:absolute;font-size:2.8rem;font-weight:800;color:var(--text-white);}.ping-details-card{background:rgba(255,255,255,0.9);backdrop-filter:blur(12px);border-radius:20px;border:1px solid rgba(255,255,255,0.7);padding:20px;display:flex;flex-direction:column;gap:15px;box-shadow:0 8px 30px rgba(0,0,0,0.06);}.ping-metrics-row{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:12px;}.ping-metric{display:flex;flex-direction:column;gap:4px;}.ping-metric-label{font-size:0.65rem;color:var(--text-gray);font-weight:600;text-transform:uppercase;}.ping-metric-val{font-size:1.2rem;font-weight:800;color:var(--text-white);}.ping-metric-val.fare{color:var(--accent-brand);}.ping-route-flow{display:flex;flex-direction:column;gap:12px;position:relative;padding-left:20px;}.ping-route-flow::before{content:'';position:absolute;top:6px;left:5px;bottom:6px;width:1px;border-left:2px dashed var(--text-muted);}.ping-route-node{position:relative;}.ping-route-dot{position:absolute;left:-20px;top:5px;width:10px;height:10px;border-radius:50%;}.ping-route-dot.pickup{background:var(--accent-brand);border:2.5px solid #fff;}.ping-route-dot.drop{background:var(--danger-red);border:2.5px solid #fff;}.ping-route-lbl{font-size:0.65rem;color:var(--text-gray);text-transform:uppercase;font-weight:600;}.ping-route-val{font-size:0.9rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;color:var(--text-white);}.ping-passenger-row{display:flex;justify-content:space-between;align-items:center;background:rgba(0,107,58,0.04);padding:10px 14px;border-radius:12px;font-size:0.8rem;border:1px solid var(--border-color);color:var(--text-white);}.ping-btn-group{display:grid;grid-template-columns:1fr 2.5fr;gap:12px;margin-bottom:10px;}.btn{border-radius:16px;padding:16px;font-weight:800;font-size:0.95rem;text-transform:uppercase;letter-spacing:0.8px;cursor:pointer;border:none;text-align:center;transition:all 0.1s cubic-bezier(0.4,0,0.2,1);}.btn:hover{transform:translateY(-2px);}.btn-secondary{background:rgba(0,0,0,0.05);color:var(--text-white);border:1px solid var(--border-color);}.btn-primary{background:var(--accent-brand);color:#ffffff;box-shadow:0 6px 20px var(--accent-brand-glow);}.active-ride-card{background:rgba(255,255,255,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-left:4px solid var(--accent-brand);border-radius:16px;border-top:1px solid rgba(255,255,255,0.7);border-right:1px solid rgba(255,255,255,0.7);border-bottom:1px solid rgba(255,255,255,0.7);box-shadow:0 6px 24px rgba(0,0,0,0.04);}.active-ride-status{font-size:0.7rem;background:rgba(0,107,58,0.1);color:var(--accent-brand);padding:3px 8px;border-radius:5px;font-weight:800;display:inline-block;margin-bottom:8px;text-transform:uppercase;}.active-metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;background:rgba(0,107,58,0.03);padding:10px;border-radius:12px;border:1px solid var(--border-color);margin:10px 0;}.active-metric-box{display:flex;flex-direction:column;gap:2px;}.active-metric-lbl{font-size:0.6rem;color:var(--text-gray);font-weight:500;text-transform:uppercase;}.active-metric-val{font-size:0.85rem;font-weight:800;color:var(--text-white);}.active-metric-val.green{color:var(--accent-brand);}.navigation-row{display:flex;gap:6px;margin-top:8px;}.nav-btn{flex:1;padding:6px 10px;font-size:0.7rem;font-weight:700;border-radius:8px;background:rgba(255,255,255,0.9);color:var(--text-white);border:1px solid var(--border-color);display:inline-flex;align-items:center;justify-content:center;gap:4px;text-decoration:none;}.nav-btn.pickup{border-color:rgba(0,107,58,0.3);color:var(--accent-brand);}.nav-btn.drop{border-color:rgba(220,38,38,0.3);color:var(--danger-red);}.chart-container{position:relative;height:140px;width:100%;margin-top:8px;}.performance-rings{display:flex;justify-content:space-around;margin-top:8px;}.perf-item{text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;}.perf-circle{width:50px;height:50px;border-radius:50%;border:3px solid var(--border-color);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;position:relative;}.perf-circle.rating{border-color:var(--accent-brand);color:var(--accent-brand);}.perf-circle.accept{border-color:var(--success-green);color:var(--success-green);}.perf-circle.cancel{border-color:var(--danger-red);color:var(--danger-red);}.perf-label{font-size:0.6rem;color:var(--text-gray);font-weight:600;text-transform:uppercase;}.wallet-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}.wallet-bal-wrap{display:flex;flex-direction:column;gap:2px;}.wallet-bal-num{font-size:1.8rem;font-weight:800;color:var(--text-white);}.wallet-bal-num span{color:var(--accent-brand);}.payout-btn{background:var(--accent-brand);color:#ffffff;font-weight:800;font-size:0.8rem;padding:8px 16px;border-radius:20px;border:none;cursor:pointer;transition:all 0.1s ease;box-shadow:0 4px 12px var(--accent-brand-glow);}.payout-btn:hover{transform:translateY(-1px);}.ledger-list{display:flex;flex-direction:column;gap:12px;margin-top:10px;}.ledger-item{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.6);border-radius:14px;padding:12px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,0.03);}.ledger-info{display:flex;flex-direction:column;gap:2px;}.ledger-desc{font-size:0.8rem;font-weight:700;color:var(--text-white);}.ledger-date{font-size:0.65rem;color:var(--text-gray);}.ledger-amount{font-weight:800;font-size:0.95rem;}.ledger-amount.credit{color:var(--success-green);}.ledger-amount.debit{color:var(--danger-red);}.doc-list{display:flex;flex-direction:column;gap:10px;}.doc-item{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.6);border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,0.03);}.doc-label{font-size:0.85rem;font-weight:700;display:flex;align-items:center;gap:10px;color:var(--text-white);}.doc-label i{font-size:1.15rem;color:var(--accent-brand);}.doc-status-badge{font-size:0.65rem;font-weight:800;padding:3px 8px;border-radius:6px;text-transform:uppercase;}.doc-status-badge.verified{background:rgba(0,107,58,0.1);color:var(--success-green);}.doc-status-badge.pending{background:rgba(217,119,6,0.1);color:var(--warning-amber);}.history-card{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.6);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:transform 0.2s ease;box-shadow:0 4px 14px rgba(0,0,0,0.03);}.history-card:hover{transform:translateY(-2px);}.history-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:8px;}.history-id{font-size:0.8rem;font-weight:800;color:var(--text-white);}.history-status{font-size:0.65rem;font-weight:800;padding:3px 8px;border-radius:6px;text-transform:uppercase;}.history-status.completed{background:rgba(0,107,58,0.1);color:var(--success-green);}.history-status.finished{background:rgba(0,107,58,0.1);color:var(--accent-brand);}.history-status.cancelled{background:rgba(220,38,38,0.1);color:var(--danger-red);}.history-datetime{font-size:0.7rem;color:var(--text-gray);display:flex;align-items:center;gap:4px;}.history-route{display:flex;flex-direction:column;gap:6px;font-size:0.75rem;padding-left:4px;}.history-node{display:flex;align-items:flex-start;gap:8px;}.history-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;}.history-dot.pickup{background:var(--success-green);}.history-dot.drop{background:var(--danger-red);}.history-addr{color:var(--text-white);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:calc(100% - 20px);}.history-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-color);padding-top:8px;margin-top:2px;}.history-metrics{display:flex;gap:12px;font-size:0.75rem;color:var(--text-gray);font-weight:600;}.history-metrics span span{color:var(--text-white);font-weight:700;}.history-fare{font-size:1rem;font-weight:800;color:var(--accent-brand);}.bottom-nav{position:absolute;bottom:0;left:0;right:0;height:70px;background:rgba(255,255,255,0.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--border-color);display:flex;justify-content:space-around;align-items:center;z-index:1000;}.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text-gray);cursor:pointer;text-decoration:none;transition:all 0.1s ease;width:20%;}.nav-item i{font-size:1.3rem;}.nav-item-lbl{font-size:0.65rem;font-weight:700;}.nav-item.active{color:var(--accent-brand);}.offline-notice-banner{background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);color:var(--danger-red);border-radius:16px;padding:12px 16px;font-size:0.8rem;font-weight:700;display:flex;align-items:center;gap:10px;}.swal2-popup.dark-popup{background:rgba(255,255,255,0.95) !important;color:var(--text-white) !important;border:1px solid var(--border-color) !important;border-radius:24px !important;box-shadow:0 20px 50px rgba(0,0,0,0.12) !important;}.swal2-title.dark-popup-title{color:var(--text-white) !important;font-family:var(--font-family) !important;}.swal2-html-container.dark-popup-html{color:var(--text-gray) !important;font-family:var(--font-family) !important;}.swal2-confirm.dark-popup-confirm{background-color:var(--accent-brand) !important;color:#ffffff !important;font-weight:700 !important;border-radius:12px !important;padding:12px 28px !important;font-size:1rem !important;border:none !important;box-shadow:0 4px 15px var(--accent-brand-glow) !important;transition:all 0.3s ease !important;margin:5px !important;}.swal2-cancel.dark-popup-cancel{background-color:rgba(0,0,0,0.05) !important;color:var(--text-gray) !important;border-radius:12px !important;padding:12px 28px !important;font-size:1rem !important;border:none !important;transition:all 0.3s ease !important;margin:5px !important;}.map-marker-pulse{width:14px;height:14px;border-radius:50%;border:2.5px solid white;box-shadow:0 0 10px rgba(0,0,0,0.5);position:relative;}.map-marker-pulse.driver{background:var(--accent-brand);}.map-marker-pulse.driver::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid var(--accent-brand);border-radius:50%;animation:pulse-radar 1s infinite;}.opp-card-list{display:flex;flex-direction:column;gap:12px;}.opp-card{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:18px;border:1px solid rgba(255,255,255,0.6);padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 4px 14px rgba(0,0,0,0.03);}.opp-card-row{display:flex;justify-content:space-between;align-items:center;}.opp-badge-row{display:flex;gap:6px;}.opp-badge{font-size:0.65rem;padding:3px 8px;border-radius:6px;font-weight:800;text-transform:uppercase;}.opp-badge.vehicle{background:rgba(0,0,0,0.05);color:var(--text-gray);}.opp-badge.type{background:rgba(0,107,58,0.1);color:var(--accent-brand);}.opp-badge.vendor{background:rgba(0,107,58,0.1);color:var(--success-green);}.opp-fare{font-size:1.15rem;font-weight:800;color:var(--accent-brand);}.opp-loc-line{display:flex;flex-direction:column;gap:4px;font-size:0.8rem;color:var(--text-white);}.opp-dist{font-size:0.75rem;color:var(--text-gray);}.ride-stats-floating{display:flex;flex-direction:row;justify-content:space-between;gap:12px;margin-bottom:15px;width:100%;pointer-events:none;}.ride-stat-float-card{pointer-events:auto;background:rgba(255,255,255,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.6);border-radius:16px;padding:10px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,0.06);min-width:140px;transition:all 0.15s cubic-bezier(0.4,0,0.2,1);}.ride-stat-float-card:hover{border-color:var(--accent-brand);transform:translateY(-2px);}.ride-stat-float-card .icon-wrap{width:36px;height:36px;border-radius:50%;background:rgba(0,107,58,0.12);border:1px solid rgba(0,107,58,0.25);display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:var(--accent-brand);}.ride-stat-float-card.dist-card .icon-wrap{background:rgba(0,107,58,0.12);border-color:rgba(0,107,58,0.25);}.ride-stat-float-card .stat-content{display:flex;flex-direction:column;align-items:flex-start;}.ride-stat-float-card .value{font-size:1.5rem;font-weight:800;color:var(--text-white);line-height:1.1;}.ride-stat-float-card .unit{font-size:0.65rem;color:var(--text-gray);font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}#processing-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(240,244,241,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:20000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity 0.15s ease,visibility 0.15s ease;}#processing-overlay.visible{opacity:1;visibility:visible;}.processing-content{background:rgba(255,255,255,0.92);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.7);border-radius:24px;padding:30px 40px;width:90%;max-width:360px;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.1);}.hourglass-wrapper{margin-bottom:20px;filter:drop-shadow(0 0 15px rgba(217,119,6,0.3));}.hourglass-svg{animation:hourglass-flip 1.25s cubic-bezier(0.77,0,0.175,1) infinite;transform-origin:50% 50%;}.sand-top{animation:sand-empty 1.25s cubic-bezier(0.77,0,0.175,1) infinite;transform-origin:50% 49px;}.sand-bottom{animation:sand-fill 1.25s cubic-bezier(0.77,0,0.175,1) infinite;transform-origin:50% 80px;}.sand-drip{stroke-dasharray:4,6;animation:drip-flow 0.2s linear infinite;}.processing-title{font-size:0.75rem;font-weight:800;color:var(--accent-brand);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;}.processing-message{font-size:0.9rem;font-weight:500;color:var(--text-white);line-height:1.4;}@keyframes hourglass-flip{0%,85%{transform:rotate(0deg);}100%{transform:rotate(180deg);}}@keyframes sand-empty{0%{transform:scaleY(1) scaleX(1);opacity:1;}45%,100%{transform:scaleY(0) scaleX(0.4);opacity:0;}}@keyframes sand-fill{0%{transform:scaleY(0);}45%,100%{transform:scaleY(1);}}@keyframes drip-flow{from{stroke-dashoffset:0;}to{stroke-dashoffset:10;}}</style>
 </head>
 <body>
 
@@ -73,7 +73,7 @@
         
         <!-- Top Sticky Header -->
         <header class="top-header">
-            <div class="logo-wrap" onclick="window.location.href = 'index.html'" style="cursor: pointer;">
+            <div class="logo-wrap" onclick="window.location.href = 'driver.html'" style="cursor: pointer;">
                 <img src="logo.png" alt="CityRide" class="logo-img">
                 <div class="logo-text">CITYRIDE<span>PARTNER</span></div>
             </div>
@@ -111,18 +111,26 @@
                     <div class="offline-hero-icon"><i class="ph-bold ph-steering-wheel"></i></div>
                     <div class="offline-hero-title">Ready to Earn?</div>
                     <div class="offline-hero-desc">Toggle the switch at the top to go ONLINE. You will start receiving live ride pings.</div>
+                    <div style="margin-top: 14px; padding: 10px 16px; background: rgba(230,46,45,0.1); border: 1px solid rgba(230,46,45,0.25); border-radius: 12px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;" onclick="enableFloatingWidgetPrompt()">
+                        <span style="font-size: 1.1rem;">🚖</span>
+                        <span style="font-size: 0.8rem; font-weight: 700; color: #ff6b6b;">Floating Widget (Ola/Uber Mode): <span id="floating-widget-status-txt" style="color:#10b981;">Active</span></span>
+                    </div>
                 </div>
 
                 <!-- Active Ongoing Ride Tracking Widget -->
-                <div class="glass-card active-ride-card hidden" id="active-mission-panel">
-                    <div class="card-header">
-                        <div class="active-ride-status" id="active-ride-badge">En Route to Pickup</div>
-                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-gray);" id="active-ride-id">ID: #B123</span>
-                    </div>
-
-                    <div style="font-size: 1.1rem; font-weight: 800;" id="active-passenger-name">Passenger Name</div>
+                <div class="active-ride-card hidden" id="active-mission-panel" style="display: flex; flex-direction: column; gap: 12px; background: transparent; border: none; padding: 0; box-shadow: none;">
                     
-                    <div class="active-metrics-grid" id="active-metrics-grid">
+                    <!-- Section 1: Customer & Ride Status Header Box -->
+                    <div style="background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 18px; border: 1px solid rgba(0,107,58,0.14); padding: 14px 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+                        <div class="card-header" style="margin-bottom: 6px;">
+                            <div class="active-ride-status" id="active-ride-badge" style="margin-bottom: 0;">En Route to Pickup</div>
+                            <span style="font-size: 0.75rem; font-weight: 800; color: var(--text-gray);" id="active-ride-id">ID: #B123</span>
+                        </div>
+                        <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-white);" id="active-passenger-name">Passenger Name</div>
+                    </div>
+                    
+                    <!-- Section 2: Metrics Summary Grid Box -->
+                    <div class="active-metrics-grid" id="active-metrics-grid" style="margin: 0; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 18px; border: 1px solid rgba(0,107,58,0.14); padding: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
                         <div class="active-metric-box" id="active-box-fare">
                             <span class="active-metric-lbl">Est. Fare</span>
                             <span class="active-metric-val green" id="active-fare-val">₹0</span>
@@ -138,75 +146,81 @@
                     </div>
 
                     <!-- Odometer info for manual rides -->
-                    <div id="active-odo-info" class="hidden" style="margin: 12px 0; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 4px;">
+                    <div id="active-odo-info" class="hidden" style="margin: 0; padding: 14px 16px; background: rgba(255,255,255,0.92); border: 1px solid rgba(0,107,58,0.14); border-radius: 18px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
                         <div><strong>Opening Odometer:</strong> <span id="active-opening-odo-val">Not Recorded</span></div>
                         <div id="active-closing-odo-wrap" class="hidden"><strong>Closing Odometer:</strong> <span id="active-closing-odo-val">Not Recorded</span></div>
                     </div>
 
-                    <!-- Live Waiting Timer (visible only during ongoing rides) -->
-                    <div id="waiting-timer-panel" class="hidden" style="margin: 12px 0; padding: 14px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px;">
+                    <!-- Section 3: Live Waiting Timer Box -->
+                    <div id="waiting-timer-panel" class="hidden" style="margin: 0; padding: 16px; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(0,107,58,0.14); border-radius: 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
                         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
-                            <span style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-gray);">Live Trip Timer</span>
-                            <span id="timer-status-badge" style="font-size:0.65rem; padding:3px 8px; border-radius:20px; font-weight:700; background:rgba(52,199,89,0.1); color:var(--success-green);">ON TIME</span>
+                            <span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-gray);">PRE-RIDE GRACE / WAITING TIMER</span>
+                            <span id="timer-status-badge" style="font-size:0.65rem; padding:4px 10px; border-radius:20px; font-weight:800; background:rgba(0,107,58,0.1); color:var(--accent-brand);">GRACE PERIOD</span>
                         </div>
-                        <div style="display:flex; justify-content:center; align-items:baseline; gap:6px; margin-bottom:12px;">
-                            <span id="timer-elapsed-display" style="font-size:2.2rem; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:-1px; color:var(--text-white);">00:00:00</span>
+                        <div style="display:flex; justify-content:center; align-items:baseline; gap:6px; margin:10px 0;">
+                            <span id="timer-elapsed-display" style="font-size:2.4rem; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:-1px; color:var(--accent-brand);">00:00:00</span>
                         </div>
                         <div id="timer-stats-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;">
-                            <div style="background:rgba(255,255,255,0.03); padding:8px 4px; border-radius:10px;">
-                                <div style="font-size:0.65rem; color:var(--text-gray); margin-bottom:2px;">Allowed</div>
-                                <div id="timer-allowed-time" style="font-size:0.9rem; font-weight:700; color:var(--success-green);">0:00</div>
+                            <div style="background:rgba(0,107,58,0.04); border:1px solid rgba(0,107,58,0.08); padding:8px 4px; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.02);">
+                                <div style="font-size:0.65rem; color:var(--text-gray); margin-bottom:2px; font-weight:600;">Allowed</div>
+                                <div id="timer-allowed-time" style="font-size:0.9rem; font-weight:800; color:var(--success-green);">0:00</div>
                             </div>
-                            <div style="background:rgba(255,255,255,0.03); padding:8px 4px; border-radius:10px;">
-                                <div style="font-size:0.65rem; color:var(--text-gray); margin-bottom:2px;">Waiting</div>
-                                <div id="timer-waiting-time" style="font-size:0.9rem; font-weight:700; color:var(--warning-amber);">0:00</div>
+                            <div style="background:rgba(0,107,58,0.04); border:1px solid rgba(0,107,58,0.08); padding:8px 4px; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.02);">
+                                <div style="font-size:0.65rem; color:var(--text-gray); margin-bottom:2px; font-weight:600;">Waiting</div>
+                                <div id="timer-waiting-time" style="font-size:0.9rem; font-weight:800; color:var(--warning-amber);">0:00</div>
                             </div>
-                            <div style="background:rgba(255,255,255,0.03); padding:8px 4px; border-radius:10px;">
-                                <div style="font-size:0.65rem; color:var(--text-gray); margin-bottom:2px;">W. Charge</div>
-                                <div id="timer-waiting-charge" style="font-size:0.9rem; font-weight:700; color:var(--danger-red);">₹0</div>
+                            <div style="background:rgba(0,107,58,0.04); border:1px solid rgba(0,107,58,0.08); padding:8px 4px; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.02);">
+                                <div style="font-size:0.65rem; color:var(--text-gray); margin-bottom:2px; font-weight:600;">W. Charge</div>
+                                <div id="timer-waiting-charge" style="font-size:0.9rem; font-weight:800; color:var(--danger-red);">₹0</div>
                             </div>
                         </div>
                         <!-- Progress bar showing allowed vs elapsed -->
-                        <div id="timer-progress-wrapper" style="margin-top:10px; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden;">
-                            <div id="timer-progress-bar" style="height:100%; width:0%; background:var(--success-green); border-radius:3px; transition:width 1s linear, background 0.3s;"></div>
+                        <div id="timer-progress-wrapper" style="margin-top:12px; height:6px; background:rgba(0,107,58,0.1); border-radius:3px; overflow:hidden;">
+                            <div id="timer-progress-bar" style="height:100%; width:0%; background:var(--accent-brand); border-radius:3px; transition:width 1s linear, background 0.3s;"></div>
                         </div>
                     </div>
 
-                    <!-- Location flow -->
-                    <div class="ping-route-flow" style="margin-bottom: 12px;">
-                        <div class="ping-route-node">
-                            <span class="ping-route-dot pickup"></span>
-                            <div class="ping-route-lbl">Pickup Location</div>
-                            <div class="ping-route-val" id="active-pickup-loc">Address line</div>
-                        </div>
-                        <div id="active-stops-list" style="display: flex; flex-direction: column;"></div>
-                        <div class="ping-route-node">
-                            <span class="ping-route-dot drop"></span>
-                            <div class="ping-route-lbl">Dropoff Location</div>
-                            <div class="ping-route-val" id="active-drop-loc">Address line</div>
+                    <!-- Section 4: Pickup & Dropoff Location Card Box -->
+                    <div style="background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 18px; border: 1px solid rgba(0,107,58,0.14); padding: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+                        <div class="ping-route-flow" style="margin-bottom: 0;">
+                            <div class="ping-route-node">
+                                <span class="ping-route-dot pickup"></span>
+                                <div class="ping-route-lbl">Pickup Location</div>
+                                <div class="ping-route-val" id="active-pickup-loc">Address line</div>
+                            </div>
+                            <div id="active-stops-list" style="display: flex; flex-direction: column;"></div>
+                            <div class="ping-route-node" style="margin-top: 10px;">
+                                <span class="ping-route-dot drop"></span>
+                                <div class="ping-route-lbl">Dropoff Location</div>
+                                <div class="ping-route-val" id="active-drop-loc">Address line</div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Navigation Action row -->
-                    <div class="navigation-row">
-                        <a href="#" id="nav-pickup-btn" target="_blank" class="nav-btn pickup">
-                            <i class="ph-bold ph-navigation-arrow"></i> Nav Pickup
-                        </a>
-                        <a href="#" id="nav-drop-btn" target="_blank" class="nav-btn drop">
-                            <i class="ph-bold ph-navigation-arrow"></i> Nav Drop
-                        </a>
-                        <a href="#" id="call-passenger-btn" class="nav-btn">
-                            <i class="ph-bold ph-phone"></i> Call
-                        </a>
-                        <a href="#" id="chat-passenger-btn" class="nav-btn" onclick="driverOpenChat(event)" style="border-color:rgba(37,99,235,0.3); color:#60a5fa;">
-                            <i class="ph-bold ph-chat-circle-dots"></i> Chat
-                        </a>
+                    <!-- Section 5: Navigation & Communication Actions Box -->
+                    <div style="background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 18px; border: 1px solid rgba(0,107,58,0.14); padding: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+                        <div class="navigation-row" style="margin-top: 0; gap: 8px;">
+                            <a href="#" id="nav-pickup-btn" target="_blank" class="nav-btn pickup" style="background:#ffffff; border:1px solid rgba(0,107,58,0.2); color:var(--accent-brand); padding:10px 4px; border-radius:12px; font-weight:800; font-size:0.75rem; box-shadow:0 2px 6px rgba(0,0,0,0.03); flex:1; text-align:center;">
+                                <i class="ph-bold ph-navigation-arrow"></i> Nav Pickup
+                            </a>
+                            <a href="#" id="nav-drop-btn" target="_blank" class="nav-btn drop" style="background:#ffffff; border:1px solid rgba(220,38,38,0.2); color:var(--danger-red); padding:10px 4px; border-radius:12px; font-weight:800; font-size:0.75rem; box-shadow:0 2px 6px rgba(0,0,0,0.03); flex:1; text-align:center;">
+                                <i class="ph-bold ph-navigation-arrow"></i> Nav Drop
+                            </a>
+                            <a href="#" id="call-passenger-btn" class="nav-btn" style="background:#ffffff; border:1px solid rgba(0,107,58,0.2); color:var(--text-white); padding:10px 4px; border-radius:12px; font-weight:800; font-size:0.75rem; box-shadow:0 2px 6px rgba(0,0,0,0.03); flex:1; text-align:center;">
+                                <i class="ph-bold ph-phone"></i> Call
+                            </a>
+                            <a href="#" id="chat-passenger-btn" class="nav-btn" onclick="driverOpenChat(event)" style="position:relative; background:#ffffff; border:1px solid rgba(0,107,58,0.2); color:var(--accent-brand); padding:10px 4px; border-radius:12px; font-weight:800; font-size:0.75rem; box-shadow:0 2px 6px rgba(0,0,0,0.03); flex:1; text-align:center;">
+                                <i class="ph-bold ph-chat-circle-dots"></i> Chat
+                                <span id="driver-chat-unread-badge" style="position:absolute; top:-4px; right:-4px; width:10px; height:10px; background:#dc2626; border-radius:50%; display:none;"></span>
+                            </a>
+                        </div>
                     </div>
 
-                    <!-- Operational status buttons -->
-                    <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;" id="active-op-btns">
+                    <!-- Section 6: Operational Action Buttons Box -->
+                    <div style="background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 18px; border: 1px solid rgba(0,107,58,0.14); padding: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.04); display: flex; flex-direction: column; gap: 10px;" id="active-op-btns">
                         <!-- Loaded dynamically -->
                     </div>
+
                 </div>
 
                 <!-- Live Speed & Odometer widgets (Outside the map) -->
@@ -242,9 +256,9 @@
                 </div>
 
                 <!-- Opportunities & Radar Container to stabilize CLS -->
-                <div id="opportunities-container" style="min-height: 230px; margin-top: 10px; position: relative;">
+                <div id="opportunities-container" class="hidden" style="min-height: 230px; margin-top: 10px; position: relative;">
                     <!-- Skeleton Standby Loader -->
-                    <div class="glass-card" id="opportunities-skeleton" style="padding: 2rem 1.5rem; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 210px;">
+                    <div class="glass-card hidden" id="opportunities-skeleton" style="padding: 2rem 1.5rem; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 210px;">
                         <div style="width: 50px; height: 50px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.05); border-top-color: var(--accent-brand); animation:pulse-dot 0.75s infinite linear; margin-bottom: 1rem;"></div>
                         <style>@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}#opportunities-skeleton div:first-child{animation:spin 1s infinite linear !important;}</style>
                         <div style="width: 120px; height: 12px; background: rgba(255,255,255,0.05); border-radius: 6px; margin-bottom: 0.5rem;"></div>
@@ -351,9 +365,9 @@
                             <div class="wallet-bal-num"><span>₹</span><span id="wallet-balance-lbl">0.00</span></div>
                         </div>
                     </div>
-                    <div class="offline-notice-banner" style="background: rgba(183, 28, 28, 0.04); border-color: rgba(183, 28, 28, 0.15); color: var(--text-white);">
-                        <i class="ph-bold ph-shield-check" style="color:var(--accent-brand); font-size:1.1rem;"></i>
-                        <span style="font-size: 0.75rem;">₹10/day platform access fee is automatically deducted at 6 AM. A flat ₹5 platform fee applies per ride completion.</span>
+                    <div style="background: rgba(0, 107, 58, 0.05); border: 1px solid rgba(0, 107, 58, 0.12); padding: 10px 14px; border-radius: 12px; font-size: 0.8rem; color: var(--text-gray); display: flex; align-items: center; gap: 8px;">
+                        <i class="ph-bold ph-shield-check" style="color: var(--accent-brand); font-size: 1.1rem;"></i>
+                        <span style="font-size: 0.75rem;">₹10 is deducted upon ride acceptance, and ₹5 platform fee is deducted upon ride completion.</span>
                     </div>
                 </div>
 
@@ -362,21 +376,21 @@
                     <div class="card-header">
                         <div class="card-title"><i class="ph-bold ph-bank"></i> Add Money to Wallet</div>
                     </div>
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 10px 0;">
-                        <img src="logo.png" alt="Admin QR Code" style="width: 150px; height: 150px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: #fff; padding: 5px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 10px 0; width: 100%; box-sizing: border-box;">
+                        <img src="logo.png" alt="Admin QR Code" style="width: 140px; height: 140px; border-radius: 12px; border: 1px solid var(--border-color); background: #ffffff; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
                         <div style="text-align: center;">
-                            <div style="font-weight: 700; color: #fff; font-size: 1.1rem;">Scan & Pay via UPI</div>
-                            <div style="color: var(--accent-brand); font-size: 0.9rem; margin-top: 4px;">UPI ID: admin@upi</div>
+                            <div style="font-weight: 800; color: var(--text-white); font-size: 1.05rem;">Scan & Pay via UPI</div>
+                            <div style="color: var(--accent-brand); font-weight: 700; font-size: 0.9rem; margin-top: 4px;">UPI ID: admin@upi</div>
                         </div>
                         
-                        <div style="width: 100%; display: flex; gap: 10px; align-items: center; margin-top: 10px;">
-                            <input type="number" id="wallet-pay-amount" placeholder="Enter Amount (₹)" style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; outline: none;">
-                            <button class="btn btn-primary" onclick="notifyWalletPayment()" style="padding: 12px 20px; white-space: nowrap;"><i class="ph-bold ph-paper-plane-right"></i> Notify Admin</button>
+                        <div style="width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 6px; box-sizing: border-box;">
+                            <input type="number" id="wallet-pay-amount" placeholder="Enter Amount (₹)" style="width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.9); color: var(--text-white); font-weight: 700; font-size: 0.95rem; outline: none; box-sizing: border-box;">
+                            <button class="btn btn-primary" onclick="notifyWalletPayment()" style="width: 100%; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box;"><i class="ph-bold ph-paper-plane-right"></i> NOTIFY ADMIN</button>
                         </div>
                         
-                        <a href="https://wa.me/910000000000" target="_blank" style="width: 100%; text-decoration: none;">
-                            <button class="btn" style="width: 100%; padding: 12px; background: #25D366; color: #fff; border: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; cursor: pointer;">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M187.58,144.84l-32-16a8,8,0,0,0-8,1.5l-19.24,16a5.36,5.36,0,0,1-4,.83,107.9,107.9,0,0,1-31.43-17.51A108.11,108.11,0,0,1,75.46,98.25a5.38,5.38,0,0,1,.84-4l16-19.24a8,8,0,0,0,1.5-8l-16-32A8,8,0,0,0,69.56,31a22.56,22.56,0,0,0-16.71,8,48,48,0,0,0-12,27.18c-3.11,36.53,19.33,76.6,54.85,112.13S171.31,229.93,207.84,226.8A48,48,0,0,0,235,214.81a22.54,22.54,0,0,0,8-16.71A8,8,0,0,0,239.05,149.86Zm-28.84,60.94c-30.82,2.64-67.43-16.85-99.11-48.53S13.76,88.42,16.4,57.6A6.53,6.53,0,0,1,21,55.33l13.56-6.78,12,24-11,13.25a21.43,21.43,0,0,0-4.08,18.06A123.86,123.86,0,0,0,51.86,129a124.08,124.08,0,0,0,25.21,21.18,21.41,21.41,0,0,0,18.06-4.08l13.25-11,24,12-6.78,13.56A6.53,6.53,0,0,1,158.74,205.78Z"></path></svg> WhatsApp Admin
+                        <a href="#" onclick="driverOpenWhatsAppAdmin(event)" style="width: 100%; text-decoration: none; box-sizing: border-box;">
+                            <button class="btn" style="width: 100%; padding: 12px; background: #25D366; color: #fff; border: none; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 0.9rem; cursor: pointer; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3); box-sizing: border-box;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M187.58,144.84l-32-16a8,8,0,0,0-8,1.5l-19.24,16a5.36,5.36,0,0,1-4,.83,107.9,107.9,0,0,1-31.43-17.51A108.11,108.11,0,0,1,75.46,98.25a5.38,5.38,0,0,1,.84-4l16-19.24a8,8,0,0,0,1.5-8l-16-32A8,8,0,0,0,69.56,31a22.56,22.56,0,0,0-16.71,8,48,48,0,0,0-12,27.18c-3.11,36.53,19.33,76.6,54.85,112.13S171.31,229.93,207.84,226.8A48,48,0,0,0,235,214.81a22.54,22.54,0,0,0,8-16.71A8,8,0,0,0,239.05,149.86Zm-28.84,60.94c-30.82,2.64-67.43-16.85-99.11-48.53S13.76,88.42,16.4,57.6A6.53,6.53,0,0,1,21,55.33l13.56-6.78,12,24-11,13.25a21.43,21.43,0,0,0-4.08,18.06A123.86,123.86,0,0,0,51.86,129a124.08,124.08,0,0,0,25.21,21.18,21.41,21.41,0,0,0,18.06-4.08l13.25-11,24,12-6.78,13.56A6.53,6.53,0,0,1,158.74,205.78Z"></path></svg> WHATSAPP ADMIN
                             </button>
                         </a>
                     </div>
@@ -504,10 +518,13 @@
                     </div>
                 </div>
 
-                <!-- Simulated passenger rating -->
+                <!-- Simulated passenger rating & seating capacity -->
                 <div class="ping-passenger-row">
                     <span style="font-weight: 700;" id="ping-passenger-name">John Doe</span>
                     <span style="color:var(--accent-brand); font-weight:800;"><i class="ph-fill ph-star"></i> 4.8 Rating</span>
+                </div>
+                <div class="ping-passenger-row" style="margin-top: 4px; background: rgba(0,107,58,0.06);">
+                    <span style="font-weight: 800; color: var(--accent-brand);" id="ping-seating-capacity">💺 Seats Required: 1 Passenger</span>
                 </div>
             </div>
 
@@ -550,48 +567,51 @@
     <!-- ===== ANIMATED ODOMETER INPUT MODAL ===== -->
     <style>
         #odo-modal-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(16px); z-index: 50000;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 50000;
             display: flex; align-items: flex-end; justify-content: center;
             opacity: 0; visibility: hidden;
             transition: opacity 0.25s ease, visibility 0.25s ease;
         }
         #odo-modal-overlay.open { opacity: 1; visibility: visible; }
         #odo-modal {
-            background: #131418; border-radius: 28px 28px 0 0;
-            border: 1px solid rgba(255,255,255,0.07);
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border-radius: 28px 28px 0 0;
+            border: 1px solid rgba(255, 255, 255, 0.7);
             border-bottom: none; width: 100%; max-width: 480px;
-            padding: 28px 24px 40px;
+            padding: 28px 24px 40px; color: #1C2B23;
             transform: translateY(100%);
             transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.12);
         }
         #odo-modal-overlay.open #odo-modal { transform: translateY(0); }
-        .odo-modal-handle { width: 44px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); margin: 0 auto 24px; }
+        .odo-modal-handle { width: 44px; height: 5px; border-radius: 3px; background: rgba(0,107,58,0.2); margin: 0 auto 24px; }
         .odo-modal-icon-wrap {
             width: 64px; height: 64px; border-radius: 20px; margin: 0 auto 20px;
             display: flex; align-items: center; justify-content: center; font-size: 2rem;
         }
-        .odo-modal-icon-wrap.opening { background: rgba(52,199,89,0.12); border: 1px solid rgba(52,199,89,0.3); }
-        .odo-modal-icon-wrap.closing { background: rgba(183,28,28,0.12); border: 1px solid rgba(183,28,28,0.3); }
-        .odo-modal-title { font-size: 1.3rem; font-weight: 800; text-align: center; margin-bottom: 6px; }
-        .odo-modal-subtitle { font-size: 0.82rem; color: #8e9297; text-align: center; margin-bottom: 28px; line-height: 1.5; }
+        .odo-modal-icon-wrap.opening { background: rgba(0,107,58,0.1); border: 1px solid rgba(0,107,58,0.25); }
+        .odo-modal-icon-wrap.closing { background: rgba(220,38,38,0.1); border: 1px solid rgba(220,38,38,0.25); }
+        .odo-modal-title { font-size: 1.3rem; font-weight: 800; text-align: center; margin-bottom: 6px; color: #1C2B23; }
+        .odo-modal-subtitle { font-size: 0.82rem; color: #64746B; text-align: center; margin-bottom: 28px; line-height: 1.5; }
         .odo-digit-row {
             display: flex; gap: 8px; justify-content: center; margin-bottom: 28px;
         }
         .odo-digit {
             width: 46px; height: 64px; border-radius: 14px;
-            background: rgba(255,255,255,0.04);
-            border: 2px solid rgba(255,255,255,0.1);
+            background: rgba(0,107,58,0.04);
+            border: 2px solid rgba(0,107,58,0.15);
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.8rem; font-weight: 900; color: #fff;
+            font-size: 1.8rem; font-weight: 900; color: #1C2B23;
             font-variant-numeric: tabular-nums;
             transition: all 0.15s ease;
             position: relative; overflow: hidden;
         }
         .odo-digit.active {
             border-color: var(--accent-brand);
-            background: rgba(183,28,28,0.12);
-            box-shadow: 0 0 20px rgba(183,28,28,0.25);
+            background: rgba(0,107,58,0.12);
+            box-shadow: 0 0 20px rgba(0,107,58,0.25);
         }
         .odo-digit-cursor {
             position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
@@ -600,40 +620,40 @@
             animation: cursor-blink 0.8s infinite;
         }
         @keyframes cursor-blink { 0%,49%{opacity:1;}50%,100%{opacity:0;} }
-        .odo-digit.filled { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); }
+        .odo-digit.filled { border-color: rgba(0,107,58,0.25); background: rgba(0,107,58,0.08); }
         .odo-numpad {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
         }
         .odo-key {
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.9); border: 1px solid rgba(0,107,58,0.15);
             border-radius: 14px; height: 58px; display: flex; align-items: center;
             justify-content: center; font-size: 1.25rem; font-weight: 700;
-            color: #fff; cursor: pointer; user-select: none;
+            color: #1C2B23; cursor: pointer; user-select: none;
             transition: all 0.1s ease; -webkit-tap-highlight-color: transparent;
         }
         .odo-key:active, .odo-key.pressed {
-            background: rgba(183,28,28,0.2); border-color: var(--accent-brand);
+            background: rgba(0,107,58,0.15); border-color: var(--accent-brand);
             transform: scale(0.93);
         }
-        .odo-key.del { color: #ff3b30; font-size: 1rem; }
+        .odo-key.del { color: #dc2626; font-size: 1rem; }
         .odo-key.confirm {
             background: var(--accent-brand); border-color: var(--accent-brand);
-            color: #000; font-size: 0.9rem; font-weight: 800;
-            box-shadow: 0 4px 20px rgba(183,28,28,0.35);
+            color: #ffffff; font-size: 0.9rem; font-weight: 800;
+            box-shadow: 0 4px 20px rgba(0,107,58,0.35);
         }
         .odo-key.confirm:active { transform: scale(0.95); }
         .odo-key.confirm:disabled, .odo-key.confirm.locked {
             opacity: 0.4; pointer-events: none;
         }
         .odo-km-note {
-            text-align: center; font-size: 0.75rem; color: #8e9297; margin-bottom: 16px;
-            padding: 8px 14px; background: rgba(255,255,255,0.03);
-            border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);
-        }
-    </style>
+            text-align: center; font-size: 0.75rem; color: #64746B; margin-bottom: 16px;
+            padding: 8px 14px; background: rgba(0,107,58,0.05);
+            border-radius: 10px; border: 1px solid rgba(0,107,58,0.1);
+        }</style>
 
     <div id="odo-modal-overlay">
-        <div id="odo-modal">
+        <div id="odo-modal" style="position:relative;">
+            <button type="button" onclick="cancelOdoModal()" style="position:absolute; top:18px; right:18px; background:rgba(255,255,255,0.08); border:none; color:#fff; width:36px; height:36px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:10;" title="Cancel">✕</button>
             <div class="odo-modal-handle"></div>
             <div class="odo-modal-icon-wrap opening" id="odo-modal-icon">🔓</div>
             <div class="odo-modal-title" id="odo-modal-title">Opening Odometer</div>
@@ -661,6 +681,9 @@
                 <div class="odo-key" onclick="odoKey('0')">0</div>
                 <div class="odo-key confirm locked" id="odo-confirm-btn" onclick="odoConfirm()">✓ Done</div>
             </div>
+            <button type="button" onclick="cancelOdoModal()" style="width:100%; margin-top:14px; background:rgba(255,59,48,0.12); border:1px solid rgba(255,59,48,0.3); color:#ff3b30; font-weight:700; font-size:0.95rem; border-radius:14px; padding:14px; cursor:pointer; transition:all 0.2s;">
+                ✕ Cancel
+            </button>
         </div>
     </div>
 
@@ -668,15 +691,7 @@
     <script>(function() {
 const originalFetch = window.fetch;
 function getLoginRedirect(url) {
-if (typeof url === 'string' && url.includes('/api/')) {
-if (url.includes('/api/admin/')) return 'admin-login.html';
-if (url.includes('/api/vendor/')) return 'vendor-login.html';
-if (url.includes('/api/driver/') || url.includes('/api/bookings/')) {
-return window.location.pathname.includes('driver') ? 'driver-login.html' : 'auth.html';
-}
-return 'auth.html';
-}
-return null;
+    return 'driver-login.html';
 }
 window.fetch = async function (...args) {
 const response = await originalFetch(...args);
@@ -774,53 +789,64 @@ cancelButton: 'dark-popup-cancel'
 buttonsStyling: false
 };
 document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Immediately load cached driver data so UI is instantly responsive (no "Loading..." stuck state)
+    const cachedDriverStr = localStorage.getItem('cityride_pilot');
+    if (cachedDriverStr) {
+        try {
+            driverData = JSON.parse(cachedDriverStr);
+            updateDriverProfileUI();
+        } catch (e) {
+            console.warn('Error parsing cached driverData:', e);
+        }
+    }
+
+    // 2. Hide initial skeleton & container when offline
+    const oppContainer = document.getElementById('opportunities-container');
+    if (oppContainer) oppContainer.classList.add('hidden');
+    const skeleton = document.getElementById('opportunities-skeleton');
+    if (skeleton) skeleton.classList.add('hidden');
+
+    // 3. Background session verification (non-blocking)
     try {
         const sessionRes = await fetch('/api/auth/session?role=driver');
         if (sessionRes.ok) {
             const sessionData = await sessionRes.json();
-            if (sessionData.valid && sessionData.role === 'driver') {
+            if (sessionData.valid && sessionData.role === 'driver' && sessionData.user) {
                 driverData = sessionData.user;
                 localStorage.setItem('cityride_pilot', JSON.stringify(driverData));
-            } else {
-                localStorage.removeItem('cityride_pilot');
-                window.location.href = 'driver-login.html';
-                return;
+                updateDriverProfileUI();
             }
-        } else {
-            localStorage.removeItem('cityride_pilot');
-            window.location.href = 'driver-login.html';
-            return;
         }
     } catch (e) {
-        // Offline fallback: try to use cached driverData if available
-        driverData = JSON.parse(localStorage.getItem('cityride_pilot'));
-        if (!driverData) {
-            window.location.href = 'driver-login.html';
-            return;
-        }
+        console.log('Session verification completed in offline/cached mode');
     }
-updateDriverProfileUI();
-renderLedgerList([]);
-await cacheTariffs();
-await syncDashboardStats();
-setInterval(syncDashboardStats, 30000);
-initializeDriverMap();
-startGpsTracking();
-try {
-    const resJobs = await fetch(`${API_BASE_URL}/api/driver/my-jobs/${driverData.id}?t=${Date.now()}`);
-    if (resJobs.ok) {
-        const activeJobs = await resJobs.json();
-        const ongoing = activeJobs.find(j => ['assigned', 'ongoing', 'finished', 'cancel_requested'].includes(j.status));
-        if (ongoing) {
-            proceedToOnline();
-        }
-    }
-} catch (e) {}
-startOpportunityPolling();
-startRadarMessageCycle();
 
-// --- SOCKET.IO: Real-time connection ---
-initDriverSocket();
+    // If still no driver data, redirect to login
+    if (!driverData || !driverData.id) {
+        window.location.href = 'driver-login.html';
+        return;
+    }
+
+    // Safe startup sequence
+    try { renderLedgerList([]); } catch(e) {}
+    try { cacheTariffs().catch(() => {}); } catch(e) {}
+    try { syncDashboardStats().catch(() => {}); } catch(e) {}
+    setInterval(() => { syncDashboardStats().catch(() => {}); }, 30000);
+
+    // Check & restore ongoing duty if any
+    try {
+        const resJobs = await fetch(`${API_BASE_URL}/api/driver/my-jobs/${driverData.id}?t=${Date.now()}`);
+        if (resJobs.ok) {
+            const activeJobs = await resJobs.json();
+            const ongoing = activeJobs.find(j => ['assigned', 'ongoing', 'finished', 'cancel_requested'].includes(j.status));
+            if (ongoing) {
+                proceedToOnline();
+            }
+        }
+    } catch (e) {}
+
+    // --- SOCKET.IO: Real-time connection ---
+    initDriverSocket();
 });
 
 /**
@@ -875,23 +901,55 @@ function initDriverSocket() {
         if (typeof pollOpportunityJobs === 'function') pollOpportunityJobs();
     });
 
+    // Incoming chat message — trigger strong notification & pulsing badge
+    const handleDriverChatNotif = (data) => {
+        if (data && data.senderRole !== 'driver') {
+            if (window.DriverNotifications && window.DriverNotifications.showChatNotification) {
+                window.DriverNotifications.showChatNotification(data, 'driver');
+            }
+            const chatBadge = document.getElementById('driver-chat-unread-badge');
+            if (chatBadge) {
+                chatBadge.style.display = 'block';
+                chatBadge.classList.add('active', 'chat-pulse-ring');
+            }
+        }
+    };
+    driverSocket.on('chat_message', handleDriverChatNotif);
+    driverSocket.on('chat_notification', handleDriverChatNotif);
+
+    window._driverSocket = driverSocket;
+
     driverSocket.on('booking_status_update', () => {
         if (typeof pollOpportunityJobs === 'function') pollOpportunityJobs();
     });
 }
+function driverOpenChat(e) {
+    if (e) e.preventDefault();
+    if (window._activeBookingId) {
+        window.location.href = `chat.html?bookingId=${window._activeBookingId}&role=driver`;
+    } else {
+        alert('No active ride found for chat.');
+    }
+}
+
 function updateDriverProfileUI() {
-if (!driverData) return;
-document.getElementById('driver-name').textContent = driverData.name;
-document.getElementById('driver-car').textContent = `Vehicle: ${driverData.car_model || '---'} (${driverData.car_number || '---'})`;
-document.getElementById('profile-driver-name').textContent = driverData.name;
-document.getElementById('profile-driver-phone').textContent = driverData.phone || '+91 99887 76655';
-document.getElementById('profile-vehicle-type').textContent = (driverData.vehicle_type || 'SEDAN');
-const numEl = document.getElementById('profile-vehicle-number');
-if(numEl) numEl.textContent = (driverData.car_number || 'UNREGISTERED');
-const modEl = document.getElementById('profile-vehicle-model');
-if(modEl) modEl.textContent = `Model: ${driverData.car_model || 'Standard'}`;
-const bal = parseFloat(driverData.wallet_balance || 0).toFixed(2);
-document.getElementById('wallet-balance-lbl').textContent = bal;
+    if (!driverData) return;
+    const nameEl = document.getElementById('driver-name');
+    if (nameEl) nameEl.textContent = driverData.name || 'CityRide Partner';
+    const carEl = document.getElementById('driver-car');
+    if (carEl) carEl.textContent = `Vehicle: ${driverData.car_model || '---'} (${driverData.car_number || '---'}) • ${driverData.seating_capacity || 5} Seater`;
+    const pNameEl = document.getElementById('profile-driver-name');
+    if (pNameEl) pNameEl.textContent = driverData.name || 'CityRide Partner';
+    const pPhoneEl = document.getElementById('profile-driver-phone');
+    if (pPhoneEl) pPhoneEl.textContent = driverData.phone || '+91 00000 00000';
+    const pTypeEl = document.getElementById('profile-vehicle-type');
+    if (pTypeEl) pTypeEl.textContent = `${driverData.vehicle_type || 'SEDAN'} (${driverData.seating_capacity || 5} Seater)`;
+    const numEl = document.getElementById('profile-vehicle-number');
+    if (numEl) numEl.textContent = (driverData.car_number || 'UNREGISTERED');
+    const modEl = document.getElementById('profile-vehicle-model');
+    if (modEl) modEl.textContent = `Model: ${driverData.car_model || 'Standard'}`;
+    const balEl = document.getElementById('wallet-balance-lbl');
+    if (balEl) balEl.textContent = parseFloat(driverData.wallet_balance || 0).toFixed(2);
 }
 function switchTab(tabId, el) {
 document.querySelectorAll('.tab-view').forEach(view => view.classList.add('hidden'));
@@ -936,97 +994,148 @@ clearInterval(radarMsgInterval);
 radarMsgInterval = null;
 }
 }
-function proceedToOnline() {
-const btn = document.getElementById('duty-toggle-btn');
-const txt = document.getElementById('duty-status-txt');
-const scanner = document.getElementById('scanning-radar-bar');
-const offlineHero = document.getElementById('offline-hero-panel');
-const mapPanel = document.getElementById('map-tracking-panel');
-const oppsPanel = document.getElementById('opportunities-panel');
+async function proceedToOnline() {
+    const btn = document.getElementById('duty-toggle-btn');
+    const txt = document.getElementById('duty-status-txt');
+    const scanner = document.getElementById('scanning-radar-bar');
+    const offlineHero = document.getElementById('offline-hero-panel');
+    const mapPanel = document.getElementById('map-tracking-panel');
+    const oppsPanel = document.getElementById('opportunities-panel');
 
-isOnline = true;
-btn.className = 'duty-toggle online';
-txt.textContent = 'Online';
-scanner.classList.remove('hidden');
-offlineHero.classList.add('hidden');
-mapPanel.classList.remove('hidden');
-document.getElementById('opportunities-container').classList.remove('hidden');
-const skeleton = document.getElementById('opportunities-skeleton');
-if (skeleton) skeleton.classList.remove('hidden');
-initializeDriverMap();
-startGpsTracking();
-startOpportunityPolling();
-startRadarMessageCycle();
-Swal.fire({
-title: 'System Online',
-text: 'You are now online. You will receive sounds and popups for booking matches.',
-icon: 'success',
-timer: 2000,
-showConfirmButton: false,
-...swalDarkOpts
-});
-}
+    isOnline = true;
+    btn.className = 'duty-toggle online';
+    txt.textContent = 'Online';
+    scanner.classList.remove('hidden');
+    offlineHero.classList.add('hidden');
+    mapPanel.classList.remove('hidden');
+    document.getElementById('opportunities-container').classList.remove('hidden');
+    const skeleton = document.getElementById('opportunities-skeleton');
+    if (skeleton) skeleton.classList.remove('hidden');
+    initializeDriverMap();
+    startGpsTracking();
+    startOpportunityPolling();
+    startRadarMessageCycle();
 
-function toggleDutyStatus() {
-const btn = document.getElementById('duty-toggle-btn');
-const txt = document.getElementById('duty-status-txt');
-const scanner = document.getElementById('scanning-radar-bar');
-const offlineHero = document.getElementById('offline-hero-panel');
-const mapPanel = document.getElementById('map-tracking-panel');
-const oppsPanel = document.getElementById('opportunities-panel');
-if (!isOnline) {
-if (!navigator.geolocation) {
-Swal.fire({ title: 'GPS Error', text: 'Geolocation is not supported by your browser.', icon: 'error', ...swalDarkOpts });
-return;
-}
-
-Swal.fire({
-title: 'Verifying GPS Signal...',
-text: 'Please wait while we lock onto your location coordinates.',
-allowOutsideClick: false,
-didOpen: () => {
-Swal.showLoading();
-navigator.geolocation.getCurrentPosition(
-    (position) => {
-        Swal.close();
-        proceedToOnline();
-    },
-    (error) => {
-        console.warn('High accuracy GPS failed, falling back to low accuracy...', error);
-        // Fallback to low accuracy for testing/weak GPS
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                Swal.close();
-                proceedToOnline();
-            },
-            (err2) => {
-                Swal.close();
-                let errMsg = 'Please turn on your GPS location to go online.';
-                if (err2.code === err2.PERMISSION_DENIED) {
-                    errMsg = 'Location permission is denied. Please allow location access in your browser or device settings to go online.';
-                } else if (err2.code === err2.POSITION_UNAVAILABLE) {
-                    errMsg = 'Location information is unavailable. Please strictly turn on your device GPS location to proceed.';
-                } else if (err2.code === err2.TIMEOUT) {
-                    errMsg = 'The request to get user location timed out. Please check your GPS signal and ensure location is turned on.';
-                }
-                
-                Swal.fire({
-                    title: 'Location Required',
-                    text: errMsg,
-                    icon: 'warning',
-                    confirmButtonText: 'OK',
-                    ...swalDarkOpts
+    // Start Native Driver Background Duty & Check Overlay Permission for Mini Mode Popup
+    if (window.Capacitor && window.Capacitor.Plugins) {
+        const driverBgPlugin = window.Capacitor.Plugins.DriverBackgroundPlugin || (typeof window.Capacitor.registerPlugin === 'function' ? window.Capacitor.registerPlugin('DriverBackgroundPlugin') : null);
+        if (driverBgPlugin) {
+            try {
+                const driverDataObj = JSON.parse(localStorage.getItem('cityride_pilot') || '{}');
+                await driverBgPlugin.startDuty({
+                    driverId: String(driverDataObj.id || ''),
+                    driverName: driverDataObj.name || 'Driver',
+                    apiUrl: window.API_BASE_URL || ''
                 });
-            },
-            { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
-        );
-    },
-    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-);
-},
-...swalDarkOpts
-});
-} else {
+                
+                const permRes = await driverBgPlugin.checkOverlayPermission();
+                if (permRes && !permRes.granted) {
+                    Swal.fire({
+                        title: 'Overlay Permission Needed',
+                        text: 'Please allow "Display over other apps" permission so CityRide Partner can shrink into Mini Mode Overlay when minimized.',
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: 'Grant Permission',
+                        confirmButtonColor: '#006B3A'
+                    }).then(async (res) => {
+                        if (res.isConfirmed) {
+                            await driverBgPlugin.requestOverlayPermission();
+                        }
+                    });
+                }
+            } catch(e) {
+                console.warn("DriverBackgroundPlugin startDuty error:", e);
+            }
+        }
+    }
+
+    Swal.fire({
+        title: 'System Online',
+        text: 'You are now online. When minimized, app will shrink into Mini Mode Floating Overlay.',
+        icon: 'success',
+        timer: 2500,
+        showConfirmButton: false,
+        ...swalDarkOpts
+    });
+}
+
+async function toggleDutyStatus() {
+    const btn = document.getElementById('duty-toggle-btn');
+    const txt = document.getElementById('duty-status-txt');
+    const scanner = document.getElementById('scanning-radar-bar');
+    const offlineHero = document.getElementById('offline-hero-panel');
+    const mapPanel = document.getElementById('map-tracking-panel');
+    const oppsPanel = document.getElementById('opportunities-panel');
+    if (!isOnline) {
+        if (!navigator.geolocation) {
+            Swal.fire({ title: 'GPS Error', text: 'Geolocation is not supported by your browser.', icon: 'error', ...swalDarkOpts });
+            return;
+        }
+
+        // Immediately check device location status & push Google Play Services Location Turn On dialogue if off
+        if (window.ensureLocationEnabled) {
+            try {
+                await window.ensureLocationEnabled();
+            } catch(e) {
+                console.warn("Google location prompt check error:", e);
+            }
+        }
+
+        Swal.fire({
+            title: 'Verifying GPS Signal...',
+            text: 'Please wait while we lock onto your location coordinates.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        Swal.close();
+                        proceedToOnline();
+                    },
+                    (error) => {
+                        console.warn('High accuracy GPS failed, falling back to low accuracy...', error);
+                        // Fallback to low accuracy for testing/weak GPS
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                Swal.close();
+                                proceedToOnline();
+                            },
+                            async (err2) => {
+                                Swal.close();
+                                if (window.ensureLocationEnabled) {
+                                    await window.ensureLocationEnabled();
+                                }
+                                let errMsg = 'Please turn on your GPS location to go online.';
+                                if (err2.code === err2.PERMISSION_DENIED) {
+                                    errMsg = 'Location permission is denied. Please allow location access in your browser or device settings to go online.';
+                                } else if (err2.code === err2.POSITION_UNAVAILABLE) {
+                                    errMsg = 'Location information is unavailable. Please strictly turn on your device GPS location to proceed.';
+                                } else if (err2.code === err2.TIMEOUT) {
+                                    errMsg = 'The request to get user location timed out. Please check your GPS signal and ensure location is turned on.';
+                                }
+                                
+                                Swal.fire({
+                                    title: 'Location Required',
+                                    text: errMsg,
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Turn On Location',
+                                    cancelButtonText: 'Cancel',
+                                    confirmButtonColor: '#006B3A'
+                                }).then(async (res) => {
+                                    if (res.isConfirmed && window.ensureLocationEnabled) {
+                                        await window.ensureLocationEnabled();
+                                    }
+                                });
+                            },
+                            { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+                        );
+                    },
+                    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                );
+            }
+        });
+    } else {
             if (activeRideObj) {
                 Swal.fire({
                     title: 'Cannot Go Offline',
@@ -1168,146 +1277,266 @@ wakeLock = await navigator.wakeLock.request('screen');
 } catch (err) {}
 }
 document.addEventListener('visibilitychange', () => {
-if (document.visibilityState === 'visible') {
-if (isOnline) requestWakeLock();
-if (isOnline && navigator.geolocation) {
-navigator.geolocation.getCurrentPosition(pos => {
-window.lastGpsCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude, time: Date.now() };
-updateGpsUI('locked', pos.coords.accuracy);
-updateDriverLocationOnMap(pos.coords.latitude, pos.coords.longitude);
-}, () => {}, { enableHighAccuracy: true });
-}
-}
+    if (document.visibilityState === 'visible') {
+        if (isOnline) requestWakeLock();
+        if (isOnline && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                window.lastGpsCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude, time: Date.now() };
+                updateGpsUI('locked', pos.coords.accuracy);
+                updateDriverLocationOnMap(pos.coords.latitude, pos.coords.longitude);
+            }, () => {}, { enableHighAccuracy: true });
+        }
+        // App is in foreground — hide compact floating bubble
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.DriverBackgroundPlugin) {
+            window.Capacitor.Plugins.DriverBackgroundPlugin.hideFloatingWidget().catch(() => {});
+        }
+    } else if (document.visibilityState === 'hidden') {
+        // App is minimized or switched to Google Maps — show Ola/Uber style floating bubble if Online
+        if (isOnline && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.DriverBackgroundPlugin) {
+            window.Capacitor.Plugins.DriverBackgroundPlugin.showFloatingWidget().catch(() => {});
+        }
+    }
 });
 async function startGpsTracking() {
-requestWakeLock();
-if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
-try {
-const permStatus = await window.Capacitor.Plugins.Geolocation.checkPermissions();
-if (permStatus.location !== 'granted') {
-await window.Capacitor.Plugins.Geolocation.requestPermissions();
+    requestWakeLock();
+
+    // Native Capacitor Android Background Engine & Floating Overlay Initialization
+    if (window.Capacitor && window.Capacitor.Plugins) {
+        const plugins = window.Capacitor.Plugins;
+        
+        // 1. Request native permissions
+        try {
+            if (plugins.Geolocation) {
+                const permStatus = await plugins.Geolocation.checkPermissions();
+                if (permStatus.location !== 'granted') {
+                    await plugins.Geolocation.requestPermissions();
+                }
+            }
+        } catch(e) { console.warn('Native geolocation permission check error:', e); }
+
+        // 2. Start Native Background Duty Foreground Service
+        try {
+            if (plugins.DriverBackgroundPlugin) {
+                console.log('🚀 Starting Native DriverBackgroundPlugin Foreground Duty Service...');
+                await plugins.DriverBackgroundPlugin.startDuty({
+                    driverId: (driverData && driverData.id) ? String(driverData.id) : '',
+                    driverName: (driverData && driverData.name) ? String(driverData.name) : 'Driver',
+                    apiUrl: typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : '',
+                    bookingId: acceptedOpportunityId ? String(acceptedOpportunityId) : '',
+                    tripStatus: (activeRideObj && activeRideObj.status) ? activeRideObj.status : ''
+                });
+
+                // Request Battery Optimization Exemption once so OEM task killers don't kill app
+                if (!window.batteryOptPrompted) {
+                    window.batteryOptPrompted = true;
+                    plugins.DriverBackgroundPlugin.requestIgnoreBatteryOptimizations().catch(() => {});
+                }
+
+                // Request "Display over other apps" (Floating Bubble) permission once
+                if (!window.overlayPermPrompted) {
+                    window.overlayPermPrompted = true;
+                    plugins.DriverBackgroundPlugin.checkOverlayPermission().then(res => {
+                        if (!res.granted) {
+                            plugins.DriverBackgroundPlugin.requestOverlayPermission().catch(() => {});
+                        }
+                    }).catch(() => {});
+                }
+
+                // Listen for native GPS updates (active even when minimized or screen locked)
+                if (!window.driverNativeGpsSubscribed) {
+                    window.driverNativeGpsSubscribed = true;
+                    plugins.DriverBackgroundPlugin.addListener('locationUpdate', (loc) => {
+                        if (loc && typeof loc.latitude === 'number' && typeof loc.longitude === 'number') {
+                            processDriverLocationUpdate(loc.latitude, loc.longitude, loc.accuracy || 10, loc.speed || 0, loc.timestamp || Date.now());
+                        }
+                    });
+                }
+
+                // Listen for 1-Tap Instant Accept from Ola/Uber Floating Heads-up Overlay
+                if (!window.driverFloatingAcceptSubscribed) {
+                    window.driverFloatingAcceptSubscribed = true;
+                    plugins.DriverBackgroundPlugin.addListener('floatingAcceptBooking', (data) => {
+                        console.log('⚡ Received 1-Tap Instant Accept from Floating Overlay:', data);
+                        if (data && data.bookingId) {
+                            acceptBookingPing(Number(data.bookingId));
+                        }
+                    });
+                }
+            }
+        } catch(e) {
+            console.warn('DriverBackgroundPlugin startup warning:', e);
+        }
+    }
 }
-} catch(e) {
-console.warn('Capacitor native permission error:', e);
+
+async function enableFloatingWidgetPrompt() {
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.DriverBackgroundPlugin) {
+        try {
+            const res = await window.Capacitor.Plugins.DriverBackgroundPlugin.checkOverlayPermission();
+            if (res && res.granted) {
+                Swal.fire({
+                    title: 'Floating Widget Active',
+                    text: 'Floating bubble is already enabled! When you minimize the app while online, the floating ride widget will appear over Google Maps.',
+                    icon: 'success',
+                    ...swalDarkOpts
+                });
+            } else {
+                Swal.fire({
+                    title: 'Allow Floating Widget',
+                    text: 'To receive floating ride pings over Google Maps (Ola/Uber style), please enable "Display over other apps" permission.',
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Open Settings',
+                    ...swalDarkOpts
+                }).then(result => {
+                    if (result && result.isConfirmed) {
+                        window.Capacitor.Plugins.DriverBackgroundPlugin.requestOverlayPermission().catch(() => {});
+                    }
+                });
+            }
+        } catch(e) {
+            console.error('Error checking overlay permission:', e);
+        }
+    } else {
+        Swal.fire('Floating Widget Ready', 'Floating widget activates automatically inside the Android APK when minimized.', 'info');
+    }
+
+    if ('wakeLock' in navigator) {
+        try {
+            if (!window.driverWakeLock) {
+                window.driverWakeLock = await navigator.wakeLock.request('screen');
+                console.log('WakeLock activated. Screen will stay on to ensure continuous GPS lock.');
+            }
+        } catch (err) {
+            console.warn('WakeLock failed:', err);
+        }
+    }
+
+    if (!navigator.geolocation) {
+        updateGpsUI('disabled');
+        return;
+    }
+
+    updateGpsUI('searching');
+
+    if (window.gpsWatchdogInterval) clearInterval(window.gpsWatchdogInterval);
+    window.gpsWatchdogInterval = setInterval(() => {
+        if (window.lastGpsCoords && (Date.now() - window.lastGpsCoords.time > 15000)) {
+            console.warn('GPS Watchdog: Signal stalled, manually forcing location refresh...');
+            navigator.geolocation.getCurrentPosition((pos) => {
+                processDriverLocationUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, pos.coords.speed, Date.now());
+            }, () => {
+                console.warn('Watchdog high accuracy failed, falling back to low accuracy...');
+                navigator.geolocation.getCurrentPosition((pos2) => {
+                    processDriverLocationUpdate(pos2.coords.latitude, pos2.coords.longitude, pos2.coords.accuracy, pos2.coords.speed, Date.now());
+                }, () => {
+                    updateGpsUI('searching');
+                }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
+            }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
+        }
+    }, 10000);
+
+    if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = navigator.geolocation.watchPosition((pos) => {
+        processDriverLocationUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, pos.coords.speed, Date.now());
+    }, (err) => {
+        console.warn('GPS Fail:', err.message);
+        if (err.message.includes('Only secure origins are allowed') || err.message.includes('secure origin') || err.code === 1) {
+            updateGpsUI('insecure');
+        } else {
+            updateGpsUI('searching');
+        }
+    }, {
+        enableHighAccuracy: true,
+        timeout: 30000,
+        maximumAge: 5000
+    });
 }
+
+function processDriverLocationUpdate(lat, lng, acc, speedMps, timeStamp) {
+    updateGpsUI('locked', acc);
+    updateDriverLocationOnMap(lat, lng);
+
+    let speedKmh = 0;
+    if (speedMps !== null && !isNaN(speedMps) && speedMps >= 0) {
+        speedKmh = Math.round(speedMps * 3.6);
+    } else if (window.lastGpsCoords) {
+        const timeDiffSec = (Date.now() - window.lastGpsCoords.time) / 1000;
+        if (timeDiffSec > 0.5) {
+            const distKm = getDistance(window.lastGpsCoords.lat, window.lastGpsCoords.lng, lat, lng);
+            speedKmh = Math.round(distKm / (timeDiffSec / 3600));
+            if (speedKmh > 160) speedKmh = 0;
+        }
+    }
+
+    window.lastGpsCoords = { lat, lng, time: timeStamp || Date.now() };
+    const floatSpeedVal = document.getElementById('float-speed-val');
+    if (floatSpeedVal) floatSpeedVal.textContent = speedKmh;
+
+    if (!window.clientKalmanFilter) {
+        window.clientKalmanFilter = new LatLngKalmanFilter(4.0);
+    }
+    const smoothed = window.clientKalmanFilter.process(lat, lng, acc, Date.now());
+
+    if (window.lastOdoCalcTime) {
+        const dtSeconds = Math.max(0.1, (Date.now() - window.lastOdoCalcTime) / 1000.0);
+        let incrementalDistanceKm = 0;
+        if (speedMps !== null && !isNaN(speedMps) && speedMps >= 0) {
+            if (speedMps >= 0.2) {
+                incrementalDistanceKm = (speedMps * dtSeconds) / 1000.0;
+            }
+        } else if (window.lastSmoothedCoords) {
+            const segmentDist = getDistance(window.lastSmoothedCoords.lat, window.lastSmoothedCoords.lng, smoothed.lat, smoothed.lng);
+            const calculatedSpeedMPS = (segmentDist * 1000.0) / dtSeconds;
+            if (acc <= 200 && calculatedSpeedMPS <= 45.0 && segmentDist >= 0.001 && calculatedSpeedMPS >= 0.05) {
+                incrementalDistanceKm = segmentDist;
+            }
+        }
+        if (incrementalDistanceKm > 0 && incrementalDistanceKm < 5.0) {
+            window.localDistanceCovered = (window.localDistanceCovered || 0) + incrementalDistanceKm;
+        }
+    }
+
+    window.lastSmoothedCoords = { lat: smoothed.lat, lng: smoothed.lng };
+    window.lastOdoCalcTime = Date.now();
+
+    if (activeRideObj && activeRideObj.status === 'ongoing') {
+        const offlineKey = `offline_gps_${acceptedOpportunityId}`;
+        const offlineLogs = JSON.parse(localStorage.getItem(offlineKey)) || [];
+        const lastLog = offlineLogs.length > 0 ? offlineLogs[offlineLogs.length - 1] : null;
+        if (!lastLog || (Date.now() - lastLog.time >= 1000)) {
+            offlineLogs.push({ latitude: lat, longitude: lng, accuracy: acc, speed: speedKmh || 0, time: Date.now() });
+            localStorage.setItem(offlineKey, JSON.stringify(offlineLogs));
+        }
+    }
+
+    const now = Date.now();
+    if (acceptedOpportunityId && (now - lastGpsSendTime >= 1500)) {
+        lastGpsSendTime = now;
+        sendGpsTrackingUpdate(acceptedOpportunityId, lat, lng, acc, speedKmh);
+    }
 }
-if ('wakeLock' in navigator) {
-try {
-if (!window.driverWakeLock) {
-window.driverWakeLock = await navigator.wakeLock.request('screen');
-console.log('WakeLock activated. Screen will stay on to ensure continuous GPS lock.');
-}
-} catch (err) {
-console.warn('WakeLock failed:', err);
-}
-}
-if (!navigator.geolocation) {
-updateGpsUI('disabled');
-return;
-}
-updateGpsUI('searching');
-if (window.gpsWatchdogInterval) clearInterval(window.gpsWatchdogInterval);
-window.gpsWatchdogInterval = setInterval(() => {
-if (window.lastGpsCoords && (Date.now() - window.lastGpsCoords.time > 15000)) {
-console.warn('GPS Watchdog: Signal stalled, manually forcing location refresh...');
-navigator.geolocation.getCurrentPosition((pos) => {
-    window.lastGpsCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude, time: Date.now() };
-    updateGpsUI('locked', pos.coords.accuracy);
-    updateDriverLocationOnMap(pos.coords.latitude, pos.coords.longitude);
-}, () => {
-    console.warn('Watchdog high accuracy failed, falling back to low accuracy...');
-    navigator.geolocation.getCurrentPosition((pos2) => {
-        window.lastGpsCoords = { lat: pos2.coords.latitude, lng: pos2.coords.longitude, time: Date.now() };
-        updateGpsUI('locked', pos2.coords.accuracy);
-        updateDriverLocationOnMap(pos2.coords.latitude, pos2.coords.longitude);
-    }, () => {
-        updateGpsUI('searching');
-    }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
-}, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
-}
-}, 10000);
-if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
-gpsWatchId = navigator.geolocation.watchPosition((pos) => {
-const lat = pos.coords.latitude;
-const lng = pos.coords.longitude;
-const acc = pos.coords.accuracy;
-updateGpsUI('locked', acc);
-updateDriverLocationOnMap(lat, lng);
-let speedKmh = 0;
-if (pos.coords.speed !== null && !isNaN(pos.coords.speed) && pos.coords.speed >= 0) {
-speedKmh = Math.round(pos.coords.speed * 3.6);
-} else if (window.lastGpsCoords) {
-const timeDiffSec = (Date.now() - window.lastGpsCoords.time) / 1000;
-if (timeDiffSec > 0.5) {
-const distKm = getDistance(window.lastGpsCoords.lat, window.lastGpsCoords.lng, lat, lng);
-speedKmh = Math.round(distKm / (timeDiffSec / 3600));
-if (speedKmh > 160) speedKmh = 0;
-}
-}
-window.lastGpsCoords = { lat, lng, time: Date.now() };
-const floatSpeedVal = document.getElementById('float-speed-val');
-if (floatSpeedVal) floatSpeedVal.textContent = speedKmh;
-if (!window.clientKalmanFilter) {
-window.clientKalmanFilter = new LatLngKalmanFilter(4.0);
-}
-const smoothed = window.clientKalmanFilter.process(lat, lng, acc, Date.now());
-if (window.lastOdoCalcTime) {
-const dtSeconds = Math.max(0.1, (Date.now() - window.lastOdoCalcTime) / 1000.0);
-let incrementalDistanceKm = 0;
-if (pos.coords.speed !== null && !isNaN(pos.coords.speed) && pos.coords.speed >= 0) {
-if (pos.coords.speed >= 0.2) {
-incrementalDistanceKm = (pos.coords.speed * dtSeconds) / 1000.0;
-}
-}
-else if (window.lastSmoothedCoords) {
-const segmentDist = getDistance(window.lastSmoothedCoords.lat, window.lastSmoothedCoords.lng, smoothed.lat, smoothed.lng);
-const calculatedSpeedMPS = (segmentDist * 1000.0) / dtSeconds;
-if (acc <= 200 && calculatedSpeedMPS <= 45.0 && segmentDist >= 0.001 && calculatedSpeedMPS >= 0.05) {
-incrementalDistanceKm = segmentDist;
-}
-}
-if (incrementalDistanceKm > 0 && incrementalDistanceKm < 5.0) {
-window.localDistanceCovered = (window.localDistanceCovered || 0) + incrementalDistanceKm;
-}
-}
-window.lastSmoothedCoords = { lat: smoothed.lat, lng: smoothed.lng };
-window.lastOdoCalcTime = Date.now();
-if (activeRideObj && activeRideObj.status === 'ongoing') {
-const offlineKey = `offline_gps_${acceptedOpportunityId}`;
-const offlineLogs = JSON.parse(localStorage.getItem(offlineKey)) || [];
-const lastLog = offlineLogs.length > 0 ? offlineLogs[offlineLogs.length - 1] : null;
-if (!lastLog || (Date.now() - lastLog.time >= 1000)) {
-offlineLogs.push({ latitude: lat, longitude: lng, accuracy: acc, speed: speedKmh || 0, time: Date.now() });
-localStorage.setItem(offlineKey, JSON.stringify(offlineLogs));
-}
-}
-const now = Date.now();
-if (acceptedOpportunityId && (now - lastGpsSendTime >= 1500)) {
-lastGpsSendTime = now;
-sendGpsTrackingUpdate(acceptedOpportunityId, lat, lng, acc, speedKmh);
-}
-}, (err) => {
-console.warn('GPS Fail:', err.message);
-if (err.message.includes('Only secure origins are allowed') || err.message.includes('secure origin') || err.code === 1) {
-updateGpsUI('insecure');
-} else {
-updateGpsUI('searching');
-}
-}, {
-enableHighAccuracy: true,
-timeout: 30000,
-maximumAge: 5000
-});
-}
+
 function stopGpsTracking() {
-if (gpsWatchId) {
-navigator.geolocation.clearWatch(gpsWatchId);
-gpsWatchId = null;
-}
-if (wakeLock !== null) {
-wakeLock.release().catch(()=>{});
-wakeLock = null;
-}
+    if (gpsWatchId) {
+        navigator.geolocation.clearWatch(gpsWatchId);
+        gpsWatchId = null;
+    }
+    if (window.gpsWatchdogInterval) {
+        clearInterval(window.gpsWatchdogInterval);
+        window.gpsWatchdogInterval = null;
+    }
+    if (wakeLock !== null) {
+        wakeLock.release().catch(()=>{});
+        wakeLock = null;
+    }
+
+    // Stop Native Driver Background Foreground Service
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.DriverBackgroundPlugin) {
+        try {
+            window.Capacitor.Plugins.DriverBackgroundPlugin.stopDuty().catch(() => {});
+        } catch(e) {}
+    }
 }
 function updateGpsUI(status, accuracy = null) {
 const dot = document.getElementById('gps-status-dot');
@@ -1472,7 +1701,7 @@ html += activeJobs.map(job => {
 <div class="opp-card">
 <div class="opp-card-row">
 <div class="opp-badge-row">
-<span class="opp-badge vehicle">${job.vehicle_type}</span>
+<span class="opp-badge vehicle">${job.vehicle_type} • 💺 ${job.passengers || 1} Seats</span>
 <span class="opp-badge type">${job.trip_type}</span>
 ${job.vendor_id ? '<span class="opp-badge vendor">Vendor</span>' : ''}
 </div>
@@ -1609,8 +1838,38 @@ if (pingExtraStopsContainer) {
 }
 
 document.getElementById('ping-passenger-name').textContent = job.customer_name || 'Passenger';
+const reqSeats = job.passengers || job.seatingCapacity || 1;
+const capEl = document.getElementById('ping-seating-capacity');
+if (capEl) capEl.innerHTML = `💺 Seats Required: ${reqSeats} Passenger${reqSeats > 1 ? 's' : ''}`;
 document.getElementById('ping-accept-btn').onclick = () => acceptBookingPing(job.id);
 document.getElementById('incoming-ping-screen').classList.remove('hidden');
+
+// Show Floating Heads-up Ride Card over Google Maps / other apps if minimized
+if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.DriverBackgroundPlugin) {
+    try {
+        let pDistStr = '1.2 km';
+        if (window.lastGpsCoords && job.pickup_coords) {
+            const [pLat, pLng] = job.pickup_coords.split(',').map(Number);
+            if (!isNaN(pLat) && !isNaN(pLng)) {
+                const d = getDistance(window.lastGpsCoords.lat, window.lastGpsCoords.lng, pLat, pLng);
+                pDistStr = `${d.toFixed(1)} km`;
+            }
+        }
+        const tripDistVal = job.distance ? `${job.distance} km` : (job.estimated_distance ? `${job.estimated_distance}` : '8.5 km');
+        const tripDurVal = job.duration ? ` (${job.duration})` : '';
+
+        window.Capacitor.Plugins.DriverBackgroundPlugin.showFloatingRidePing({
+            bookingId: String(job.id),
+            pickup: job.pickup_loc || job.pickup || 'Pickup Location',
+            drop: job.drop_loc || job.drop || 'Drop Location',
+            fare: job.fare ? `₹${job.fare}` : (job.estimated_price ? `₹${job.estimated_price}` : '₹150'),
+            pickupDist: pDistStr,
+            tripDist: `${tripDistVal}${tripDurVal}`,
+            vehicleType: (job.vehicle_type || 'CAR').toUpperCase()
+        }).catch(() => {});
+    } catch(e) {}
+}
+
 startAlertSound();
 pingCountdownVal = 15;
 const progressCircle = document.getElementById('ping-timer-progress');
@@ -1637,6 +1896,14 @@ window.passedRideIds.push(activePingId);
 }
 document.getElementById('incoming-ping-screen').classList.add('hidden');
 stopAlertSound();
+
+// Hide Floating Heads-up Ride Card
+if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.DriverBackgroundPlugin) {
+    try {
+        window.Capacitor.Plugins.DriverBackgroundPlugin.hideFloatingRidePing().catch(() => {});
+    } catch(e) {}
+}
+
 if (pingTimerInterval) {
 clearInterval(pingTimerInterval);
 pingTimerInterval = null;
@@ -1646,12 +1913,13 @@ activePingId = null;
 async function acceptBookingPing(rideId) {
 declinePing();
 const bookingObj = allOpportunities.find(j => j.id === rideId);
-const bookingFareVal = bookingObj ? parseFloat(bookingObj.fare.replace(/[^0-9.]/g, '')) || 0 : 0;
-const requiredBalance = bookingFareVal * 0.10;
-if (parseFloat(driverData.wallet_balance) < requiredBalance) {
+const isVendorRide = bookingObj && (bookingObj.vendor_id || bookingObj.vendor_profit > 0);
+const vendorMarkup = bookingObj ? (parseFloat(bookingObj.vendor_profit) || 0) : 0;
+const requiredBalance = 10 + (isVendorRide ? vendorMarkup : 0);
+if (parseFloat(driverData.wallet_balance || 0) < requiredBalance) {
 Swal.fire({
 title: 'Wallet Balance Low',
-html: `Accepting this ride requires at least 10% commission balance (₹${requiredBalance.toFixed(2)}). Please add money to your wallet.`,
+html: `Accepting this ride requires at least ₹${requiredBalance.toFixed(2)} wallet balance (₹10 ride accept fee + ₹5 completion fee). Please add money to your wallet.`,
 icon: 'error',
 ...swalDarkOpts
 });
@@ -1671,17 +1939,25 @@ body: JSON.stringify({
     lng: window.lastGpsCoords ? window.lastGpsCoords.lng : null 
 })
 });
-if (res.ok) {
-Swal.fire({
-title: 'Mission Captured!',
-text: 'Navigate to pickup location immediately.',
-icon: 'success',
-timer: 2000,
-showConfirmButton: false,
-...swalDarkOpts
-});
-pollOpportunityJobs();
-} else {
+            if (res.ok) {
+                // Immediately deduct ₹10 from local driver wallet state & update UI
+                if (typeof driverData !== 'undefined' && driverData && driverData.wallet_balance !== undefined) {
+                    driverData.wallet_balance = Math.max(0, (parseFloat(driverData.wallet_balance || 0) - 10)).toFixed(2);
+                    localStorage.setItem('cityride_pilot', JSON.stringify(driverData));
+                    const walletBalEl = document.getElementById('wallet-balance-val');
+                    if (walletBalEl) walletBalEl.textContent = '₹' + driverData.wallet_balance;
+                }
+
+                Swal.fire({
+                    title: 'Ride Accepted! (-₹10 Fee)',
+                    text: '₹10 ride accept fee has been deducted from your wallet. Proceed to pickup location.',
+                    icon: 'success',
+                    timer: 2200,
+                    showConfirmButton: false,
+                    ...swalDarkOpts
+                });
+                pollOpportunityJobs();
+            } else {
 const err = await res.json();
 Swal.fire('Accept Failed', err.error || 'Failed', 'error');
 }
@@ -1715,18 +1991,30 @@ return d.features[0]?.geometry.coordinates;
 const pCoords = await getCoords(pickupLoc, pCoordsStr);
 const dCoords = await getCoords(dropLoc, dCoordsStr);
 if (pCoords && dCoords) {
-const pinPickup = L.divIcon({
-className: 'map-pin-div',
-html: `<div style="background:var(--accent-brand); width:14px; height:14px; border-radius:50%; border:2.5px solid #000; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>`,
-iconSize: [14, 14]
-});
-const pinDrop = L.divIcon({
-className: 'map-pin-div',
-html: `<div style="background:var(--danger-red); width:14px; height:14px; border-radius:50%; border:2.5px solid #000; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>`,
-iconSize: [14, 14]
-});
-activePickupMarker = L.marker([pCoords[1], pCoords[0]], { icon: pinPickup }).addTo(driverMap).bindPopup('<b>Pickup Point</b>');
-activeDropMarker = L.marker([dCoords[1], dCoords[0]], { icon: pinDrop }).addTo(driverMap).bindPopup('<b>Destination Drop</b>');
+            const pinPickup = L.divIcon({
+                className: 'map-pin-div',
+                html: `<div style="display:flex; flex-direction:column; align-items:center; transform: translate(-50%, -100%);">
+                           <div style="background:var(--success-green, #34c759); color:#fff; font-size:10px; font-weight:900; padding:3px 8px; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.4); margin-bottom:4px; text-transform:uppercase; white-space:nowrap; border:2px solid #fff;">Pickup</div>
+                           <svg width="28" height="36" viewBox="0 0 24 36" fill="none" style="filter:drop-shadow(0 4px 6px rgba(0,0,0,0.4));">
+                               <path d="M12 0C5.373 0 0 5.373 0 12c0 8.4 12 24 12 24s12-15.6 12-24c0-6.627-5.373-12-12-12zm0 17c-2.761 0-5-2.239-5-5s2.239-5 5-5 5 2.239 5 5-2.239 5-5 5z" fill="var(--success-green, #34c759)"/>
+                               <circle cx="12" cy="12" r="4" fill="#fff"/>
+                           </svg>
+                       </div>`,
+                iconSize: [0, 0]
+            });
+            const pinDrop = L.divIcon({
+                className: 'map-pin-div',
+                html: `<div style="display:flex; flex-direction:column; align-items:center; transform: translate(-50%, -100%);">
+                           <div style="background:var(--danger-red, #ff3b30); color:#fff; font-size:10px; font-weight:900; padding:3px 8px; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.4); margin-bottom:4px; text-transform:uppercase; white-space:nowrap; border:2px solid #fff;">Drop</div>
+                           <svg width="28" height="36" viewBox="0 0 24 36" fill="none" style="filter:drop-shadow(0 4px 6px rgba(0,0,0,0.4));">
+                               <path d="M12 0C5.373 0 0 5.373 0 12c0 8.4 12 24 12 24s12-15.6 12-24c0-6.627-5.373-12-12-12z" fill="var(--danger-red, #ff3b30)"/>
+                               <circle cx="12" cy="12" r="4" fill="#fff"/>
+                           </svg>
+                       </div>`,
+                iconSize: [0, 0]
+            });
+            activePickupMarker = L.marker([pCoords[1], pCoords[0]], { icon: pinPickup }).addTo(driverMap).bindPopup('<b>Pickup Point</b><br>' + pickupLoc);
+            activeDropMarker = L.marker([dCoords[1], dCoords[0]], { icon: pinDrop }).addTo(driverMap).bindPopup('<b>Destination Drop</b><br>' + dropLoc);
 
 // Parse extra drops
 const stops = extraDrops ? (typeof extraDrops === 'string' ? JSON.parse(extraDrops) : extraDrops) : [];
@@ -1888,15 +2176,15 @@ function startPreRideWaitingTimer(ride) {
             const rS = remainingSecs % 60;
             if (elapsedDisplay) {
                 elapsedDisplay.textContent = `00:${String(rM).padStart(2,'0')}:${String(rS).padStart(2,'0')}`;
-                elapsedDisplay.style.color = 'var(--warning-amber)';
+                elapsedDisplay.style.color = 'var(--success-green)';
             }
             if (badge) {
                 badge.textContent = 'GRACE PERIOD';
-                badge.style.background = 'rgba(255, 159, 10, 0.15)';
-                badge.style.color = 'var(--warning-amber)';
+                badge.style.background = 'rgba(0, 107, 58, 0.12)';
+                badge.style.color = 'var(--success-green)';
             }
             if (bar) {
-                bar.style.background = 'var(--warning-amber)';
+                bar.style.background = 'var(--success-green)';
                 const pct = Math.min(100, (elapsedSecs / allowedSecs) * 100);
                 bar.style.width = `${pct}%`;
             }
@@ -1918,7 +2206,7 @@ function startPreRideWaitingTimer(ride) {
             }
             if (badge) {
                 badge.textContent = 'WAITING CHARGES';
-                badge.style.background = 'rgba(255, 59, 48, 0.1)';
+                badge.style.background = 'rgba(220, 38, 38, 0.12)';
                 badge.style.color = 'var(--danger-red)';
             }
             if (bar) {
@@ -2069,6 +2357,9 @@ document.getElementById('call-passenger-btn').href = `tel:${ride.customer_phone 
 window._activePassengerName  = ride.customer_name  || 'Passenger';
 window._activePassengerPhone = ride.customer_phone || '';
 window._activeBookingId      = ride.id;
+if (window._driverSocket && ride.id) {
+    window._driverSocket.emit('track_booking', ride.id);
+}
 const badge = document.getElementById('active-ride-badge');
 const btnsArea = document.getElementById('active-op-btns');
 if (ride.drop_coords && window.lastDrawnRideId !== ride.id) {
@@ -2089,11 +2380,7 @@ btnsArea.innerHTML = `
 badge.textContent = 'Arrived at Pickup';
 badge.style.background = 'rgba(52, 199, 89, 0.1)';
 badge.style.color = 'var(--success-green)';
-if (ride.trip_type === 'local') {
 startPreRideWaitingTimer(ride);
-} else {
-stopWaitingTimer();
-}
 btnsArea.innerHTML = `
 <button class="btn btn-primary" onclick="initiateStartJourney(${ride.id}, '${ride.trip_type}')">Start Journey</button>
 <button class="btn btn-secondary" style="color:var(--danger-red); border-color:rgba(255,59,48,0.2);" onclick="abortAssignedMission(${ride.id})">Cancel Assignment</button>
@@ -2195,6 +2482,13 @@ function odoConfirm() {
 function _closeOdoModal() {
     const overlay = document.getElementById('odo-modal-overlay');
     if (overlay) overlay.classList.remove('open');
+}
+
+function cancelOdoModal() {
+    _closeOdoModal();
+    if (typeof _odoResolve === 'function') {
+        _odoResolve(null);
+    }
 }
 
 /**
@@ -2341,6 +2635,13 @@ showConfirmButton: true,
 confirmButtonText: 'OK',
 ...swalDarkOpts
 });
+
+if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.DriverBackgroundPlugin) {
+    try {
+        window.Capacitor.Plugins.DriverBackgroundPlugin.setActiveTrip({ bookingId: String(rideId), status: 'ongoing' }).catch(() => {});
+    } catch(e) {}
+}
+
 stopPreRideWaitingTimer();
 pollOpportunityJobs();
 } else {
@@ -2553,29 +2854,29 @@ if (res.ok) {
                 `;
             }
 
+            const fareNum = parseFloat(String(data.finalFare).replace(/[^0-9.]/g,'')) || 0;
+            const vendorProf = parseFloat(data.vendorProfit || 0);
+            const netEarningsVal = fareNum - vendorProf;
+
             const mainHtml = `
             <div style="text-align:left; font-size:0.85rem; display:flex; flex-direction:column; gap:8px;">
-                <div style="background:var(--primary-red); margin:-1rem -1rem 1rem -1rem; padding:1.2rem; text-align:center; border-radius:0 0 16px 16px;">
-                    <div style="font-size:0.75rem; text-transform:uppercase; font-weight:800; letter-spacing:1px; color:rgba(255,255,255,0.7); margin-bottom:4px;">Invoice Total</div>
-                    <div style="font-size:2.2rem; font-weight:900; color:#fff; line-height:1; text-shadow:0 2px 6px rgba(0,0,0,0.3);">${data.finalFare}</div>
-                    <div style="margin-top:6px; font-size:0.7rem; color:rgba(255,255,255,0.8); font-weight:600;">Booking ID: #B${rideId}</div>
+                <div style="background:linear-gradient(135deg, #006B3A 0%, #004D25 100%); margin:-1.25rem -1.25rem 1.2rem -1.25rem; padding:1.4rem 1rem; text-align:center; border-radius:16px 16px 20px 20px; box-shadow: 0 4px 15px rgba(0,107,58,0.25);">
+                    <div style="font-size:0.75rem; text-transform:uppercase; font-weight:800; letter-spacing:1.5px; color:rgba(255,255,255,0.9); margin-bottom:4px;">INVOICE TOTAL</div>
+                    <div style="font-size:2.6rem; font-weight:900; color:#ffffff; line-height:1; text-shadow:0 2px 8px rgba(0,0,0,0.3);">₹${fareNum.toFixed(2)}</div>
+                    <div style="margin-top:8px; font-size:0.75rem; color:rgba(255,255,255,0.95); font-weight:700;">Booking ID: #B${rideId}</div>
                 </div>
                 <div style="padding:4px 0;">
-                    <div style="font-weight:800; font-size:0.75rem; color:var(--text-gray); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">Fare Breakdown</div>
+                    <div style="font-weight:800; font-size:0.75rem; color:var(--text-gray); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid var(--border-color); padding-bottom:4px;">Fare Breakdown</div>
                     ${breakdownHtml}
                 </div>
-                    <div style="display:flex; justify-content:space-between; color:var(--danger-red);">
-                        <span>Platform Fee (Deducted):</span>
-                        <span>-₹5.00</span>
-                    </div>
-                    ${data.vendorProfit > 0 ? `
-                    <div style="display:flex; justify-content:space-between; color:var(--danger-red);">
+                    ${vendorProf > 0 ? `
+                    <div style="display:flex; justify-content:space-between; color:var(--danger-red); font-weight:600;">
                         <span>Partner Markup (Deducted):</span>
-                        <span>-₹${parseFloat(data.vendorProfit).toFixed(2)}</span>
+                        <span>-₹${vendorProf.toFixed(2)}</span>
                     </div>` : ''}
-                    <div style="display:flex; justify-content:space-between; font-weight:800; font-size:0.95rem; background:rgba(52,199,89,0.06); padding:6px; border-radius:6px; border:1px solid rgba(52,199,89,0.12); margin-top:4px;">
+                    <div style="display:flex; justify-content:space-between; font-weight:800; font-size:1.0rem; background:rgba(0,107,58,0.06); padding:10px 12px; border-radius:12px; border:1px solid var(--border-color); margin-top:6px;">
                         <span style="color:var(--text-white);">Your Net Earnings:</span>
-                        <span style="color:var(--success-green);">₹${(parseFloat(data.finalFare.replace(/[^0-9.]/g,'')) - parseFloat(data.vendorProfit || 0) - 5).toFixed(2)}</span>
+                        <span style="color:var(--success-green);">₹${netEarningsVal.toFixed(2)}</span>
                     </div>
             </div>
             `;
@@ -2587,36 +2888,36 @@ if (res.ok) {
                 confirmButtonText: 'Acknowledge',
                 ...swalDarkOpts
             });
-if (data.vendorProfit > 0) {
-const totalFareVal = parseFloat(data.finalFare.replace(/[^0-9.]/g, '')) || 0;
-const originalFare = totalFareVal;
-const vendorProfit = parseFloat(data.vendorProfit) || 0;
-const netEarnings = originalFare - vendorProfit - 5;
-await Swal.fire({
-title: 'Vendor Booking Notice',
-html: `
-<div style="text-align: left; font-size: 0.9rem; line-height: 1.6;">
-<div style="background: rgba(10, 132, 255, 0.1); border: 1px solid var(--info-blue); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; color: var(--info-blue); text-align: center;">
-💼 Vendor Dispatch Ride Summary
-</div>
-<div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px; margin-bottom: 8px;">
-<span>Original Ride Fare:</span>
-<span style="font-weight: 700; color: var(--text-white);">₹${originalFare.toFixed(2)}</span>
-</div>
-<div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px; margin-bottom: 8px; color: var(--danger-red);">
-<span>Vendor Profit Share:</span>
-<span style="font-weight: 700;">₹${vendorProfit.toFixed(2)}</span>
-</div>
-<div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px; margin-bottom: 15px;">
-<span>Your Net Earnings:</span>
-<span style="color: var(--success-green);">₹${netEarnings.toFixed(2)}</span>
-</div>
-<div style="background: rgba(220, 20, 60, 0.12); border: 1px solid var(--primary-red); padding: 12px; border-radius: 8px; color: #ff6b6b; font-size: 0.82rem; font-weight: bold; text-align: center;">
-⚠️ Wallet Deduction: The vendor profit amount of ₹${vendorProfit.toFixed(2)} has been successfully deducted from your wallet balance.
-</div>
-</div>
-`,
-icon: 'info',
+
+            if (data.vendorProfit > 0) {
+                const totalFareVal = parseFloat(String(data.finalFare).replace(/[^0-9.]/g, '')) || 0;
+                const vendorProfit = parseFloat(data.vendorProfit) || 0;
+                const netEarnings = totalFareVal - vendorProfit;
+                await Swal.fire({
+                    title: 'Vendor Booking Notice',
+                    html: `
+                    <div style="text-align: left; font-size: 0.9rem; line-height: 1.6;">
+                    <div style="background: rgba(0, 107, 58, 0.08); border: 1px solid var(--border-color); padding: 12px; border-radius: 12px; margin-bottom: 15px; font-weight: bold; color: var(--accent-brand); text-align: center;">
+                    💼 Vendor Dispatch Ride Summary
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px;">
+                    <span style="color:var(--text-gray);">Original Ride Fare:</span>
+                    <span style="font-weight: 700; color: var(--text-white);">₹${totalFareVal.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px; color: var(--danger-red);">
+                    <span>Vendor Profit Share:</span>
+                    <span style="font-weight: 700;">₹${vendorProfit.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;">
+                    <span style="color:var(--text-white);">Your Net Earnings:</span>
+                    <span style="color: var(--success-green);">₹${netEarnings.toFixed(2)}</span>
+                    </div>
+                    <div style="background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.2); padding: 12px; border-radius: 12px; color: var(--danger-red); font-size: 0.82rem; font-weight: bold; text-align: center;">
+                    ⚠️ Wallet Deduction: The vendor profit amount of ₹${vendorProfit.toFixed(2)} has been successfully deducted from your wallet balance.
+                    </div>
+                    </div>
+                    `,
+                    icon: 'info',
 confirmButtonText: 'Acknowledge',
 ...swalDarkOpts
 });
@@ -2715,6 +3016,11 @@ icon: 'info',
 confirmButtonText: 'Acknowledge',
 ...swalDarkOpts
 });
+}
+if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.DriverBackgroundPlugin) {
+    try {
+        window.Capacitor.Plugins.DriverBackgroundPlugin.clearActiveTrip().catch(() => {});
+    } catch(e) {}
 }
 await syncDashboardStats();
 pollOpportunityJobs();
@@ -2899,98 +3205,107 @@ localStorage.setItem(offlineKey, JSON.stringify(offlineLogs));
 }
 // Sync statistics details
 async function syncDashboardStats() {
-try {
-// Cache tariffs periodically (non-blocking)
-cacheTariffs().catch(() => {});
-const controller = new AbortController();
-const timeoutId = setTimeout(() => controller.abort(), 8000);
-// Sync Profile details & wallet IN PARALLEL
-const [resProfile, resStats] = await Promise.all([
-fetch(`${API_BASE_URL}/api/driver/info/${driverData.id}`, { signal: controller.signal }).catch(() => null),
-fetch(`${API_BASE_URL}/api/driver/dashboard-stats/${driverData.id}`, { signal: controller.signal }).catch(() => null)
-]);
-clearTimeout(timeoutId);
-if (resProfile && resProfile.ok) {
-const dataProfile = await resProfile.json();
-if (dataProfile.success) {
-driverData.wallet_balance = dataProfile.driver.wallet_balance;
-localStorage.setItem('cityride_pilot', JSON.stringify(driverData));
-updateDriverProfileUI();
-}
-}
-if (resStats && resStats.ok) {
-const stats = await resStats.json();
-document.getElementById('earn-today').textContent = `₹${Math.round(stats.today.today_earnings).toLocaleString('en-IN')}`;
-document.getElementById('earn-week').textContent = `₹${Math.round(stats.week.week_earnings).toLocaleString('en-IN')}`;
-document.getElementById('earn-totals').textContent = `₹${Math.round(stats.totals.total_earnings).toLocaleString('en-IN')}`;
-if (stats.rating) {
-const rEl = document.getElementById('driver-perf-rating');
-if (rEl) rEl.textContent = `${stats.rating.average}★`;
-}
-// Update incentives
-const count = stats.week.week_rides;
-document.getElementById('incentive-progress-txt').textContent = `${count}/10 Rides`;
-const percent = Math.min(100, (count / 10) * 100);
-document.getElementById('incentive-progress-bar').style.width = `${percent}%`;
-// Generate dynamic ledger
-if (stats.rideHistory) {
-const ledgerTransactions = [];
-stats.rideHistory.forEach(ride => {
-if (ride.status === 'completed' || ride.status === 'finished') {
-const fareNum = parseFloat(ride.fare.replace(/[^0-9.]/g, '')) || 0;
-ledgerTransactions.push({
-desc: ride.status === 'completed' ? `Completed ride #B${ride.id}` : `Finished ride #B${ride.id}`,
-date: new Date(ride.journey_end_time || ride.created_at).toLocaleDateString(),
-amount: `+₹${fareNum.toFixed(2)}`,
-type: 'credit'
-});
-if (ride.vendor_markup && parseFloat(ride.vendor_markup) > 0) {
-const markup = parseFloat(ride.vendor_markup);
-ledgerTransactions.push({
-desc: `Partner markup deduction #B${ride.id}`,
-date: new Date(ride.journey_end_time || ride.created_at).toLocaleDateString(),
-amount: `-₹${markup.toFixed(2)}`,
-type: 'debit'
-});
-}
-} else if (ride.status === 'cancelled') {
-ledgerTransactions.push({
-desc: `Cancelled ride #B${ride.id}`,
-date: new Date(ride.created_at).toLocaleDateString(),
-amount: `₹0.00`,
-type: 'debit'
-});
-}
-});
-const mockPayouts = JSON.parse(localStorage.getItem(`payouts_${driverData.id}`)) || [];
-mockPayouts.forEach(p => {
-ledgerTransactions.unshift(p);
-});
-renderLedgerList(ledgerTransactions);
-renderHistoryList(stats.rideHistory);
-window.weeklyEarningsData = stats.rideHistory;
-}
-}
-} catch (err) {
-console.warn('Dashboard stats sync failed:', err.message);
-}
+    try {
+        if (!driverData || !driverData.id) return;
+        cacheTariffs().catch(() => {});
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        // Sync Profile details & wallet IN PARALLEL
+        const [resProfile, resStats] = await Promise.all([
+            fetch(`${API_BASE_URL}/api/driver/info/${driverData.id}`, { signal: controller.signal }).catch(() => null),
+            fetch(`${API_BASE_URL}/api/driver/dashboard-stats/${driverData.id}`, { signal: controller.signal }).catch(() => null)
+        ]);
+        clearTimeout(timeoutId);
+        if (resProfile && resProfile.ok) {
+            const dataProfile = await resProfile.json();
+            if (dataProfile.success && dataProfile.driver) {
+                driverData.wallet_balance = dataProfile.driver.wallet_balance;
+                if (dataProfile.driver.name) driverData.name = dataProfile.driver.name;
+                if (dataProfile.driver.car_model) driverData.car_model = dataProfile.driver.car_model;
+                if (dataProfile.driver.car_number) driverData.car_number = dataProfile.driver.car_number;
+                localStorage.setItem('cityride_pilot', JSON.stringify(driverData));
+                updateDriverProfileUI();
+            }
+        }
+        if (resStats && resStats.ok) {
+            const stats = await resStats.json();
+            const earnTodayEl = document.getElementById('earn-today');
+            if (earnTodayEl && stats.today) earnTodayEl.textContent = `₹${Math.round(stats.today.today_earnings || 0).toLocaleString('en-IN')}`;
+            const earnWeekEl = document.getElementById('earn-week');
+            if (earnWeekEl && stats.week) earnWeekEl.textContent = `₹${Math.round(stats.week.week_earnings || 0).toLocaleString('en-IN')}`;
+            const earnTotalsEl = document.getElementById('earn-totals');
+            if (earnTotalsEl && stats.totals) earnTotalsEl.textContent = `₹${Math.round(stats.totals.total_earnings || 0).toLocaleString('en-IN')}`;
+            if (stats.rating) {
+                const rEl = document.getElementById('driver-perf-rating');
+                if (rEl) rEl.textContent = `${stats.rating.average}★`;
+            }
+            if (stats.week) {
+                const count = stats.week.week_rides || 0;
+                const incTxt = document.getElementById('incentive-progress-txt');
+                if (incTxt) incTxt.textContent = `${count}/10 Rides`;
+                const incBar = document.getElementById('incentive-progress-bar');
+                if (incBar) incBar.style.width = `${Math.min(100, (count / 10) * 100)}%`;
+            }
+            // Generate dynamic ledger
+            if (stats.rideHistory) {
+                const ledgerTransactions = [];
+                stats.rideHistory.forEach(ride => {
+                    if (ride.status === 'completed' || ride.status === 'finished') {
+                        const fareNum = parseFloat((ride.fare || '0').replace(/[^0-9.]/g, '')) || 0;
+                        ledgerTransactions.push({
+                            desc: ride.status === 'completed' ? `Completed ride #B${ride.id}` : `Finished ride #B${ride.id}`,
+                            date: new Date(ride.journey_end_time || ride.created_at).toLocaleDateString(),
+                            amount: `+₹${fareNum.toFixed(2)}`,
+                            type: 'credit'
+                        });
+                        if (ride.vendor_markup && parseFloat(ride.vendor_markup) > 0) {
+                            const markup = parseFloat(ride.vendor_markup);
+                            ledgerTransactions.push({
+                                desc: `Partner markup deduction #B${ride.id}`,
+                                date: new Date(ride.journey_end_time || ride.created_at).toLocaleDateString(),
+                                amount: `-₹${markup.toFixed(2)}`,
+                                type: 'debit'
+                            });
+                        }
+                    } else if (ride.status === 'cancelled') {
+                        ledgerTransactions.push({
+                            desc: `Cancelled ride #B${ride.id}`,
+                            date: new Date(ride.created_at).toLocaleDateString(),
+                            amount: `₹0.00`,
+                            type: 'debit'
+                        });
+                    }
+                });
+                const mockPayouts = JSON.parse(localStorage.getItem(`payouts_${driverData.id}`)) || [];
+                mockPayouts.forEach(p => {
+                    ledgerTransactions.unshift(p);
+                });
+                renderLedgerList(ledgerTransactions);
+                renderHistoryList(stats.rideHistory);
+                window.weeklyEarningsData = stats.rideHistory;
+            }
+        }
+    } catch (err) {
+        console.warn('Dashboard stats sync failed:', err.message);
+    }
 }
 // Render standard ledger
 function renderLedgerList(transactions) {
-const list = document.getElementById('transaction-ledger-list');
-if (transactions.length === 0) {
-list.innerHTML = `<div style="text-align:center; padding:15px; color:var(--text-muted); font-size:0.8rem;">No transactions logged yet.</div>`;
-return;
-}
-list.innerHTML = transactions.slice(0, 10).map(t => `
-<div class="ledger-item">
-<div class="ledger-info">
-<span class="ledger-desc">${t.desc}</span>
-<span class="ledger-date">${t.date}</span>
-</div>
-<span class="ledger-amount ${t.type}">${t.amount}</span>
-</div>
-`).join('');
+    const list = document.getElementById('transaction-ledger-list');
+    if (!list) return;
+    if (!transactions || transactions.length === 0) {
+        list.innerHTML = `<div style="text-align:center; padding:15px; color:var(--text-muted); font-size:0.8rem;">No transactions logged yet.</div>`;
+        return;
+    }
+    list.innerHTML = transactions.slice(0, 10).map(t => `
+    <div class="ledger-item">
+    <div class="ledger-info">
+    <span class="ledger-desc">${t.desc}</span>
+    <span class="ledger-date">${t.date}</span>
+    </div>
+    <span class="ledger-amount ${t.type}">${t.amount}</span>
+    </div>
+    `).join('');
 }
 // Render detailed ride history
 function renderHistoryList(rides) {
@@ -3391,36 +3706,64 @@ confirmButtonColor: '#ff3b30',
 }
 // Notify Wallet Payment
 async function notifyWalletPayment() {
-const amountInput = document.getElementById('wallet-pay-amount');
-const amount = parseFloat(amountInput.value);
-if (!amount || amount <= 0) {
-return Swal.fire('Invalid Amount', 'Please enter a valid transfer amount.', 'error');
+    const amountInput = document.getElementById('wallet-pay-amount');
+    const amount = parseFloat(amountInput.value);
+    if (!amount || amount <= 0) {
+        return Swal.fire('Invalid Amount', 'Please enter a valid transfer amount.', 'error');
+    }
+    const btn = document.querySelector('button[onclick="notifyWalletPayment()"]');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = 'Sending...';
+    }
+    
+    let token = '';
+    try {
+        const raw = localStorage.getItem('cityride_pilot');
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            token = parsed.token || '';
+        }
+    } catch(e) {}
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/driver/wallet-payment-notify`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ amount })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            amountInput.value = '';
+            Swal.fire('Notification Sent', data.message || 'Ground Control has been notified of your payment.', 'success');
+        } else {
+            Swal.fire('Failed', data.error || 'Failed to notify Ground Control.', 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error', 'Network error. Please try again.', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ph-bold ph-paper-plane-right"></i> NOTIFY ADMIN';
+        }
+    }
 }
-const btn = document.querySelector('button[onclick="notifyWalletPayment()"]');
-btn.disabled = true;
-btn.innerHTML = 'Sending...';
-try {
-const res = await fetch(`${API_BASE_URL}/api/driver/wallet-payment-notify`, {
-method: 'POST',
-headers: {
-'Content-Type': 'application/json',
-'Authorization': `Bearer ${localStorage.getItem('cityride_pilot')}`
-},
-body: JSON.stringify({ amount })
-});
-const data = await res.json();
-if (res.ok) {
-amountInput.value = '';
-Swal.fire('Notification Sent', data.message || 'Ground Control has been notified of your payment.', 'success');
-} else {
-Swal.fire('Failed', data.error || 'Failed to notify Ground Control.', 'error');
-}
-} catch (err) {
-Swal.fire('Error', 'Network error. Please try again.', 'error');
-} finally {
-btn.disabled = false;
-btn.innerHTML = '<i class="ph-bold ph-paper-plane-right"></i> Notify Admin';
-}
+
+function driverOpenWhatsAppAdmin(e) {
+    if (e) e.preventDefault();
+    const amountInput = document.getElementById('wallet-pay-amount');
+    const amount = amountInput ? amountInput.value.trim() : '';
+    const driverName = (typeof driverData !== 'undefined' && driverData?.name) ? driverData.name : 'Driver';
+    const driverPhone = (typeof driverData !== 'undefined' && driverData?.phone) ? driverData.phone : '';
+    
+    let msg = `Hello Admin, I need assistance with my wallet recharge. Driver: ${driverName} (${driverPhone})`;
+    if (amount) {
+        msg = `Hello Admin, I have transferred ₹${amount} for my wallet recharge. Driver: ${driverName} (${driverPhone}). Please verify.`;
+    }
+    window.open(`https://wa.me/910000000000?text=${encodeURIComponent(msg)}`, '_blank');
 }
 // Logout
 function logoutUser() {
@@ -3474,6 +3817,67 @@ navigator.serviceWorker.register('/sw.js')
 
         window.location.href = url;
     }
+    </script>
+
+    <!-- Socket.IO Client -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+    // ⚡ DRIVER WEBSOCKET REALTIME CONNECTION (0 DELAY)
+    (function initDriverSocket() {
+        try {
+            const driverData = JSON.parse(localStorage.getItem('cityride_driver'));
+            if (!driverData || !driverData.id) return;
+
+            if (typeof io === 'undefined') return;
+
+            const socket = io({
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: Infinity,
+                reconnectionDelay: 1000
+            });
+
+            socket.on('connect', () => {
+                console.log('⚡ [DriverSocket] Connected:', socket.id);
+            });
+
+            socket.on('booking_assigned', (data) => {
+                console.log('⚡ [DriverSocket] Booking Assigned:', data);
+                if (typeof fetchActiveRide === 'function') fetchActiveRide();
+                if (typeof playNewBookingAudio === 'function') playNewBookingAudio();
+            });
+
+            socket.on('pickup_location_updated', (data) => {
+                console.log('⚡ [DriverSocket] Pickup Location Updated:', data);
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: '📍 Pickup Location Updated!',
+                        text: `Customer updated pickup location to: "${data.newPickupLoc}"`,
+                        confirmButtonColor: '#B71C1C'
+                    });
+                }
+                if (typeof fetchActiveRide === 'function') fetchActiveRide();
+            });
+
+            socket.on('booking_status_update', (data) => {
+                console.log('⚡ [DriverSocket] Realtime Status Update:', data);
+                if (typeof fetchActiveRide === 'function') fetchActiveRide();
+            });
+
+            socket.on('chat_message', (data) => {
+                if (data && data.senderRole !== 'driver') {
+                    if (window.DriverNotifications && window.DriverNotifications.showChatNotification) {
+                        window.DriverNotifications.showChatNotification(data, 'driver');
+                    }
+                }
+            });
+
+            window._driverSocket = socket;
+        } catch(e) {
+            console.warn('Driver socket init error:', e.message);
+        }
+    })();
     </script>
 </body>
 </html>

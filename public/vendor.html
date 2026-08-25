@@ -14,23 +14,24 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
     <style>
         :root {
-            --partner-bg: #090a0f;
-            --partner-sidebar: #0e1017;
-            --card-bg: rgba(20, 24, 33, 0.85);
-            --card-border: rgba(255, 255, 255, 0.06);
-            --text-main: #f1f3f5;
-            --text-muted: #868e96;
-            --primary-red: #dc143c;
-            --primary-red-hover: #b00f30;
-            --accent-color: #ffd700;
-            --success-green: #2ecc71;
+            --partner-bg: #F7FAF6;
+            --partner-sidebar: #FFFFFF;
+            --card-bg: #FFFFFF;
+            --card-border: rgba(0, 107, 58, 0.12);
+            --text-main: #000000;
+            --text-muted: #1C2B23;
+            --primary-red: #006B3A;
+            --primary-red-pista: #70C157;
+            --primary-red-hover: #00562e;
+            --accent-color: #70C157;
+            --success-green: #006B3A;
             --warning-amber: #ff9f0a;
             --info-blue: #0a84ff;
             --glass-blur: blur(16px);
-            --input-bg: rgba(12, 14, 21, 0.9);
-            --input-border: rgba(255, 255, 255, 0.08);
-            --input-focus: rgba(220, 20, 60, 0.4);
-            --shadow-premium: 0 12px 30px rgba(0, 0, 0, 0.3);
+            --input-bg: #FFFFFF;
+            --input-border: rgba(0, 107, 58, 0.15);
+            --input-focus: rgba(112, 193, 87, 0.4);
+            --shadow-premium: 0 12px 30px rgba(0, 107, 58, 0.08);
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -40,9 +41,16 @@
             height: 100vh; 
             overflow: hidden; 
             font-family: 'Outfit', sans-serif;
-            color: var(--text-main);
+            color: #000000 !important;
             margin: 0;
         }
+
+        .swal2-popup { background: #FFFFFF !important; color: #000000 !important; border: 1px solid rgba(0, 107, 58, 0.15) !important; border-radius: 20px !important; box-shadow: 0 20px 50px rgba(0,0,0,0.15) !important; }
+        .swal2-title { color: #000000 !important; font-weight: 800 !important; }
+        .swal2-html-container { color: #1C2B23 !important; font-weight: 600 !important; }
+        .swal2-input, .swal2-textarea, .swal2-select { background: #F7FAF6 !important; color: #000000 !important; border: 1px solid rgba(0, 107, 58, 0.25) !important; color-scheme: light !important; font-weight: 700 !important; }
+        input, select, textarea { background: #F7FAF6 !important; color: #000000 !important; border: 1px solid rgba(0, 107, 58, 0.25) !important; color-scheme: light !important; font-weight: 700 !important; }
+        label { color: #000000 !important; font-weight: 800 !important; }
 
         /* --- Sidebar Styling --- */
         .sidebar { 
@@ -242,7 +250,7 @@
             font-weight: 800;
             margin-top: 2px;
             white-space: nowrap;
-            color: #ffffff;
+            color: #000000;
         }
         .stats-overview-deck .stat-info p {
             margin: 4px 0 0 0;
@@ -658,7 +666,7 @@
 <body>
     <!-- Mobile Header -->
     <div class="mobile-header">
-        <div class="logo" style="margin:0">
+        <div class="logo" style="margin:0; cursor:pointer;" onclick="window.location.href='vendor.html'">
             <img src="logo.png" alt="CityRideTaxi" style="height: 35px; width: auto;">
         </div>
         <div class="burger-menu" id="vendor-burger">
@@ -671,7 +679,7 @@
     <!-- Sidebar Navigation -->
     <aside class="sidebar" id="vendor-sidebar">
         <div>
-            <div class="logo">
+            <div class="logo" style="cursor:pointer;" onclick="window.location.href='vendor.html'">
                 <img src="logo.png" alt="CityRide">
                 <div class="logo-text">Partner<span>Hub</span></div>
             </div>
@@ -848,12 +856,12 @@
 
                             <div class="input-group" style="grid-column: span 2;">
                                 <label>Passenger Full Name</label>
-                                <input type="text" id="passenger-name" placeholder="John Doe" required style="width: 100%;">
+                                <input type="text" id="passenger-name" placeholder="" required style="width: 100%;">
                             </div>
 
                             <div class="input-group">
                                 <label>Passenger Phone</label>
-                                <input type="tel" id="passenger-phone" placeholder="9876543210" required style="width: 100%;">
+                                <input type="tel" id="passenger-phone" placeholder="" required style="width: 100%;">
                             </div>
 
                             <div class="input-group">
@@ -1106,15 +1114,7 @@
             const originalFetch = window.fetch;
 
             function getLoginRedirect(url) {
-                if (typeof url === 'string' && url.includes('/api/')) {
-                    if (url.includes('/api/admin/')) return 'admin-login.html';
-                    if (url.includes('/api/vendor/')) return 'vendor-login.html';
-                    if (url.includes('/api/driver/') || url.includes('/api/bookings/')) {
-                        return window.location.pathname.includes('driver') ? 'driver-login.html' : 'auth.html';
-                    }
-                    return 'auth.html';
-                }
-                return null;
+                return 'vendor-login.html';
             }
 
             window.fetch = async function (...args) {
@@ -1229,36 +1229,38 @@
         // Check Auth - always validate server cookie
         let vendorData = null;
         (async () => {
+            // 1. Synchronously verify stored credentials
+            try {
+                const raw = localStorage.getItem('cityride_vendor');
+                if (raw) {
+                    vendorData = JSON.parse(raw);
+                    document.getElementById('vendor-welcome').textContent = `Welcome back, ${vendorData.business_name || 'Partner'} (${vendorData.name || 'Vendor'})`;
+                    document.getElementById('sb-business-name').textContent = vendorData.business_name || 'Vendor Partner';
+                    document.getElementById('sb-avatar').textContent = (vendorData.business_name || 'V').charAt(0).toUpperCase();
+                }
+            } catch(e) {}
+
+            // If no credentials, redirect to login page immediately
+            if (!vendorData || (!vendorData.id && !vendorData.vendor_id)) {
+                window.location.href = 'vendor-login.html';
+                return;
+            }
+
+            // 2. Background session check
             try {
                 const sessionRes = await fetch('/api/auth/session?role=vendor');
                 if (sessionRes.ok) {
                     const sd = await sessionRes.json();
-                    if (sd.valid && sd.role === 'vendor') {
+                    if (sd.valid && sd.role === 'vendor' && sd.user) {
                         vendorData = sd.user;
                         localStorage.setItem('cityride_vendor', JSON.stringify(vendorData));
-                        
-                        // Setup User welcome headers and profiles
-                        document.getElementById('vendor-welcome').textContent = `Welcome back, ${vendorData.business_name} (${vendorData.name})`;
-                        document.getElementById('sb-business-name').textContent = vendorData.business_name;
+                        document.getElementById('vendor-welcome').textContent = `Welcome back, ${vendorData.business_name || 'Partner'} (${vendorData.name || 'Vendor'})`;
+                        document.getElementById('sb-business-name').textContent = vendorData.business_name || 'Vendor Partner';
                         document.getElementById('sb-avatar').textContent = (vendorData.business_name || 'V').charAt(0).toUpperCase();
-                    } else {
-                        localStorage.removeItem('cityride_vendor');
-                        window.location.href = '/vendor-login';
                     }
-                } else {
-                    localStorage.removeItem('cityride_vendor');
-                    window.location.href = '/vendor-login';
                 }
             } catch (e) {
-                // Offline fallback
-                vendorData = JSON.parse(localStorage.getItem('cityride_vendor'));
-                if (vendorData) {
-                    document.getElementById('vendor-welcome').textContent = `Welcome back, ${vendorData.business_name} (${vendorData.name})`;
-                    document.getElementById('sb-business-name').textContent = vendorData.business_name;
-                    document.getElementById('sb-avatar').textContent = (vendorData.business_name || 'V').charAt(0).toUpperCase();
-                } else {
-                    window.location.href = '/vendor-login';
-                }
+                console.log('Vendor session active in local mode');
             }
         })();
 
@@ -2262,17 +2264,20 @@
                     const result = await res.json();
                     alert(`Mission Dispatched Successfully!\nBooking ID: #B${result.bookingId}\nTariff Profit Locked: ₹${markup}\nOTP for Ride Completion: ${result.journeyOtp}`);
                     window.location.reload();
+                } else {
+                    const errData = await res.json();
+                    alert(errData.error || 'Failed to dispatch booking.');
                 }
-            } catch (err) { alert('Dispatcher Error'); }
+            } catch (err) { alert('Dispatcher Error: ' + err.message); }
         }
 
         let _cachedBookings = [];
 
         async function loadVendorHistory() {
             try {
-                const res = await fetch(`${API_BASE_URL}/api/admin/bookings`); 
-                const bookings = await res.json();
-                const myBookings = bookings.filter(b => b.vendor_id == vendorData.id);
+                const res = await fetch(`${API_BASE_URL}/api/vendor/bookings/${vendorData.id}`); 
+                const myBookings = await res.json();
+                if (!Array.isArray(myBookings)) return;
                 _cachedBookings = myBookings;
                 
                 const body = document.getElementById('vendor-history-body');
@@ -2520,7 +2525,7 @@
                 body: JSON.stringify({ role: 'vendor' })
             }).catch(() => {});
             localStorage.removeItem('cityride_vendor');
-            window.location.href = '/vendor-login';
+            window.location.href = 'vendor-login.html';
         }
 
         // --- Vendor Tariff Utility Functions ---

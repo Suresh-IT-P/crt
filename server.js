@@ -26,7 +26,7 @@ const app = express();
 const httpServer = http.createServer(app);
 const isDev = process.env.NODE_ENV !== 'production';
 
-// --- SOCKET.IO SETUP -
+// --- SOCKET.IO SETUP ---
 const allowedSocketOrigins = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
@@ -104,17 +104,19 @@ io.on('connection', (socket) => {
         if (!clean) return;
         
         const ts = timestamp || Date.now();
-
-        // Broadcast to everyone else in the booking room
-        socket.to(`booking:${bookingId}`).emit('chat_message', {
-            bookingId,
+        const notifData = {
+            bookingId: String(bookingId),
             message: clean,
             senderName: senderName || 'Unknown',
             senderRole: senderRole || 'user',
             timestamp: ts
-        });
+        };
 
-        // Save to database and notify specific user/driver rooms
+        // Broadcast to everyone else in the booking room (excluding sender socket)
+        socket.to(`booking:${bookingId}`).emit('chat_message', notifData);
+        socket.to(`booking:${bookingId}`).emit('chat_notification', notifData);
+
+        // Save to database and notify specific user/driver rooms directly
         try {
             if (db) {
                 await db.query(
@@ -124,22 +126,16 @@ io.on('connection', (socket) => {
                 
                 // Lookup booking to notify the other party
                 const [rows] = await db.query('SELECT user_id, driver_id FROM taxi_bookings WHERE id = ?', [bookingId]);
-                if (rows.length > 0) {
+                if (rows && rows.length > 0) {
                     const booking = rows[0];
-                    const notifData = {
-                        bookingId,
-                        message: clean,
-                        senderName: senderName || 'Unknown',
-                        senderRole: senderRole || 'user',
-                        timestamp: ts
-                    };
-                    
                     if (senderRole === 'driver' && booking.user_id) {
-                        // Notify passenger
-                        emitEvent(`user:${booking.user_id}`, 'chat_notification', notifData);
+                        // Notify passenger directly
+                        io.to(`user:${booking.user_id}`).emit('chat_message', notifData);
+                        io.to(`user:${booking.user_id}`).emit('chat_notification', notifData);
                     } else if (senderRole === 'user' && booking.driver_id) {
-                        // Notify driver
-                        emitEvent(`driver:${booking.driver_id}`, 'chat_notification', notifData);
+                        // Notify driver directly
+                        io.to(`driver:${booking.driver_id}`).emit('chat_message', notifData);
+                        io.to(`driver:${booking.driver_id}`).emit('chat_notification', notifData);
                     }
                 }
             }
@@ -1242,10 +1238,12 @@ async function initDB() {
 
         // Pool Error Handling
         db.on('error', (err) => {
-            console.error('Database Pool Error:', err);
-            if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET') {
-                console.log('Re-initializing database pool...');
-                db = mysql.createPool(dbConfig);
+            console.error('Database Pool Error:', err.code || err.message);
+            if (['PROTOCOL_CONNECTION_LOST', 'ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED', 'EHOSTUNREACH'].includes(err.code)) {
+                console.log('Re-initializing database pool after network connection drop...');
+                try {
+                    db = wrapDB(mysql.createPool(dbConfig));
+                } catch (e) { console.error('Failed to re-initialize pool:', e); }
             }
         });
 
@@ -1324,6 +1322,7 @@ async function initDB() {
                 ride_local TINYINT DEFAULT 1,
                 ride_oneway TINYINT DEFAULT 1,
                 ride_round TINYINT DEFAULT 1,
+                seating_capacity INT DEFAULT 5,
 
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -1336,12 +1335,13 @@ async function initDB() {
         try { await db.query('ALTER TABLE taxi_driver_applications ADD UNIQUE (phone)'); } catch (e) { }
         try { await db.query('ALTER TABLE taxi_driver_applications ADD COLUMN payment_qr LONGTEXT'); } catch (e) { }
 
-        // Add Preferences Migrations
-        const prefCols = ['pref_loc_1 VARCHAR(100)', 'pref_loc_2 VARCHAR(100)', 'pref_loc_3 VARCHAR(100)', 'ride_local TINYINT DEFAULT 1', 'ride_oneway TINYINT DEFAULT 1', 'ride_round TINYINT DEFAULT 1'];
+        // Add Preferences & Seating Capacity Migrations
+        const prefCols = ['pref_loc_1 VARCHAR(100)', 'pref_loc_2 VARCHAR(100)', 'pref_loc_3 VARCHAR(100)', 'ride_local TINYINT DEFAULT 1', 'ride_oneway TINYINT DEFAULT 1', 'ride_round TINYINT DEFAULT 1', 'seating_capacity INT DEFAULT 5'];
         for (const col of prefCols) {
             try { await db.query(`ALTER TABLE taxi_drivers ADD COLUMN ${col}`); } catch (e) { }
             try { await db.query(`ALTER TABLE taxi_driver_applications ADD COLUMN ${col}`); } catch (e) { }
         }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN seating_capacity INT DEFAULT 4'); } catch (e) { }
 
         // Add Document Columns to Drivers if missing
         const docCols = ['dl_front', 'dl_back', 'pvc', 'aadhar_front', 'aadhar_back', 'rc_book', 'insurance', 'pollution', 'permit', 'payment_qr'];
@@ -1380,6 +1380,7 @@ async function initDB() {
                 ride_local TINYINT DEFAULT 1,
                 ride_oneway TINYINT DEFAULT 1,
                 ride_round TINYINT DEFAULT 1,
+                seating_capacity INT DEFAULT 5,
                 
                 status VARCHAR(20) DEFAULT 'pending', -- pending, approved, rejected
                 admin_note TEXT,
@@ -2161,21 +2162,9 @@ async function sendDailyReport() {
     }
 }
 
-// Schedule: 11:59 PM Daily
+// Daily report cron job at 11:59 PM
 cron.schedule('59 23 * * *', () => {
     sendDailyReport();
-});
-
-// Schedule: 6:00 AM Daily Deduct Daily Commission
-cron.schedule('0 6 * * *', async () => {
-    try {
-        if (db) {
-            await db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - 10 WHERE is_blocked = 0');
-            console.log('--- DAILY 10Rs DEDUCTION COMPLETED ---');
-        }
-    } catch (err) {
-        console.error('Failed to deduct daily 10rs:', err);
-    }
 });
 
 // --- PEAK RULES API ---
@@ -2641,7 +2630,7 @@ app.post('/api/driver/register', authRateLimiter, upload.fields([
     { name: 'permit', maxCount: 1 },
     { name: 'payment_qr', maxCount: 1 }
 ]), async (req, res) => {
-    let { name, email, password, phone, car_model, car_number, vehicle_type, pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round } = req.body;
+    let { name, email, password, phone, car_model, car_number, vehicle_type, seating_capacity, pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round } = req.body;
     try {
         name = cleanString(name);
         email = cleanString(email);
@@ -2649,6 +2638,7 @@ app.post('/api/driver/register', authRateLimiter, upload.fields([
         car_model = cleanString(car_model);
         car_number = cleanString(car_number);
         vehicle_type = cleanString(vehicle_type);
+        seating_capacity = parseInt(seating_capacity) || 5;
         pref_loc_1 = cleanString(pref_loc_1 || '');
         pref_loc_2 = cleanString(pref_loc_2 || '');
         pref_loc_3 = cleanString(pref_loc_3 || '');
@@ -2700,15 +2690,15 @@ app.post('/api/driver/register', authRateLimiter, upload.fields([
 
         const sql = `
             INSERT INTO taxi_driver_applications 
-            (name, email, password, phone, car_model, car_number, vehicle_type, 
+            (name, email, password, phone, car_model, car_number, vehicle_type, seating_capacity,
              dl_front, dl_back, pvc, aadhar_front, aadhar_back, 
              rc_book, insurance, pollution, permit, payment_qr,
              pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const values = [
-            name, email, hashedPassword, phone, car_model, car_number, vehicle_type,
+            name, email, hashedPassword, phone, car_model, car_number, vehicle_type, seating_capacity,
             dl_front, dl_back, pvc, aadhar_front, aadhar_back,
             rc_book, insurance, pollution, permit, payment_qr,
             pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round
@@ -2780,14 +2770,14 @@ app.post('/api/admin/driver-applications/decision', async (req, res) => {
             // Move to drivers table with all documents
             const sql = `
                 INSERT INTO taxi_drivers (
-                    name, email, password, phone, car_model, car_number, vehicle_type, approval_status,
+                    name, email, password, phone, car_model, car_number, vehicle_type, seating_capacity, approval_status,
                     dl_front, dl_back, pvc, aadhar_front, aadhar_back, rc_book, insurance, pollution, permit, payment_qr,
                     pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const values = [
-                app.name, app.email, app.password, app.phone, app.car_model, app.car_number, app.vehicle_type,
+                app.name, app.email, app.password, app.phone, app.car_model, app.car_number, app.vehicle_type, app.seating_capacity || 5,
                 app.dl_front, app.dl_back, app.pvc, app.aadhar_front, app.aadhar_back,
                 app.rc_book, app.insurance, app.pollution, app.permit, app.payment_qr,
                 app.pref_loc_1, app.pref_loc_2, app.pref_loc_3, app.ride_local, app.ride_oneway, app.ride_round
@@ -2824,7 +2814,7 @@ app.post('/api/admin/driver-applications/decision', async (req, res) => {
 // 4.1 Get Latest Driver Info
 app.get('/api/driver/info/:id', authenticateJWT, requireRole(['driver', 'user', 'admin']), async (req, res) => {
     try {
-        const [drivers] = await db.query('SELECT id, name, email, phone, car_model, car_number, vehicle_type, wallet_balance, payment_qr FROM taxi_drivers WHERE id = ?', [req.params.id]);
+        const [drivers] = await db.query('SELECT id, name, email, phone, car_model, car_number, vehicle_type, seating_capacity, wallet_balance, payment_qr FROM taxi_drivers WHERE id = ?', [req.params.id]);
         if (drivers.length > 0) {
             const driver = drivers[0];
             const [ratingRows] = await db.query('SELECT AVG(rating) as avg_rating, COUNT(rating) as total_ratings FROM taxi_bookings WHERE driver_id = ? AND rating IS NOT NULL', [req.params.id]);
@@ -3048,19 +3038,15 @@ function isSameDistrict(pickup, drop) {
 }
 
 // 2. Booking Management
-app.post('/api/bookings/create', authenticateJWT, requireRole(['user']), (req, res, next) => {
-    req.body.userId = req.user.id;
+app.post('/api/bookings/create', authenticateJWT, requireRole(['user', 'vendor', 'admin']), (req, res, next) => {
+    if (!req.body.userId && req.user && req.user.role === 'user') {
+        req.body.userId = req.user.id;
+    }
     next();
 }, async (req, res) => {
     try {
         const booking = req.body;
 
-        // Check if user is banned from booking
-        let [passRows] = await db.query('SELECT id, banned_until FROM passengers WHERE id = ?', [req.body.userId]);
-        if (passRows.length === 0) {
-            [passRows] = await db.query('SELECT id, banned_until FROM taxi_passengers WHERE id = ?', [req.body.userId]);
-        }
-        // Cancellation ban check removed as requested
         const journeyOtp = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit OTP
         const endOtp = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit OTP
         const fareStr = String(booking.fare || '₹0');
@@ -3071,14 +3057,14 @@ app.post('/api/bookings/create', authenticateJWT, requireRole(['user']), (req, r
              return res.status(400).json({ error: 'Bikes and Autos are only available for local rides.' });
         }
 
-
-
         const status = booking.driverId ? 'assigned' : 'pending';
         const driverId = booking.driverId || null;
+        const vendorIdToUse = booking.vendorId || (req.user && req.user.role === 'vendor' ? req.user.id : null);
+        const userIdToUse = booking.userId || (req.user && req.user.role === 'user' ? req.user.id : 1);
         const extraDropsStr = booking.extraDrops ? (typeof booking.extraDrops === 'string' ? booking.extraDrops : JSON.stringify(booking.extraDrops)) : null;
         const specialPlaceType = booking.specialPlaceType || null;
         const values = [
-            booking.userId || 1,
+            userIdToUse,
             String(booking.pickup || ''),
             booking.pickupCoords,
             String(booking.drop || ''),
@@ -3094,7 +3080,7 @@ app.post('/api/bookings/create', authenticateJWT, requireRole(['user']), (req, r
             journeyOtp,
             endOtp,
             status,
-            booking.vendorId || null,
+            vendorIdToUse,
             booking.vendorMarkup || 0,
             booking.rentalPackage || null,
             booking.returnDate || null,
@@ -3117,6 +3103,8 @@ app.post('/api/bookings/create', authenticateJWT, requireRole(['user']), (req, r
             distance: distStr,
             vehicleType: booking.vehicle,
             tripType: booking.tripType,
+            passengers: parseInt(booking.passengers) || 1,
+            seatingCapacity: parseInt(booking.passengers) || 1,
             status
         };
         emitEvent('drivers', 'new_opportunity', newBookingPayload);
@@ -3442,6 +3430,30 @@ app.post('/api/vendor/update-tariff', (req, res, next) => {
     }
 });
 
+app.get('/api/vendor/bookings/:vendorId', async (req, res) => {
+    try {
+        const vendorId = req.params.vendorId;
+        const sql = `
+            SELECT b.*, 
+                   COALESCE(b.passenger_name, u.name, tu.name) as customer_name, 
+                   COALESCE(b.passenger_phone, u.phone, tu.phone) as customer_phone, 
+                   d.name as driver_name, d.car_model, d.car_number, d.phone as driver_phone,
+                   v.business_name as vendor_business_name
+            FROM taxi_bookings b
+            LEFT JOIN passengers u ON b.user_id = u.id
+            LEFT JOIN taxi_passengers tu ON b.user_id = tu.id
+            LEFT JOIN taxi_drivers d ON b.driver_id = d.id
+            LEFT JOIN taxi_vendors v ON b.vendor_id = v.id
+            WHERE b.vendor_id = ?
+            ORDER BY b.created_at DESC
+        `;
+        const [rows] = await db.query(sql, [vendorId]);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // 2.1.1 Cancel Ride (Passenger) — with 3-cancel-per-day ban enforcement
 app.post('/api/user/cancel-ride', authenticateJWT, requireRole(['user']), (req, res, next) => {
     console.log(`CANCEL RIDE DEBUG: req.user.id=`, req.user.id, ` type=`, typeof req.user.id, ` req.body.userId=`, req.body.userId, ` type=`, typeof req.body.userId);
@@ -3580,11 +3592,11 @@ app.post('/api/bookings/accept', authenticateJWT, requireRole(['driver']), (req,
         const vendorMarkup = parseFloat(check.vendor_markup) || 0;
         const isVendorRide = check.vendor_id !== null && check.vendor_id !== undefined;
         
-        // Minimum balance required: 300 Rs (plus vendor markup if it's a vendor ride)
-        const requiredBalance = 300 + (isVendorRide ? vendorMarkup : 0);
+        // Minimum balance required: flat ₹10 accept fee (plus vendor markup if it's a vendor ride)
+        const requiredBalance = 10 + (isVendorRide ? vendorMarkup : 0);
 
         if (parseFloat(check.wallet_balance) < requiredBalance) {
-            return res.status(400).json({ error: `Insufficient funds. Minimum wallet balance required is ₹${requiredBalance.toFixed(2)}.` });
+            return res.status(400).json({ error: `Insufficient funds. Minimum wallet balance required to accept this ride is ₹${requiredBalance.toFixed(2)}.` });
         }
 
         // Atomic conditional update to prevent race conditions
@@ -3597,29 +3609,47 @@ app.post('/api/bookings/accept', authenticateJWT, requireRole(['driver']), (req,
             return res.status(400).json({ error: 'Ride no longer available (accepted by another pilot).' });
         }
 
-        // Note: We no longer deduct a 10% commission on accept.
-        // Daily commission of 10rs is deducted via a cron job.
-        // Vendor profit is deducted in the finish-trip route.
+        // Deduct flat ₹10 accept fee from driver wallet upon ride acceptance
+        await db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - 10 WHERE id = ?', [driverId]);
+        console.log(`[FINANCE] Deducted ₹10 accept fee from Driver #${driverId} for accepting Ride #B${bookingId}`);
 
-        // Fetch driver name and booking user_id to notify relevant parties
+        // Fetch driver details & booking user_id to notify relevant parties
         const [[driverRow], [bookingRow]] = await Promise.all([
-            db.query('SELECT name, car_model, car_number FROM taxi_drivers WHERE id = ?', [driverId]),
-            db.query('SELECT user_id, pickup_loc, drop_loc FROM taxi_bookings WHERE id = ?', [bookingId])
+            db.query('SELECT name, phone, car_model, car_number FROM taxi_drivers WHERE id = ?', [driverId]),
+            db.query('SELECT user_id, pickup_loc, drop_loc, fare FROM taxi_bookings WHERE id = ?', [bookingId])
         ]);
         const driverName = driverRow[0]?.name || 'Your Driver';
+        const driverPhone = driverRow[0]?.phone || '';
+        const carModel = driverRow[0]?.car_model || '';
+        const carNumber = driverRow[0]?.car_number || '';
         const userId = bookingRow[0]?.user_id;
 
-        // 🔴 Socket.IO: Notify user their booking was accepted
+        const acceptPayload = {
+            bookingId: parseInt(bookingId),
+            id: parseInt(bookingId),
+            status: 'assigned',
+            driverId: parseInt(driverId),
+            driverName,
+            driverPhone,
+            carModel,
+            carNumber,
+            pickupLoc: bookingRow[0]?.pickup_loc || '',
+            dropLoc: bookingRow[0]?.drop_loc || '',
+            fare: bookingRow[0]?.fare || '0',
+            ts: Date.now()
+        };
+
+        // 🔴 Socket.IO: Realtime instant updates to Customer, Driver, and Admin panels
         if (userId) {
-            emitEvent(`user:${userId}`, 'booking_confirmed', {
-                bookingId,
-                driverName,
-                carModel: driverRow[0]?.car_model || '',
-                carNumber: driverRow[0]?.car_number || '',
-                status: 'assigned'
-            });
+            emitEvent(`user:${userId}`, 'booking_confirmed', acceptPayload);
+            emitEvent(`user:${userId}`, 'booking_status_update', acceptPayload);
         }
-        emitEvent('admin', 'booking_status_update', { bookingId, status: 'assigned', driverId });
+        emitEvent(`driver:${driverId}`, 'booking_assigned', acceptPayload);
+        emitEvent(`driver:${driverId}`, 'booking_status_update', acceptPayload);
+        emitEvent(`booking:${bookingId}`, 'booking_status_update', acceptPayload);
+        emitEvent('admin', 'booking_status_update', acceptPayload);
+        io.emit('booking_status_update', acceptPayload);
+        io.emit('booking_assigned', acceptPayload);
 
         // Immediately seed the driver's current location so passenger map works instantly
         if (lat !== undefined && lng !== undefined && lat !== null && lng !== null) {
@@ -3809,7 +3839,7 @@ app.get('/api/admin/users', async (req, res) => {
 // 3.2.1 Fleet Management
 app.get('/api/admin/drivers', async (req, res) => {
     try {
-        const [rows] = await db.query("SELECT id, name, email, phone, 'driver' as role, car_model, car_number, vehicle_type, wallet_balance, is_blocked, created_at FROM taxi_drivers ORDER BY created_at DESC");
+        const [rows] = await db.query("SELECT id, name, email, phone, 'driver' as role, car_model, car_number, vehicle_type, seating_capacity, wallet_balance, is_blocked, created_at FROM taxi_drivers ORDER BY created_at DESC");
         res.json(rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -3877,10 +3907,10 @@ app.post('/api/admin/update-user', async (req, res) => {
 // 3.4 Registry Updates
 app.post('/api/admin/update-driver', async (req, res) => {
     try {
-        const { id, name, email, phone, car_model, car_number, vehicle_type, password } = req.body;
+        const { id, name, email, phone, car_model, car_number, vehicle_type, seating_capacity, password } = req.body;
 
-        let sql = 'UPDATE taxi_drivers SET name = ?, email = ?, phone = ?, car_model = ?, car_number = ?, vehicle_type = ?';
-        let params = [name, email, phone, car_model, car_number, vehicle_type];
+        let sql = 'UPDATE taxi_drivers SET name = ?, email = ?, phone = ?, car_model = ?, car_number = ?, vehicle_type = ?, seating_capacity = ?';
+        let params = [name, email, phone, car_model, car_number, vehicle_type, parseInt(seating_capacity) || 5];
 
         if (password && password.trim() !== "") {
             const salt = await bcrypt.genSalt(10);
@@ -3954,14 +3984,14 @@ app.post('/api/admin/toggle-block', async (req, res) => {
 // 3.5 Induct Pilot
 app.post('/api/admin/create-driver', async (req, res) => {
     try {
-        const { name, email, password, phone, car_model, car_number, vehicle_type } = req.body;
+        const { name, email, password, phone, car_model, car_number, vehicle_type, seating_capacity } = req.body;
         const [existing] = await db.query('SELECT id FROM taxi_drivers WHERE email = ?', [email]);
         if (existing.length > 0) return res.status(400).json({ error: 'Pilot email already authorized.' });
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-        const sql = 'INSERT INTO taxi_drivers (name, email, password, phone, car_model, car_number, vehicle_type) VALUES (?, ?, ?, ?, ?, ?, ?)';
-        await db.query(sql, [name, email, hashedPassword, phone, car_model, car_number, vehicle_type]);
+        const sql = 'INSERT INTO taxi_drivers (name, email, password, phone, car_model, car_number, vehicle_type, seating_capacity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+        await db.query(sql, [name, email, hashedPassword, phone, car_model, car_number, vehicle_type, parseInt(seating_capacity) || 5]);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Pilot Induction failed.' });
@@ -4031,11 +4061,12 @@ app.post('/api/admin/delete-vendor', async (req, res) => {
 });
 app.get('/api/driver/jobs/:driverId', async (req, res) => {
     try {
-        const [driverRows] = await db.query('SELECT vehicle_type, pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round FROM taxi_drivers WHERE id = ?', [req.params.driverId]);
+        const [driverRows] = await db.query('SELECT vehicle_type, seating_capacity, pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round FROM taxi_drivers WHERE id = ?', [req.params.driverId]);
         if (driverRows.length === 0) return res.status(404).json({ error: 'Driver not found' });
 
         const driver = driverRows[0];
         const driverVehicleType = driver.vehicle_type;
+        const driverSeatingCapacity = driver.seating_capacity || 5;
         const driverHasAllRideTypes = (driver.ride_local === 1 && driver.ride_oneway === 1 && driver.ride_round === 1);
         const prefLocations = [driver.pref_loc_1, driver.pref_loc_2, driver.pref_loc_3]
             .filter(Boolean)
@@ -4048,10 +4079,10 @@ app.get('/api/driver/jobs/:driverId', async (req, res) => {
             FROM taxi_bookings b 
             LEFT JOIN passengers u ON b.user_id = u.id 
             LEFT JOIN taxi_passengers tu ON b.user_id = tu.id
-            WHERE b.status = "pending" AND b.vehicle_type = ?
+            WHERE b.status = "pending" AND b.vehicle_type = ? AND (b.passengers IS NULL OR b.passengers = 0 OR b.passengers <= ?)
             ORDER BY b.created_at ASC
         `;
-        const [rows] = await db.query(sql, [driverVehicleType]);
+        const [rows] = await db.query(sql, [driverVehicleType, driverSeatingCapacity]);
 
         // --- Air Distance Restriction ---
         // Check if the admin has enabled this feature
@@ -4391,18 +4422,40 @@ async function processNewGpsPoint(bookingId, newLat, newLng, newAcc, newSpeed, s
 }
 
 function calculateLocalSlabFare(distance, config) {
-    let fare = 0;
-    let d = distance;
-    const r4 = (config && config.slab4_rate !== undefined) ? config.slab4_rate : 17;
-    const r3 = (config && config.slab3_rate !== undefined) ? config.slab3_rate : 19;
-    const r2 = (config && config.slab2_rate !== undefined) ? config.slab2_rate : 25;
-    const r1 = (config && config.slab1_rate !== undefined) ? config.slab1_rate : 30;
+    const minKm = (config && config.minKm) ? parseFloat(config.minKm) : 0;
+    const baseFare = (config && config.base !== undefined) ? parseFloat(config.base) : 0;
+    const d = Math.max(distance, minKm);
+    
+    let fare = baseFare;
 
-    if (d > 50) { fare += (d - 50) * r4; d = 50; }
-    if (d > 30) { fare += (d - 30) * r3; d = 30; }
-    if (d > 10) { fare += (d - 10) * r2; d = 10; }
-    if (d > 0) { fare += d * r1; }
-    return fare;
+    const r1 = (config && config.slab1_rate !== undefined) ? parseFloat(config.slab1_rate) : (config.perKm || 20); // 0-5
+    const r2 = (config && config.slab2_rate !== undefined) ? parseFloat(config.slab2_rate) : r1; // 6-10
+    const r3 = (config && config.slab3_rate !== undefined) ? parseFloat(config.slab3_rate) : r2; // 11-20
+    const r4 = (config && config.slab4_rate !== undefined) ? parseFloat(config.slab4_rate) : r3; // 21-30
+    const r5 = (config && config.slab5_rate !== undefined) ? parseFloat(config.slab5_rate) : r4; // 31-40
+    const r6 = (config && config.slab6_rate !== undefined) ? parseFloat(config.slab6_rate) : r5; // 41-50
+    const r7 = (config && config.slab7_rate !== undefined) ? parseFloat(config.slab7_rate) : r6; // 51-60
+    const r8 = (config && config.slab8_rate !== undefined) ? parseFloat(config.slab8_rate) : r7; // 61-70
+    const r9 = (config && config.slab9_rate !== undefined) ? parseFloat(config.slab9_rate) : r8; // 71-80
+    const r10 = (config && config.slab10_rate !== undefined) ? parseFloat(config.slab10_rate) : r9; // 81-90
+    const r11 = (config && config.slab11_rate !== undefined) ? parseFloat(config.slab11_rate) : r10; // 91-100
+    const rAbove100 = (config && config.above100_rate !== undefined) ? parseFloat(config.above100_rate) : (config.perKm || r11); // >100km
+
+    let rem = d;
+    if (rem > 100) { fare += (rem - 100) * rAbove100; rem = 100; }
+    if (rem > 90) { fare += (rem - 90) * r11; rem = 90; }
+    if (rem > 80) { fare += (rem - 80) * r10; rem = 80; }
+    if (rem > 70) { fare += (rem - 70) * r9; rem = 70; }
+    if (rem > 60) { fare += (rem - 60) * r8; rem = 60; }
+    if (rem > 50) { fare += (rem - 50) * r7; rem = 50; }
+    if (rem > 40) { fare += (rem - 40) * r6; rem = 40; }
+    if (rem > 30) { fare += (rem - 30) * r5; rem = 30; }
+    if (rem > 20) { fare += (rem - 20) * r4; rem = 20; }
+    if (rem > 10) { fare += (rem - 10) * r3; rem = 10; }
+    if (rem > 5) { fare += (rem - 5) * r2; rem = 5; }
+    if (rem > 0) { fare += rem * r1; }
+
+    return Math.round(fare);
 }
 
 // Odometer-style distance calculator summing segments from logged coordinates
@@ -4648,26 +4701,156 @@ app.post('/api/bookings/reached-pickup', authenticateJWT, requireRole(['driver']
         const { bookingId } = req.body;
         if (!bookingId) return res.status(400).json({ error: 'Booking ID is required.' });
 
+        const nowStr = new Date().toISOString();
         await db.query(
             'UPDATE taxi_bookings SET reached_pickup_time = NOW() WHERE id = ?',
             [bookingId]
         );
 
-        const booking = req.booking;
-        if (booking && booking.user_id) {
-            const notifData = {
-                bookingId,
-                status: 'reached_pickup',
-                message: 'Your captain has arrived at your pickup location!'
-            };
-            emitEvent(`user:${booking.user_id}`, 'booking_status_update', notifData);
-            emitEvent(`booking:${bookingId}`, 'booking_status_update', notifData);
+        const [[bRow]] = await db.query(
+            'SELECT b.user_id, b.driver_id, b.journey_otp, d.name as driver_name FROM taxi_bookings b LEFT JOIN taxi_drivers d ON b.driver_id = d.id WHERE b.id = ?',
+            [bookingId]
+        );
+
+        const notifData = {
+            bookingId: parseInt(bookingId),
+            id: parseInt(bookingId),
+            status: 'reached_pickup',
+            reached_pickup_time: nowStr,
+            reached_elapsed_seconds: 0,
+            driver_name: bRow?.driver_name || 'Your Driver',
+            otp: bRow?.journey_otp || '',
+            message: 'Your captain has arrived at your pickup location!',
+            ts: Date.now()
+        };
+
+        if (bRow && bRow.user_id) {
+            emitEvent(`user:${bRow.user_id}`, 'reached_pickup', notifData);
+            emitEvent(`user:${bRow.user_id}`, 'booking_status_update', notifData);
         }
+        if (bRow && bRow.driver_id) {
+            emitEvent(`driver:${bRow.driver_id}`, 'reached_pickup', notifData);
+            emitEvent(`driver:${bRow.driver_id}`, 'booking_status_update', notifData);
+        }
+        emitEvent(`booking:${bookingId}`, 'reached_pickup', notifData);
+        emitEvent(`booking:${bookingId}`, 'booking_status_update', notifData);
+        emitEvent('admin', 'booking_status_update', notifData);
+        io.emit('booking_status_update', notifData);
+        io.emit('reached_pickup', notifData);
 
         res.json({ success: true, message: 'Driver reached pickup location.' });
     } catch (err) {
         console.error('Error in reached-pickup:', err.message);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// Endpoint: Change Pickup Location (Max 3 times per booking)
+app.post('/api/user/update-pickup', async (req, res) => {
+    try {
+        const { bookingId, userId, newPickupLoc, newPickupCoords } = req.body;
+        if (!bookingId || !newPickupLoc) {
+            return res.status(400).json({ error: 'Booking ID and new pickup location are required.' });
+        }
+
+        // Auto-add column if not exists
+        try {
+            await db.query(`ALTER TABLE taxi_bookings ADD COLUMN pickup_change_count INT DEFAULT 0`);
+        } catch (e) {}
+
+        // Fetch booking
+        const [rows] = await db.query('SELECT * FROM taxi_bookings WHERE id = ?', [bookingId]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Booking not found.' });
+        }
+
+        const booking = rows[0];
+        if (userId && String(booking.user_id) !== String(userId)) {
+            return res.status(403).json({ error: 'Unauthorized to modify this booking.' });
+        }
+
+        // Verify status: only pending or assigned rides can change pickup location
+        if (!['pending', 'assigned'].includes(booking.status)) {
+            return res.status(400).json({ error: 'Pickup location can only be changed before the trip starts.' });
+        }
+
+        // Verify change count limit (max 3)
+        const currentCount = booking.pickup_change_count || 0;
+        if (currentCount >= 3) {
+            return res.status(400).json({ error: 'Maximum limit of 3 pickup location changes reached for this ride.' });
+        }
+
+        const newCount = currentCount + 1;
+        const remaining = 3 - newCount;
+
+        // Geocode new address if coords not supplied
+        let coordsStr = newPickupCoords || booking.pickup_coords;
+        if (!newPickupCoords && newPickupLoc) {
+            try {
+                const geoRes = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(newPickupLoc.trim())}&limit=1`, {
+                    headers: { 'User-Agent': 'CityRideTaxi/2.0' },
+                    timeout: 4000
+                });
+                if (geoRes.data && geoRes.data.length > 0) {
+                    coordsStr = `${geoRes.data[0].lon},${geoRes.data[0].lat}`;
+                }
+            } catch (e) {}
+        }
+
+        // Update database
+        await db.query(
+            'UPDATE taxi_bookings SET pickup_loc = ?, pickup_coords = ?, pickup_change_count = ? WHERE id = ?',
+            [newPickupLoc.trim(), coordsStr, newCount, bookingId]
+        );
+
+        // Notify socket rooms & driver
+        const updatePayload = {
+            bookingId: booking.id,
+            newPickupLoc: newPickupLoc.trim(),
+            newPickupCoords: coordsStr,
+            pickupChangeCount: newCount,
+            remainingChanges: remaining
+        };
+        io.to(`booking:${booking.id}`).emit('pickup_location_updated', updatePayload);
+        if (booking.driver_id) {
+            io.to(`driver:${booking.driver_id}`).emit('pickup_location_updated', updatePayload);
+        }
+
+        res.json({
+            success: true,
+            message: 'Pickup location updated successfully.',
+            pickup_change_count: newCount,
+            remainingChanges: remaining,
+            newPickupLoc: newPickupLoc.trim(),
+            newPickupCoords: coordsStr
+        });
+    } catch (err) {
+        console.error('Error updating pickup location:', err);
+        res.status(500).json({ error: 'Failed to update pickup location.' });
+    }
+});
+
+// Endpoint: Rate Ride & Submit Customer Feedback
+app.post('/api/user/rate-ride', async (req, res) => {
+    try {
+        const { bookingId, rating, comment } = req.body;
+        if (!bookingId || !rating) {
+            return res.status(400).json({ error: 'Booking ID and rating are required.' });
+        }
+
+        // Auto-add rating and rating_comment columns if missing
+        try { await db.query(`ALTER TABLE taxi_bookings ADD COLUMN rating INT DEFAULT NULL`); } catch(e) {}
+        try { await db.query(`ALTER TABLE taxi_bookings ADD COLUMN rating_comment TEXT DEFAULT NULL`); } catch(e) {}
+
+        await db.query(
+            'UPDATE taxi_bookings SET rating = ?, rating_comment = ? WHERE id = ?',
+            [Math.min(5, Math.max(1, parseInt(rating))), (comment || '').trim(), bookingId]
+        );
+
+        res.json({ success: true, message: 'Rating submitted successfully.' });
+    } catch (err) {
+        console.error('Error submitting rating:', err);
+        res.status(500).json({ error: 'Failed to submit rating.' });
     }
 });
 
@@ -4860,16 +5043,15 @@ app.post('/api/bookings/update-status', authenticateJWT, requireRole(['driver', 
             const booking = req.booking;
             const isVendorBooking = !!booking.vendor_id;
 
-            // --- VENDOR PROFIT DEDUCTION ---
+            // --- DRIVER WALLET PLATFORM FEE DEDUCTION ON COMPLETION ---
+            const updatePromises = [];
             let vendorProfitDeducted = 0;
-            if (booking.status !== 'completed' && booking.vendor_id && parseFloat(booking.vendor_markup) > 0) {
+            if (booking.vendor_id && parseFloat(booking.vendor_markup) > 0) {
                 vendorProfitDeducted = parseFloat(booking.vendor_markup);
             }
-
-            const updatePromises = [];
-            if (vendorProfitDeducted > 0) {
-                updatePromises.push(db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - ? WHERE id = ?', [vendorProfitDeducted, booking.driver_id]));
-                console.log(`[FINANCE] Deducted ₹${vendorProfitDeducted} vendor profit from Driver #${booking.driver_id} for Ride #B${bookingId}`);
+            if (!['completed', 'finished'].includes(booking.status) && booking.driver_id) {
+                updatePromises.push(db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - 5 WHERE id = ?', [booking.driver_id]));
+                console.log(`[FINANCE] Deducted ₹5 platform fee from Driver #${booking.driver_id} upon completion of Ride #B${bookingId}`);
             }
 
             // Combine end time and status updates into a single database update
@@ -5064,22 +5246,16 @@ app.post('/api/bookings/finish-trip', authenticateJWT, requireRole(['driver']), 
                 }
             }
 
-            // --- VENDOR PROFIT DEDUCTION ---
-            let vendorProfitDeducted = 0;
-            if (booking.status !== 'completed' && booking.vendor_id && parseFloat(booking.vendor_markup) > 0) {
-                vendorProfitDeducted = parseFloat(booking.vendor_markup);
-            }
-
+            // --- DRIVER WALLET PLATFORM FEE DEDUCTION ON COMPLETION ---
             const nextStatus = booking.vendor_id ? "completed" : "finished";
             const updatePromises = [];
-            
-            // --- PLATFORM FEE DEDUCTION ---
-            updatePromises.push(db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - 5 WHERE id = ?', [booking.driver_id]));
-            console.log(`[FINANCE] Deducted ₹5 platform fee from Driver #${booking.driver_id} for Ride #B${bookingId}`);
-
-            if (vendorProfitDeducted > 0) {
-                updatePromises.push(db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - ? WHERE id = ?', [vendorProfitDeducted, booking.driver_id]));
-                console.log(`[FINANCE] Deducted ₹${vendorProfitDeducted} vendor profit from Driver #${booking.driver_id} for Ride #B${bookingId}`);
+            let vendorProfitDeducted = 0;
+            if (booking.vendor_id && parseFloat(booking.vendor_markup) > 0) {
+                vendorProfitDeducted = parseFloat(booking.vendor_markup);
+            }
+            if (!['completed', 'finished'].includes(booking.status) && booking.driver_id) {
+                updatePromises.push(db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - 5 WHERE id = ?', [booking.driver_id]));
+                console.log(`[FINANCE] Deducted ₹5 platform fee from Driver #${booking.driver_id} upon completion of Rental Ride #B${bookingId}`);
             }
             updatePromises.push(db.query('UPDATE taxi_bookings SET status = ?, end_odometer = ?, journey_end_time = NOW(), fare = ?, end_gps_coords = ? WHERE id = ?', [nextStatus, endOdometer, finalFareStr, endCoords, bookingId]));
 
@@ -5254,29 +5430,23 @@ app.post('/api/bookings/finish-trip', authenticateJWT, requireRole(['driver']), 
                 const specialCharge = baseKmFare * specialSurchargePct;
                 totalFare = ((baseKmFare + (booking.vehicle_type === 'bike' ? 0 : driverAllowance * tripDays) + specialCharge) + waitingCharge) + 5;
             }
-
-            const finalFareStr = `₹${Math.ceil(totalFare)}`;
+const finalFareStr = `₹${Math.ceil(totalFare)}`;
             const distanceStr = `${distanceCovered.toFixed(3)} KM`;
             const { allowedMins: finalAllowedMins, waitingMins: finalWaitingMins } = calcWaitingCharge(distanceCovered, durationMins);
 
             console.log(`[Finish Trip #${bookingId}] Fare: ${finalFareStr} | Dist: ${distanceStr} | Duration: ${durationMins.toFixed(1)}min | WaitCharge: ₹${Math.ceil(waitingCharge)}`);
 
-            // --- VENDOR PROFIT DEDUCTION ---
+            // --- DRIVER WALLET PLATFORM FEE DEDUCTION ON COMPLETION ---
+            const nextStatus = (booking.vendor_id || booking.trip_type === 'local') ? "completed" : "finished";
+            const updatePromises = [];
             let vendorProfitDeducted = 0;
-            if (booking.status !== 'completed' && booking.vendor_id && parseFloat(booking.vendor_markup) > 0) {
+            if (booking.vendor_id && parseFloat(booking.vendor_markup) > 0) {
                 vendorProfitDeducted = parseFloat(booking.vendor_markup);
             }
 
-            const nextStatus = (booking.vendor_id || booking.trip_type === 'local') ? "completed" : "finished";
-            const updatePromises = [];
-            
-            // --- PLATFORM FEE DEDUCTION ---
-            updatePromises.push(db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - 5 WHERE id = ?', [booking.driver_id]));
-            console.log(`[FINANCE] Deducted ₹5 platform fee from Driver #${booking.driver_id} for Ride #B${bookingId}`);
-
-            if (vendorProfitDeducted > 0) {
-                updatePromises.push(db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - ? WHERE id = ?', [vendorProfitDeducted, booking.driver_id]));
-                console.log(`[FINANCE] Deducted ₹${vendorProfitDeducted} vendor profit from Driver #${booking.driver_id} for Ride #B${bookingId}`);
+            if (!['completed', 'finished'].includes(booking.status) && booking.driver_id) {
+                updatePromises.push(db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - 5 WHERE id = ?', [booking.driver_id]));
+                console.log(`[FINANCE] Deducted ₹5 platform fee from Driver #${booking.driver_id} upon completion of Standard Ride #B${bookingId}`);
             }
 
             if (booking.trip_type !== 'local') {

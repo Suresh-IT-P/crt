@@ -7,15 +7,16 @@
     const originalFetch = window.fetch;
 
     function getLoginRedirect(url) {
+        const path = (window.location.pathname || '').toLowerCase();
+        if (path.includes('vendor')) return 'vendor-login.html';
+        if (path.includes('driver')) return 'driver-login.html';
+        if (path.includes('admin')) return 'admin-login.html';
         if (typeof url === 'string' && url.includes('/api/')) {
-            if (url.includes('/api/admin/')) return 'admin-login.html';
-            if (url.includes('/api/vendor/')) return 'vendor-login.html';
-            if (url.includes('/api/driver/') || url.includes('/api/bookings/')) {
-                return window.location.pathname.includes('driver') ? 'driver-login.html' : 'auth.html';
-            }
-            return 'auth.html';
+            if (url.includes('/api/admin/') || url.includes('role=admin')) return 'admin-login.html';
+            if (url.includes('/api/vendor/') || url.includes('role=vendor')) return 'vendor-login.html';
+            if (url.includes('/api/driver/') || url.includes('role=driver')) return 'driver-login.html';
         }
-        return null;
+        return 'auth.html';
     }
 
     window.fetch = async function (...args) {
@@ -131,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Auth Guard for Landing Page (/)
     // If you are on the landing page and NOT logged in as a passenger, we show login.
     if (isLandingPage && !member) {
-        window.location.href = '/auth';
+        window.location.href = 'auth.html';
         return;
     }
 
@@ -827,7 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const user = JSON.parse(localStorage.getItem('cityride_member'));
         if (!user) {
             alert('Please login to confirm booking.');
-            window.location.href = '/auth';
+            window.location.href = 'auth.html';
             return;
         }
 
@@ -914,6 +915,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="display:flex; align-items:center; gap:8px; color:var(--cr-text-muted); font-size:0.9rem;"><span style="font-size:1.1rem;">💰</span> Estimated Fare</div>
                     <div id="cm-fare" style="text-align:right; font-size:1.1rem; font-weight:800; color:var(--cr-primary);">₹${selectedVehicleData.fare}</div>
                 </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:1px solid var(--cr-border-light);">
+                    <div style="display:flex; align-items:center; gap:8px; color:var(--cr-text-muted); font-size:0.9rem;"><span style="font-size:1.1rem;">💺</span> Seats Required</div>
+                    <div id="cm-passengers" style="text-align:right; font-size:0.85rem; font-weight:600; color:var(--cr-text-main);">${pendingBookingData.passengers} Passengers</div>
+                </div>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center; gap:8px; color:var(--cr-text-muted); font-size:0.9rem;"><span style="font-size:1.1rem;">📅</span> Date &amp; Time</div>
                     <div id="cm-datetime" style="text-align:right; font-size:0.85rem; font-weight:600; color:var(--cr-text-main);">${bookingDate} at ${bookingTime || 'Now'}</div>
@@ -927,6 +932,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastCalculatedDuration = 0;
 
     function calculateLocalSlabFare(dist, config) {
+        if (config && config.perKm !== undefined && config.slab1_rate === undefined) {
+            const distanceFare = dist * config.perKm;
+            const baseFareLimit = config.base || 0;
+            return Math.max(baseFareLimit, distanceFare);
+        }
+
         let fare = 0;
         let d = dist;
         const r11 = (config && config.slab11_rate !== undefined) ? config.slab11_rate : 13;
@@ -1336,6 +1347,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             box.appendChild(hint);
                         }
 
+                        const gridContainer = document.createElement('div');
+                        gridContainer.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; padding: 12px;';
+                        
                         data.features.forEach(feature => {
                             const p = feature.properties;
                             const c = feature.geometry.coordinates; // [lng, lat]
@@ -1353,6 +1367,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             const item = document.createElement('div');
                             item.className = 'suggestion-item';
                             item.textContent = label;
+                            
+                            // Apply grid card styles inline
+                            item.style.cssText = 'border: 1px solid var(--cr-border-light, #e5e7eb); border-radius: 8px; padding: 10px 14px; background: #f8fafc; font-size: 0.85rem; line-height: 1.4; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02); display: flex; align-items: center;';
+                            item.onmouseover = () => { item.style.borderColor = 'var(--cr-primary, #B71C1C)'; item.style.background = '#fffafa'; };
+                            item.onmouseout = () => { item.style.borderColor = 'var(--cr-border-light, #e5e7eb)'; item.style.background = '#f8fafc'; };
 
                             item.onclick = () => {
                                 input.value = label;
@@ -1362,8 +1381,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (window.updateMapMarkers) window.updateMapMarkers();
                                 calculateFare();
                             };
-                            box.appendChild(item);
+                            gridContainer.appendChild(item);
                         });
+                        box.appendChild(gridContainer);
                         box.style.display = 'block';
                     } else {
                         // Show "no results" hint
@@ -1632,7 +1652,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 pickupCoords = null;
                 dropCoords = null;
 
-                window.location.href = '/active-ride.html';
+                window.location.href = 'active-ride.html';
             } else {
                 const errData = await response.json();
                 console.error('Server Booking Error:', errData);
@@ -1652,7 +1672,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const user = JSON.parse(localStorage.getItem('cityride_member'));
         if (!user) {
             alert('Please login to CityRideTaxi to continue.');
-            window.location.href = '/auth';
+            window.location.href = 'auth.html';
             return;
         }
 
@@ -1777,7 +1797,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainLogo = document.querySelector('.logo');
     if (mainLogo) {
         mainLogo.addEventListener('dblclick', () => {
-            if (confirm("Enter Admin Panel?")) window.location.href = '/admin';
+            if (confirm("Enter Admin Panel?")) window.location.href = 'admin.html';
         });
     }
 });

@@ -442,15 +442,16 @@
     <script>(function() {
 const originalFetch = window.fetch;
 function getLoginRedirect(url) {
-if (typeof url === 'string' && url.includes('/api/')) {
-if (url.includes('/api/admin/')) return 'admin-login.html';
-if (url.includes('/api/vendor/')) return 'vendor-login.html';
-if (url.includes('/api/driver/') || url.includes('/api/bookings/')) {
-return window.location.pathname.includes('driver') ? 'driver-login.html' : 'auth.html';
-}
-return 'auth.html';
-}
-return null;
+    const path = (window.location.pathname || '').toLowerCase();
+    if (path.includes('vendor')) return 'vendor-login.html';
+    if (path.includes('driver')) return 'driver-login.html';
+    if (path.includes('admin')) return 'admin-login.html';
+    if (typeof url === 'string' && url.includes('/api/')) {
+        if (url.includes('/api/admin/') || url.includes('role=admin')) return 'admin-login.html';
+        if (url.includes('/api/vendor/') || url.includes('role=vendor')) return 'vendor-login.html';
+        if (url.includes('/api/driver/') || url.includes('role=driver')) return 'driver-login.html';
+    }
+    return 'auth.html';
 }
 window.fetch = async function (...args) {
 const response = await originalFetch(...args);
@@ -581,11 +582,23 @@ function initUserSocket(user) {
     // Booking status changed (assigned, ongoing, finished, cancelled) — refresh immediately
     userSocket.on('booking_status_update', (data) => {
         if (typeof loadDashboardData === 'function') loadDashboardData(user);
+        if (data && (data.status === 'completed' || data.status === 'finished')) {
+            const bId = data.bookingId || data.id;
+            if (bId && typeof openTripInvoice === 'function') {
+                openTripInvoice(bId);
+            }
+        }
     });
 
     // Driver confirmed — refresh booking list immediately
     userSocket.on('booking_confirmed', (data) => {
         if (typeof loadDashboardData === 'function') loadDashboardData(user);
+    });
+
+    // Driver reached pickup location — reload customer dashboard immediately
+    userSocket.on('reached_pickup', (data) => {
+        console.log('⚡ [UserSocket] Driver reached pickup location! Reloading customer dashboard immediately.');
+        window.location.reload();
     });
 
     // Live driver GPS location pushed from server — update map immediately
@@ -656,27 +669,38 @@ if (!Array.isArray(rides)) {
 console.error('Expected array for rides, got:', rides);
 return;
 }
-if (initialLoadDone) {
-rides.forEach(ride => {
-if (!lastSeenStatuses.has(ride.id)) {
-    if (window.CustomerNotifications) {
-        window.CustomerNotifications.processSocketActivity({ bookingId: ride.id, status: ride.status });
-    } else {
-        showToast('New Ride Booked', `Your trip to ${ride.drop_loc.split(',')[0]} has been registered.`, 'success');
-    }
-} else if (lastSeenStatuses.get(ride.id) !== ride.status) {
-    if (window.CustomerNotifications) {
-        window.CustomerNotifications.processSocketActivity({ bookingId: ride.id, status: ride.status });
-    } else {
-        showToast('Ride Update', `Trip #B${ride.id} is now ${ride.status.toUpperCase()}.`, 'info');
-    }
-if (ride.status === 'completed') {
-setTimeout(() => window.location.reload(), 2000);
-}
-}
-});
-}
-lastSeenStatuses = new Map(rides.map(r => [r.id, r.status]));
+        if (initialLoadDone) {
+            rides.forEach(ride => {
+                const prevStatus = lastSeenStatuses.get(ride.id);
+                const isArrived = ride.status === 'assigned' && ride.reached_pickup_time;
+                const currentCompositeStatus = isArrived ? 'reached_pickup' : ride.status;
+                const payload = {
+                    bookingId: ride.id,
+                    status: currentCompositeStatus,
+                    driverName: ride.driver_name,
+                    carModel: ride.car_model,
+                    carNumber: ride.car_number,
+                    otp: ride.journey_otp,
+                    dropLoc: ride.drop_loc,
+                    fare: ride.fare || ride.estimated_price
+                };
+
+                if (!lastSeenStatuses.has(ride.id)) {
+                    // Initial load: ONLY notify if this is an currently active ride (pending, assigned, ongoing)
+                    if (['pending', 'assigned', 'ongoing'].includes(ride.status) && window.CustomerNotifications) {
+                        window.CustomerNotifications.processSocketActivity(payload);
+                    }
+                } else if (prevStatus !== currentCompositeStatus) {
+                    if (window.CustomerNotifications) {
+                        window.CustomerNotifications.processSocketActivity(payload);
+                    }
+                    if (ride.status === 'completed' || ride.status === 'finished') {
+                        setTimeout(() => window.location.reload(), 2500);
+                    }
+                }
+            });
+        }
+        lastSeenStatuses = new Map(rides.map(r => [r.id, (r.status === 'assigned' && r.reached_pickup_time) ? 'reached_pickup' : r.status]));
 const body = document.getElementById('rides-body');
 body.innerHTML = '';
 if (rides.length === 0) {
@@ -1435,6 +1459,15 @@ Swal.fire('Error', 'A network error occurred.', 'error');
 }
 });
 }
+
+async function openTripInvoice(bookingId) {
+    if (!bookingId) return;
+    let tripObj = typeof bookingId === 'object' ? bookingId : { id: bookingId };
+    return showInvoiceModal(tripObj);
+}
+window.openTripInvoice = openTripInvoice;
+window.showFareCompletedModal = function(b) { openTripInvoice(b.id || b); };
+
 async function showInvoiceModal(trip) {
         // Show a premium loading indicator
         Swal.fire({
@@ -1451,7 +1484,13 @@ async function showInvoiceModal(trip) {
 
         let breakdown = null;
         try {
-            const token = localStorage.getItem('cityride_user_token');
+            let token = localStorage.getItem('cityride_user_token');
+            if (!token) {
+                try {
+                    const member = JSON.parse(localStorage.getItem('cityride_member'));
+                    token = member?.token;
+                } catch(e) {}
+            }
             const headers = {};
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;

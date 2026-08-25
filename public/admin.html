@@ -15,7 +15,23 @@
     <!-- Jspdf for Reporting -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js" integrity="sha512-SgWewGM3r8xXm8LNXt4ZHqKVKu/7eKrJ1aBCbMaX44xXXaCcIvCAvD2kj9qnC1lhyjAu04mcPiTzcc/CaACnUQ==" crossorigin="anonymous" defer></script>
-    <style>:root{--admin-sidebar:#0e1016;--admin-bg:#090a0f;--primary-red:#B71C1C;--primary-red-hover:#8E1515;--dark-charcoal:#ffffff;--text-main:#ffffff;--text-muted:#8e9297;--white:#14161d;--border-color:rgba(255,255,255,0.06);--success-green:#34c759;--danger-red:#ff3b30;--warning-amber:#ff9f0a;--info-blue:#0a84ff;}body{background:var(--admin-bg) !important;color:var(--text-main) !important;display:flex;height:100vh;overflow:hidden;scroll-behavior:smooth;}.sidebar{width:280px;background:var(--admin-sidebar);color:white;padding:2.5rem 1.5rem;display:flex;flex-direction:column;flex-shrink:0;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);height:100vh;position:sticky;top:0;overflow-y:auto;padding-bottom:4rem;border-right:1px solid var(--border-color);}.sidebar::-webkit-scrollbar{width:4px;}.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.05);border-radius:10px;}.sidebar .logo{margin-bottom:4rem;cursor:pointer;}.sidebar-nav{flex-grow:1;display:flex;flex-direction:column;min-height:min-content;}.nav-item{padding:1rem 1.2rem;margin-bottom:0.4rem;border-radius:12px;cursor:pointer;transition:all 0.3s ease;display:flex;align-items:center;gap:1rem;opacity:0.6;font-size:0.9rem;color:var(--text-main) !important;}.logout-item{margin-top:2rem;border-top:1px solid var(--border-color);padding-top:2rem;}.nav-item:hover,.nav-item.active{background:rgba(255,255,255,0.03);opacity:1;}.nav-item.active{border-left:4px solid var(--primary-red);}.main-stage{flex-grow:1;padding:3rem;overflow-y:auto;background:var(--admin-bg);scroll-behavior:smooth;}.main-stage::-webkit-scrollbar{width:8px;}.main-stage::-webkit-scrollbar-track{background:var(--admin-bg);}.main-stage::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.05);border-radius:10px;}.main-stage::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.15);}.stage-header{margin-bottom:4rem;display:flex;justify-content:space-between;align-items:center;}.stage-header h1{color:var(--text-main) !important;}.stage-header p{color:var(--text-muted) !important;}.stat-banner{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;margin-bottom:4rem;}.b-card{background:var(--white);padding:2.5rem;border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,0.5);border:1px solid var(--border-color);color:var(--text-main) !important;}.b-card h4{font-size:0.8rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:1rem;letter-spacing:1px;}.b-card .val{font-size:2.2rem;font-weight:700;color:var(--text-main);}.swal2-popup{background:#14161d !important;color:#ffffff !important;border:1px solid rgba(255,255,255,0.06) !important;border-radius:20px !important;}.swal2-title{color:#ffffff !important;}.swal2-html-container{color:#8e9297 !important;}.swal2-input,.swal2-textarea,.swal2-select{background:#090a0f !important;color:#ffffff !important;border:1px solid rgba(255,255,255,0.06) !important;color-scheme:dark !important;}.swal2-validation-message{background:rgba(255,59,48,0.1) !important;color:#ff3b30 !important;}input,select,textarea{background:rgba(255,255,255,0.03) !important;color:#ffffff !important;border:1px solid rgba(255,255,255,0.08) !important;padding:0.75rem 1rem !important;border-radius:10px !important;outline:none !important;transition:all 0.3s ease !important;color-scheme:dark !important;}input:focus,select:focus,textarea:focus{border-color:var(--primary-red) !important;background:rgba(255,255,255,0.05) !important;box-shadow:0 0 10px rgba(183,28,28,0.2) !important;}label{color:var(--text-muted) !important;font-weight:600 !important;font-size:0.85rem !important;margin-bottom:0.5rem !important;display:inline-block !important;}.data-table-container{background:var(--white);border-radius:30px;padding:2.5rem;box-shadow:0 20px 50px rgba(0,0,0,0.4);overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border-color);}.data-table-container::-webkit-scrollbar{width:8px;height:8px;}.data-table-container::-webkit-scrollbar-track{background:transparent;}.data-table-container::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.05);border-radius:10px;}.data-table-container::-webkit-scrollbar-thumb:hover{background:var(--primary-red);}.cityride-table{width:100%;border-collapse:collapse;}.cityride-table th{text-align:left;padding:1.5rem;font-size:0.75rem;text-transform:uppercase;color:var(--text-muted);border-bottom:2px solid var(--border-color);}.cityride-table td{padding:1.5rem;border-bottom:1px solid var(--border-color);font-size:0.95rem;vertical-align:top;color:var(--text-main);}.status-tag{padding:0.4rem 0.8rem;border-radius:8px;font-size:0.7rem;font-weight:800;text-transform:uppercase;}.status-pending{background:rgba(255,159,10,0.1);color:var(--warning-amber);}.status-assigned{background:rgba(10,132,255,0.1);color:var(--info-blue);}.status-completed{background:rgba(52,199,89,0.1);color:var(--success-green);}.status-cancelled{background:rgba(255,59,48,0.1);color:var(--danger-red);}.status-cancel_requested{background:rgba(255,59,48,0.15);color:var(--danger-red);}.action-btn{background:none;border:none;cursor:pointer;color:var(--primary-red);font-weight:600;font-size:0.85rem;}.action-btn:hover{text-decoration:underline;}.tab-section{display:none;}.tab-section.active{display:block;animation:fadeIn 0.4s ease;}@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}@media (max-width:1366px){.sidebar{width:220px;padding:1.5rem;}.main-stage{padding:2.5rem;}.stat-banner{grid-template-columns:repeat(2,1fr);gap:1.5rem;}.b-card{padding:2rem;}.b-card .val{font-size:1.8rem;}}@media (max-width:1024px){.stat-banner{grid-template-columns:1fr 1fr;}.sidebar{width:200px;}}@media (max-width:768px){body{flex-direction:column;overflow-y:auto;}.sidebar{position:fixed;left:-260px;top:0;height:100vh;z-index:10000;transition:var(--transition);width:260px;box-shadow:20px 0 50px rgba(0,0,0,0.1);}.sidebar.active{left:0;}.mobile-header{display:flex;background:var(--admin-sidebar);color:white;padding:1.25rem 2rem;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:9000;}.sidebar .logo{margin-bottom:3rem;}.sidebar-nav{display:block;}.main-stage{padding:1.5rem;overflow:visible;}.data-table-container{padding:1.25rem;border-radius:15px;}.stage-header h1{font-size:1.8rem;}.stat-banner{grid-template-columns:1fr;gap:1rem;}.b-card{padding:1.5rem;}.b-card .val{font-size:1.6rem;}}.map-modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:10000;}.map-modal-content{background:var(--white);padding:0;border-radius:24px;width:90%;max-width:550px;max-height:90vh;overflow-y:auto;box-shadow:0 30px 60px rgba(0,0,0,0.5);animation:modalSlideUp 0.4s ease;border:1px solid var(--border-color);color:var(--text-main);}@keyframes modalSlideUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}.map-header{background:var(--admin-sidebar);color:white;padding:1.5rem 2rem;display:flex;justify-content:space-between;align-items:center;}.close-map{background:none;border:none;color:white;font-size:1.5rem;cursor:pointer;opacity:0.7;}.close-map:hover{opacity:1;}.btn-large{padding:1.2rem;border-radius:12px;font-weight:700;font-size:1rem;cursor:pointer;border:none;transition:all 0.3s ease;}.btn-primary{background:var(--primary-red);color:white;}.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(183,28,28,0.2);}.mobile-header{display:none;}@media (max-width:1024px){body{flex-direction:column;overflow-y:auto;}.mobile-header{display:flex;background:var(--admin-sidebar);color:white;padding:1.25rem 2rem;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:9000;box-shadow:0 10px 30px rgba(0,0,0,0.1);}.sidebar{position:fixed;left:-280px;top:0;height:100vh;z-index:10000;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);width:280px;background:var(--admin-sidebar);padding-top:5rem;}.sidebar.active{left:0;}.sidebar-nav{display:block;}.main-stage{padding:1.5rem;overflow:visible;}.stat-banner{grid-template-columns:1fr;gap:1rem;}.data-table-container{padding:1rem;border-radius:12px;}.stage-header h1{font-size:1.6rem;}.burger-menu{display:flex;flex-direction:column;gap:5px;cursor:pointer;z-index:10001;width:44px;height:44px;align-items:center;justify-content:center;}.burger-menu span{display:block;width:25px;height:2px;background:white;transition:0.3s;border-radius:2px;}.burger-menu.active span:nth-child(1){transform:translateY(7px) rotate(45deg);}.burger-menu.active span:nth-child(2){opacity:0;}.burger-menu.active span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}#tariff-fields-container{grid-template-columns:1fr !important;}#create-vendor-form,#create-driver-form{grid-template-columns:1fr !important;}.cityride-table thead{display:none;}.cityride-table,.cityride-table tbody,.cityride-table tr,.cityride-table td{display:block;width:100%;}.cityride-table tr{margin-bottom:1.5rem;background:var(--white);border:1px solid var(--border-color);border-radius:16px;padding:1.25rem;box-shadow:0 10px 30px rgba(0,0,0,0.2);}.cityride-table td{border:none;padding:0.85rem 0 0.85rem 130px;display:block;text-align:right;border-bottom:1px solid var(--border-color);position:relative;min-height:2.5rem;}.cityride-table td:last-child{border-bottom:none;margin-top:0.5rem;padding-bottom:0;}.cityride-table td::before{content:attr(data-label);font-weight:800;text-transform:uppercase;font-size:0.65rem;color:var(--text-muted);position:absolute;left:0;top:1rem;text-align:left;width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}}.pilot-info-block{display:flex;flex-direction:column;gap:4px;text-align:left;min-width:180px;}.pilot-info-block .p-name{font-weight:700;color:var(--text-main);font-size:0.9rem;line-height:1.2;}.pilot-info-block .p-email a{font-size:0.75rem;color:var(--info-blue);text-decoration:none;font-weight:600;display:block;margin-top:1px;}.pilot-info-block .p-phone a{font-size:0.75rem;color:var(--primary-red);text-decoration:none;font-weight:700;display:block;}@media (max-width:1024px){.pilot-info-block{text-align:right;align-items:flex-end;}}</style>
+    <style>:root{--admin-sidebar:#FFFFFF;--admin-bg:#F7FAF6;--primary-red:#006B3A;--primary-red-pista:#70C157;--primary-red-hover:#00562e;--dark-charcoal:#000000;--text-main:#000000;--text-muted:#1C2B23;--white:#FFFFFF;--border-color:rgba(0,107,58,0.12);--success-green:#006B3A;--danger-red:#ff3b30;--warning-amber:#ff9f0a;--info-blue:#0a84ff;}body{background:var(--admin-bg) !important;color:#000000 !important;display:flex;height:100vh;overflow:hidden;scroll-behavior:smooth;}.sidebar{width:280px;background:var(--admin-sidebar);color:#000000;padding:2.5rem 1.5rem;display:flex;flex-direction:column;flex-shrink:0;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);height:100vh;position:sticky;top:0;overflow-y:auto;padding-bottom:4rem;border-right:1px solid var(--border-color);}.sidebar::-webkit-scrollbar{width:4px;}.sidebar::-webkit-scrollbar-thumb{background:rgba(0,107,58,0.1);border-radius:10px;}.sidebar .logo{margin-bottom:4rem;cursor:pointer;}.sidebar-nav{flex-grow:1;display:flex;flex-direction:column;min-height:min-content;}.nav-item{padding:1rem 1.2rem;margin-bottom:0.4rem;border-radius:12px;cursor:pointer;transition:all 0.3s ease;display:flex;align-items:center;gap:1rem;opacity:0.85;font-size:0.9rem;color:#000000 !important;font-weight:700 !important;}.logout-item{margin-top:2rem;border-top:1px solid var(--border-color);padding-top:2rem;}.nav-item:hover,.nav-item.active{background:rgba(0,107,58,0.08);opacity:1;}.nav-item.active{border-left:4px solid var(--primary-red);color:#006B3A !important;}.main-stage{flex-grow:1;padding:3rem;overflow-y:auto;background:var(--admin-bg);scroll-behavior:smooth;}.main-stage::-webkit-scrollbar{width:8px;}.main-stage::-webkit-scrollbar-track{background:var(--admin-bg);}.main-stage::-webkit-scrollbar-thumb{background:rgba(0,107,58,0.1);border-radius:10px;}.main-stage::-webkit-scrollbar-thumb:hover{background:rgba(0,107,58,0.25);}.stage-header{margin-bottom:4rem;display:flex;justify-content:space-between;align-items:center;}.stage-header h1{color:#000000 !important;font-weight:800 !important;}.stage-header p{color:#1C2B23 !important;font-weight:600 !important;}.stat-banner{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;margin-bottom:4rem;}.b-card{background:var(--white);padding:2.5rem;border-radius:24px;box-shadow:0 10px 30px rgba(0,107,58,0.06);border:1px solid var(--border-color);color:#000000 !important;}.b-card h4{font-size:0.8rem;text-transform:uppercase;color:#1C2B23;margin-bottom:1rem;letter-spacing:1px;font-weight:800;}.b-card .val{font-size:2.2rem;font-weight:800;color:#000000;}.swal2-popup{background:#FFFFFF !important;color:#000000 !important;border:1px solid rgba(0,107,58,0.15) !important;border-radius:20px !important;box-shadow:0 20px 50px rgba(0,0,0,0.15) !important;}.swal2-title{color:#000000 !important;font-weight:800 !important;}.swal2-html-container{color:#1C2B23 !important;font-weight:600 !important;}.swal2-input,.swal2-textarea,.swal2-select{background:#F7FAF6 !important;color:#000000 !important;border:1px solid rgba(0,107,58,0.25) !important;color-scheme:light !important;font-weight:700 !important;}.swal2-validation-message{background:rgba(255,59,48,0.1) !important;color:#ff3b30 !important;}input,select,textarea{background:#F7FAF6 !important;color:#000000 !important;border:1px solid rgba(0,107,58,0.25) !important;padding:0.75rem 1rem !important;border-radius:10px !important;outline:none !important;transition:all 0.3s ease !important;color-scheme:light !important;font-weight:700 !important;}input:focus,select:focus,textarea:focus{border-color:var(--primary-red) !important;background:#FFFFFF !important;box-shadow:0 0 10px rgba(0,107,58,0.2) !important;}label{color:#000000 !important;font-weight:800 !important;font-size:0.85rem !important;margin-bottom:0.5rem !important;display:inline-block !important;}.data-table-container{background:var(--white);border-radius:30px;padding:2.5rem;box-shadow:0 20px 50px rgba(0,0,0,0.06);overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border-color);}.data-table-container::-webkit-scrollbar{width:8px;height:8px;}.data-table-container::-webkit-scrollbar-track{background:transparent;}.data-table-container::-webkit-scrollbar-thumb{background:rgba(0,107,58,0.1);border-radius:10px;}.data-table-container::-webkit-scrollbar-thumb:hover{background:var(--primary-red);}.cityride-table{width:100%;border-collapse:collapse;}.cityride-table th{text-align:left;padding:1.5rem;font-size:0.75rem;text-transform:uppercase;color:#1C2B23;font-weight:800;border-bottom:2px solid var(--border-color);}.cityride-table td{padding:1.5rem;border-bottom:1px solid var(--border-color);font-size:0.95rem;vertical-align:top;color:#000000;font-weight:600;}.status-tag{padding:0.4rem 0.8rem;border-radius:8px;font-size:0.7rem;font-weight:800;text-transform:uppercase;}.status-pending{background:rgba(255,159,10,0.1);color:var(--warning-amber);}.status-assigned{background:rgba(10,132,255,0.1);color:var(--info-blue);}.status-completed{background:rgba(52,199,89,0.1);color:var(--success-green);}.status-cancelled{background:rgba(255,59,48,0.1);color:var(--danger-red);}.status-cancel_requested{background:rgba(255,59,48,0.15);color:var(--danger-red);}.action-btn{background:none;border:none;cursor:pointer;color:var(--primary-red);font-weight:600;font-size:0.85rem;}.action-btn:hover{text-decoration:underline;}.tab-section{display:none;}.tab-section.active{display:block;animation:fadeIn 0.4s ease;}@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}@media (max-width:1366px){.sidebar{width:220px;padding:1.5rem;}.main-stage{padding:2.5rem;}.stat-banner{grid-template-columns:repeat(2,1fr);gap:1.5rem;}.b-card{padding:2rem;}.b-card .val{font-size:1.8rem;}}@media (max-width:1024px){.stat-banner{grid-template-columns:1fr 1fr;}.sidebar{width:200px;}}@media (max-width:768px){body{flex-direction:column;overflow-y:auto;}.sidebar{position:fixed;left:-260px;top:0;height:100vh;z-index:10000;transition:var(--transition);width:260px;box-shadow:20px 0 50px rgba(0,0,0,0.1);}.sidebar.active{left:0;}.mobile-header{display:flex;background:var(--admin-sidebar);color:white;padding:1.25rem 2rem;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:9000;}.sidebar .logo{margin-bottom:3rem;}.sidebar-nav{display:block;}.main-stage{padding:1.5rem;overflow:visible;}.data-table-container{padding:1.25rem;border-radius:15px;}.stage-header h1{font-size:1.8rem;}.stat-banner{grid-template-columns:1fr;gap:1rem;}.b-card{padding:1.5rem;}.b-card .val{font-size:1.6rem;}}.map-modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:10000;}.map-modal-content{background:var(--white);padding:0;border-radius:24px;width:90%;max-width:550px;max-height:90vh;overflow-y:auto;box-shadow:0 30px 60px rgba(0,0,0,0.5);animation:modalSlideUp 0.4s ease;border:1px solid var(--border-color);color:var(--text-main);}@keyframes modalSlideUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}.map-header{background:var(--admin-sidebar);color:white;padding:1.5rem 2rem;display:flex;justify-content:space-between;align-items:center;}.close-map{background:none;border:none;color:white;font-size:1.5rem;cursor:pointer;opacity:0.7;}.close-map:hover{opacity:1;}.btn-large{padding:1.2rem;border-radius:12px;font-weight:700;font-size:1rem;cursor:pointer;border:none;transition:all 0.3s ease;}.btn-primary{background:var(--primary-red);color:white;}.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(183,28,28,0.2);}.mobile-header{display:none;}@media (max-width:1024px){body{flex-direction:column;overflow-y:auto;}.mobile-header{display:flex;background:var(--admin-sidebar);color:white;padding:1.25rem 2rem;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:9000;box-shadow:0 10px 30px rgba(0,0,0,0.1);}.sidebar{position:fixed;left:-280px;top:0;height:100vh;z-index:10000;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);width:280px;background:var(--admin-sidebar);padding-top:5rem;}.sidebar.active{left:0;}.sidebar-nav{display:block;}.main-stage{padding:1.5rem;overflow:visible;}.stat-banner{grid-template-columns:1fr;gap:1rem;}.data-table-container{padding:1rem;border-radius:12px;}.stage-header h1{font-size:1.6rem;}.burger-menu{display:flex;flex-direction:column;gap:5px;cursor:pointer;z-index:10001;width:44px;height:44px;align-items:center;justify-content:center;}.burger-menu span{display:block;width:25px;height:2px;background:white;transition:0.3s;border-radius:2px;}.burger-menu.active span:nth-child(1){transform:translateY(7px) rotate(45deg);}.burger-menu.active span:nth-child(2){opacity:0;}.burger-menu.active span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}#tariff-fields-container{grid-template-columns:1fr !important;}#create-vendor-form,#create-driver-form{grid-template-columns:1fr !important;}.cityride-table thead{display:none;}.cityride-table,.cityride-table tbody,.cityride-table tr,.cityride-table td{display:block;width:100%;}.cityride-table tr{margin-bottom:1.5rem;background:var(--white);border:1px solid var(--border-color);border-radius:16px;padding:1.25rem;box-shadow:0 10px 30px rgba(0,0,0,0.2);}.cityride-table td{border:none;padding:0.85rem 0 0.85rem 130px;display:block;text-align:right;border-bottom:1px solid var(--border-color);position:relative;min-height:2.5rem;}.cityride-table td:last-child{border-bottom:none;margin-top:0.5rem;padding-bottom:0;}.cityride-table td::before{content:attr(data-label);font-weight:800;text-transform:uppercase;font-size:0.65rem;color:var(--text-muted);position:absolute;left:0;top:1rem;text-align:left;width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}}.pilot-info-block{display:flex;flex-direction:column;gap:4px;text-align:left;min-width:180px;}.pilot-info-block .p-name{font-weight:700;color:var(--text-main);font-size:0.9rem;line-height:1.2;}.pilot-info-block .p-email a{font-size:0.75rem;color:var(--info-blue);text-decoration:none;font-weight:600;display:block;margin-top:1px;}.pilot-info-block .p-phone a{font-size:0.75rem;color:var(--primary-red);text-decoration:none;font-weight:700;display:block;}@media (max-width:1024px){.pilot-info-block{text-align:right;align-items:flex-end;}}.vehicle-tiles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.25rem;margin-bottom:2.5rem;}
+.vehicle-tile-card{background:#14161d;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:1.5rem;cursor:pointer;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.3);}
+.vehicle-tile-card:hover{transform:translateY(-4px);border-color:var(--primary-red);box-shadow:0 12px 30px rgba(183,28,28,0.25);background:#1a1d26;}
+.vehicle-tile-card.active{border-color:var(--primary-red);box-shadow:0 0 20px rgba(183,28,28,0.4);background:#1e222e;}
+.vehicle-tile-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+.vehicle-tile-icon{font-size:2.2rem;width:52px;height:52px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;display:flex;align-items:center;justify-content:center;}
+.vehicle-tile-title{font-size:1.2rem;font-weight:800;color:#ffffff;margin:0;}
+.vehicle-tile-sub{font-size:0.78rem;color:var(--text-muted);font-weight:500;}
+.vehicle-rate-summary{display:flex;flex-direction:column;gap:8px;margin:1rem 0;padding-top:1rem;border-top:1px dashed rgba(255,255,255,0.08);}
+.rate-summary-pill{display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.04);}
+.rate-summary-pill .cat-name{font-weight:700;color:var(--text-muted);font-size:0.7rem;text-transform:uppercase;}
+.rate-summary-pill .cat-val{font-weight:700;color:#ffffff;}
+.vehicle-tile-footer{display:flex;align-items:center;justify-content:space-between;margin-top:1rem;padding-top:0.8rem;border-top:1px solid rgba(255,255,255,0.06);color:var(--primary-red);font-weight:700;font-size:0.85rem;}
+.expanded-tariff-card{background:#14161d;border:1px solid rgba(183,28,28,0.3);border-radius:24px;padding:1.75rem;margin-bottom:3rem;box-shadow:0 20px 50px rgba(0,0,0,0.5);animation:fadeIn 0.4s ease;}
+.category-tariff-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.25rem;margin-top:1.5rem;}
+.category-tariff-card{background:#090a0f;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:1.25rem;display:flex;flex-direction:column;justify-content:space-between;}
+</style>
 </head>
 
 <body style="overflow: hidden;"> <!-- Lock scroll during splash -->
@@ -50,7 +66,7 @@
         <div class="splash-status">Dispatching Systems…</div>
     </div>
     <div class="mobile-header">
-        <div class="logo" style="margin:0">
+        <div class="logo" style="margin:0; cursor:pointer;" onclick="window.location.href='admin.html'">
             <img src="logo.png" alt="CityRideTaxi" width="48" height="35" style="height: 35px; width: auto;">
         </div>
         <div class="burger-menu" id="admin-burger">
@@ -60,7 +76,7 @@
         </div>
     </div>
     <aside class="sidebar" id="admin-sidebar">
-        <div class="logo" onclick="window.location.href='/'" style="cursor:pointer;">
+        <div class="logo" onclick="window.location.href='admin.html'" style="cursor:pointer;">
             <img src="logo.png" alt="CityRideTaxi" width="69" height="50" style="height: 50px; width: auto;">
         </div>
         <div class="sidebar-nav">
@@ -437,21 +453,12 @@
                 <h1>Rate <span class="text-accent">Tariffs</span></h1>
                 <p>Manage pricing and fare rules for all vehicle categories.</p>
             </div>
-            <div class="data-table-container">
-                <table class="cityride-table">
-                    <thead>
-                        <tr>
-                            <th>Vehicle</th>
-                            <th>Category</th>
-                            <th>Current Rates</th>
-                            <th>Last Updated</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tariffs-table-body">
-                        <!-- Loaded via JS -->
-                    </tbody>
-                </table>
+            <div id="vehicle-tiles-container" class="vehicle-tiles-grid">
+                <!-- Loaded dynamically via JS -->
+            </div>
+
+            <div id="expanded-vehicle-tariff-view" class="expanded-tariff-card" style="display: none;">
+                <!-- Loaded dynamically when vehicle tile is pressed -->
             </div>
 
             <div class="stage-header" style="margin-top: 4rem;">
@@ -760,15 +767,7 @@
     <script>(function() {
 const originalFetch = window.fetch;
 function getLoginRedirect(url) {
-if (typeof url === 'string' && url.includes('/api/')) {
-if (url.includes('/api/admin/')) return 'admin-login.html';
-if (url.includes('/api/vendor/')) return 'vendor-login.html';
-if (url.includes('/api/driver/') || url.includes('/api/bookings/')) {
-return window.location.pathname.includes('driver') ? 'driver-login.html' : 'auth.html';
-}
-return 'auth.html';
-}
-return null;
+    return 'admin-login.html';
 }
 window.fetch = async function (...args) {
 const response = await originalFetch(...args);
@@ -784,30 +783,31 @@ return response;
 };
 })();
 async function initAdminSession() {
+    // 1. Synchronously verify stored credentials
     let user = null;
+    try {
+        const raw = localStorage.getItem('cityride_master');
+        if (raw) user = JSON.parse(raw);
+    } catch(e) {}
+
+    // If no credentials, redirect to login page immediately
+    if (!user || (!user.id && !user.email)) {
+        window.location.href = 'admin-login.html';
+        return;
+    }
+
+    // 2. Background session check
     try {
         const sessionRes = await fetch('/api/auth/session?role=admin');
         if (sessionRes.ok) {
             const sd = await sessionRes.json();
-            if (sd.valid && sd.role === 'admin') {
+            if (sd.valid && sd.role === 'admin' && sd.user) {
                 user = sd.user;
                 localStorage.setItem('cityride_master', JSON.stringify(user));
-            } else {
-                localStorage.removeItem('cityride_master');
-                window.location.href = '/admin-login';
-                return;
             }
-        } else {
-            localStorage.removeItem('cityride_master');
-            window.location.href = '/admin-login';
-            return;
         }
     } catch (e) {
-        user = JSON.parse(localStorage.getItem('cityride_master'));
-        if (!user) {
-            window.location.href = '/admin-login';
-            return;
-        }
+        console.log('Admin session active in local mode');
     }
 }
 initAdminSession();
@@ -897,34 +897,27 @@ if (Array.isArray(bookings)) {
 body.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888;">No recent missions found or platform error.</td></tr>';
 }
 } else if (tabId === 'tariffs') {
-const resT = await fetch(`${API_BASE_URL}/api/tariffs`);
-if (!resT.ok) throw new Error('Tariffs Fetch Failed');
-const tariffs = await resT.json();
-if (body) {
-body.innerHTML = '';
-tariffs.forEach(t => {
-const config = typeof t.config === 'string' ? JSON.parse(t.config) : t.config;
-let rateStr = '';
-if (t.category === 'rental') {
-rateStr = 'Package-based';
-} else {
-rateStr = `Base: ₹${config.base}, Rate: ₹${config.perKm}/km`;
-}
-body.innerHTML += `
-<tr>
-<td data-label="Vehicle">${t.vehicle_type.toUpperCase()}</td>
-<td data-label="Category">${t.category.toUpperCase()}</td>
-<td data-label="Current Rates">${rateStr}</td>
-<td data-label="Last Updated">${new Date(t.updated_at).toLocaleDateString()}</td>
-<td data-label="Actions">
-<button class="action-btn" onclick='openTariffModal(${JSON.stringify(t)})'>Configure</button>
-</td>
-</tr>
-`;
-});
-}
-loadPeakRules();
-loadSpecialLocationCharges();
+    try {
+        const resT = await fetch(`${API_BASE_URL}/api/tariffs`);
+        if (!resT.ok) throw new Error('Tariffs Fetch Failed');
+        const tariffs = await resT.json();
+        window._adminTariffsData = tariffs;
+        renderVehicleTariffTiles(tariffs);
+    } catch (err) {
+        console.error('Failed to load tariffs:', err);
+        const container = document.getElementById('vehicle-tiles-container');
+        if (container) {
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; padding: 2rem; background: rgba(255, 59, 48, 0.1); border: 1px solid rgba(255, 59, 48, 0.3); border-radius: 16px; text-align: center;">
+                    <h3 style="color: var(--danger-red); margin-bottom: 0.5rem;">⚠️ Failed to load vehicle tariffs</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 1rem;">Database query timed out or server is re-connecting.</p>
+                    <button class="btn btn-primary" onclick="loadTabData('tariffs')">🔄 Retry Loading Tariffs</button>
+                </div>
+            `;
+        }
+    }
+    loadPeakRules();
+    loadSpecialLocationCharges();
 } else if (tabId === 'system-settings') {
 loadSystemSettings();
 } else if (tabId === 'bookings') {
@@ -1907,145 +1900,283 @@ alert("Failed to generate PDF Report");
         </div>
     </div>
 
-    <script>function openTariffModal(t) {
-const config = typeof t.config === 'string' ? JSON.parse(t.config) : t.config;
-document.getElementById('edit-t-id').value = t.id;
-document.getElementById('edit-t-category').value = t.category;
-document.getElementById('tariff-info').textContent = `${t.vehicle_type.toUpperCase()} - ${t.category.toUpperCase()}`;
-const container = document.getElementById('tariff-fields-container');
-container.innerHTML = '';
-if (t.category === 'rental') {
-Object.keys(config).forEach(pkg => {
-const pkgData = config[pkg];
-container.innerHTML += `
-<div style="grid-column: span 2; padding: 10px; background: #f8f8f8; border-radius: 8px; font-weight: 700; font-size: 0.8rem;">Package: ${pkg}</div>
-<div class="input-group">
-<label>Base Fare (₹)</label>
-<input type="number" step="0.01" value="${pkgData.base}" data-pkg="${pkg}" data-key="base" required>
-</div>
-<div class="input-group">
-<label>Extra KM (₹)</label>
-<input type="number" step="0.01" value="${pkgData.extraKm}" data-pkg="${pkg}" data-key="extraKm" required>
-</div>
-<div class="input-group">
-<label>Extra Hour (₹)</label>
-<input type="number" step="0.01" value="${pkgData.extraHour}" data-pkg="${pkg}" data-key="extraHour" required>
-</div>
-<div style="height: 10px; grid-column: span 2;"></div>
-`;
-});
-} else if (t.category === 'local') {
-container.innerHTML = `
-<div class="input-group">
-<label>Rate 0-5 KM (₹)</label>
-<input type="number" step="0.01" id="edit-t-slab1" value="${config.slab1_rate !== undefined ? config.slab1_rate : 30}" required>
-</div>
-<div class="input-group">
-<label>Rate 6-10 KM (₹)</label>
-<input type="number" step="0.01" id="edit-t-slab2" value="${config.slab2_rate !== undefined ? config.slab2_rate : 28}" required>
-</div>
-<div class="input-group">
-<label>Rate 11-20 KM (₹)</label>
-<input type="number" step="0.01" id="edit-t-slab3" value="${config.slab3_rate !== undefined ? config.slab3_rate : 26}" required>
-</div>
-<div class="input-group">
-<label>Rate 21-30 KM (₹)</label>
-<input type="number" step="0.01" id="edit-t-slab4" value="${config.slab4_rate !== undefined ? config.slab4_rate : 24}" required>
-</div>
-<div class="input-group">
-<label>Rate 31-40 KM (₹)</label>
-<input type="number" step="0.01" id="edit-t-slab5" value="${config.slab5_rate !== undefined ? config.slab5_rate : 19}" required>
-</div>
-<div class="input-group">
-<label>Rate 41-50 KM (₹)</label>
-<input type="number" step="0.01" id="edit-t-slab6" value="${config.slab6_rate !== undefined ? config.slab6_rate : 18}" required>
-</div>
-<div class="input-group">
-<label>Rate 51-60 KM (₹)</label>
-<input type="number" step="0.01" id="edit-t-slab7" value="${config.slab7_rate !== undefined ? config.slab7_rate : 17}" required>
-</div>
-<div class="input-group">
-<label>Rate 61-70 KM (₹)</label>
-<input type="number" step="0.01" id="edit-t-slab8" value="${config.slab8_rate !== undefined ? config.slab8_rate : 16}" required>
-</div>
-<div class="input-group">
-<label>Rate 71-80 KM (₹)</label>
-<input type="number" step="0.01" id="edit-t-slab9" value="${config.slab9_rate !== undefined ? config.slab9_rate : 15}" required>
-</div>
-<div class="input-group">
-<label>Rate 81-90 KM (₹)</label>
-<input type="number" step="0.01" id="edit-t-slab10" value="${config.slab10_rate !== undefined ? config.slab10_rate : 14}" required>
-</div>
-<div class="input-group">
-<label>Rate 91-100+ KM (₹)</label>
-<input type="number" step="0.01" id="edit-t-slab11" value="${config.slab11_rate !== undefined ? config.slab11_rate : 13}" required>
-</div>
-<div class="input-group">
-<label>Min KM Distance</label>
-<input type="number" id="edit-t-min" value="${config.minKm || 0}" required>
-</div>
-`;
-} else {
-container.innerHTML = `
-<div class="input-group">
-<label>Base Fare (₹)</label>
-<input type="number" step="0.01" id="edit-t-base" value="${config.base || 0}" required>
-</div>
-<div class="input-group">
-<label>Rate Per KM (₹)</label>
-<input type="number" step="0.01" id="edit-t-perKm" value="${config.perKm || 0}" required>
-</div>
-<div class="input-group">
-<label>${t.category === 'round' ? 'Min KM Per Day' : 'Min KM Distance'}</label>
-<input type="number" id="edit-t-min" value="${config.minKm || config.minKmPerDay || 0}" required>
-</div>
-`;
-if (t.category === 'oneway' && t.vehicle_type !== 'bike') {
-}
-}
-document.getElementById('tariff-modal').style.display = 'flex';
-}
-function closeTariffModal() {
-document.getElementById('tariff-modal').style.display = 'none';
-}
-document.getElementById('tariff-form').addEventListener('submit', async (e) => {
-e.preventDefault();
-const id = document.getElementById('edit-t-id').value;
-const category = document.getElementById('edit-t-category').value;
-let config = {};
-if (category === 'rental') {
-const inputs = document.querySelectorAll('#tariff-fields-container input');
-inputs.forEach(input => {
-const pkg = input.dataset.pkg;
-const key = input.dataset.key;
-if (!config[pkg]) config[pkg] = {};
-config[pkg][key] = parseFloat(input.value);
-});
-} else if (category === 'local') {
-config = {
-slab1_rate: parseFloat(document.getElementById('edit-t-slab1').value),
-slab2_rate: parseFloat(document.getElementById('edit-t-slab2').value),
-slab3_rate: parseFloat(document.getElementById('edit-t-slab3').value),
-slab4_rate: parseFloat(document.getElementById('edit-t-slab4').value),
-slab5_rate: parseFloat(document.getElementById('edit-t-slab5').value),
-slab6_rate: parseFloat(document.getElementById('edit-t-slab6').value),
-slab7_rate: parseFloat(document.getElementById('edit-t-slab7').value),
-slab8_rate: parseFloat(document.getElementById('edit-t-slab8').value),
-slab9_rate: parseFloat(document.getElementById('edit-t-slab9').value),
-slab10_rate: parseFloat(document.getElementById('edit-t-slab10').value),
-slab11_rate: parseFloat(document.getElementById('edit-t-slab11').value),
-minKm: parseInt(document.getElementById('edit-t-min').value)
-};
-} else {
-config = {
-base: parseFloat(document.getElementById('edit-t-base').value),
-perKm: parseFloat(document.getElementById('edit-t-perKm').value)
-};
-const minVal = parseInt(document.getElementById('edit-t-min').value);
-if (category === 'round') config.minKmPerDay = minVal;
-else config.minKm = minVal;
-}
-try {
+    <script>
+        const VEHICLE_TYPES = [
+            { key: 'bike', name: 'Bike Taxi', capacity: '1 Seater', icon: '🏍️' },
+            { key: 'auto', name: 'Auto Rickshaw', capacity: '3+1 Seater', icon: '🛺' },
+            { key: 'hatchback', name: 'Hatchback Economy', capacity: '4+1 Seater', icon: '🚗' },
+            { key: 'sedan', name: 'Sedan Premium', capacity: '4+1 Seater', icon: '🚘' },
+            { key: 'suv', name: 'SUV Classic', capacity: '6+1 Seater', icon: '🚙' },
+            { key: '8plus1', name: 'Tempo Traveler', capacity: '8+1 Seater', icon: '🚐' },
+            { key: 'van24', name: 'Omni Bus', capacity: '24+1 Seater', icon: '🚌' }
+        ];
+
+        let _activeVehicleKey = null;
+
+        function renderVehicleTariffTiles(tariffs) {
+            const container = document.getElementById('vehicle-tiles-container');
+            if (!container) return;
+
+            container.innerHTML = VEHICLE_TYPES.map(v => {
+                const vehicleTariffs = tariffs.filter(t => t.vehicle_type === v.key && t.category !== 'rental');
+                
+                let summaryHtml = '';
+                if (vehicleTariffs.length === 0) {
+                    summaryHtml = `<div class="rate-summary-pill" style="justify-content:center; color:var(--text-muted);">No rates configured</div>`;
+                } else {
+                    summaryHtml = vehicleTariffs.map(t => {
+                        const config = typeof t.config === 'string' ? JSON.parse(t.config) : t.config;
+                        let rateVal = '';
+                        if (t.category === 'local') {
+                            const base = config.base !== undefined ? config.base : (config.slab1_rate !== undefined ? config.slab1_rate : 0);
+                            const rate = config.perKm !== undefined ? config.perKm : (config.slab1_rate !== undefined ? config.slab1_rate : 0);
+                            rateVal = `Base ₹${base} | ₹${rate}/km`;
+                        } else {
+                            const base = config.base || 0;
+                            const perKm = config.perKm || 0;
+                            rateVal = base > 0 ? `Base ₹${base} | ₹${perKm}/km` : `₹${perKm}/km`;
+                        }
+
+                        return `
+                            <div class="rate-summary-pill">
+                                <span class="cat-name">${t.category.toUpperCase()}</span>
+                                <span class="cat-val">${rateVal}</span>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                const isSelected = _activeVehicleKey === v.key;
+
+                return `
+                    <div class="vehicle-tile-card ${isSelected ? 'active' : ''}" onclick="expandVehicleTariff('${v.key}')">
+                        <div>
+                            <div class="vehicle-tile-header">
+                                <div class="vehicle-tile-icon">${v.icon}</div>
+                                <span class="status-tag status-assigned" style="font-size:0.65rem;">${v.capacity}</span>
+                            </div>
+                            <h3 class="vehicle-tile-title">${v.name.toUpperCase()}</h3>
+                            <div class="vehicle-tile-sub">Vehicle Key: <code style="color:var(--info-blue); font-weight:700;">${v.key}</code></div>
+                            <div class="vehicle-rate-summary">
+                                ${summaryHtml}
+                            </div>
+                        </div>
+                        <div class="vehicle-tile-footer">
+                            <span>Manage Rate Tariffs</span>
+                            <span style="font-size:1.1rem;">→</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (_activeVehicleKey) {
+                expandVehicleTariff(_activeVehicleKey);
+            } else {
+                const expView = document.getElementById('expanded-vehicle-tariff-view');
+                if (expView) expView.style.display = 'none';
+            }
+        }
+
+        function expandVehicleTariff(vehicleKey) {
+            _activeVehicleKey = vehicleKey;
+            
+            if (window._adminTariffsData) {
+                const container = document.getElementById('vehicle-tiles-container');
+                if (container) {
+                    container.querySelectorAll('.vehicle-tile-card').forEach(card => card.classList.remove('active'));
+                }
+            }
+
+            const vehicleInfo = VEHICLE_TYPES.find(v => v.key === vehicleKey) || { name: vehicleKey.toUpperCase(), icon: '🚖', capacity: 'Standard' };
+            const vehicleTariffs = (window._adminTariffsData || []).filter(t => t.vehicle_type === vehicleKey && t.category !== 'rental');
+
+            const expView = document.getElementById('expanded-vehicle-tariff-view');
+            if (!expView) return;
+
+            expView.style.display = 'block';
+
+            const CATEGORY_NAMES = {
+                local: { label: 'Standard Rate Tariff', desc: 'Distance slab pricing up to 100 KM + standard rate above 100 KM with configurable base fare and min KM' }
+            };
+
+            const allCategories = ['local'];
+
+            const categoriesHtml = allCategories.map(cat => {
+                const t = vehicleTariffs.find(x => x.category === cat) || vehicleTariffs[0];
+                const catMeta = CATEGORY_NAMES.local;
+
+                let rateDetailsHtml = '';
+                if (!t) {
+                    rateDetailsHtml = `<div style="color:var(--danger-red); font-size:0.85rem; font-weight:600;">Not configured in database</div>`;
+                } else {
+                    const config = typeof t.config === 'string' ? JSON.parse(t.config) : t.config;
+                    const baseFare = config.base !== undefined ? config.base : 0;
+                    const minKm = config.minKm || 0;
+                    const above100 = config.above100_rate !== undefined ? config.above100_rate : (config.slab11_rate || config.perKm || 13);
+                    
+                    rateDetailsHtml = `
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding-bottom:6px; margin-bottom:8px; border-bottom:1px dashed rgba(255,255,255,0.08);">
+                            <span><span style="color:var(--text-muted)">Base Fare:</span> <strong style="color:var(--primary-red)">₹${baseFare}</strong></span>
+                            <span><span style="color:var(--text-muted)">Min KM:</span> <strong>${minKm} KM</strong></span>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.8rem;">
+                            <div><span style="color:var(--text-muted)">0-5 KM:</span> <strong>₹${config.slab1_rate !== undefined ? config.slab1_rate : 30}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">6-10 KM:</span> <strong>₹${config.slab2_rate !== undefined ? config.slab2_rate : 28}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">11-20 KM:</span> <strong>₹${config.slab3_rate !== undefined ? config.slab3_rate : 26}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">21-30 KM:</span> <strong>₹${config.slab4_rate !== undefined ? config.slab4_rate : 24}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">31-40 KM:</span> <strong>₹${config.slab5_rate !== undefined ? config.slab5_rate : 22}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">41-50 KM:</span> <strong>₹${config.slab6_rate !== undefined ? config.slab6_rate : 20}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">51-60 KM:</span> <strong>₹${config.slab7_rate !== undefined ? config.slab7_rate : 18}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">61-70 KM:</span> <strong>₹${config.slab8_rate !== undefined ? config.slab8_rate : 16}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">71-80 KM:</span> <strong>₹${config.slab9_rate !== undefined ? config.slab9_rate : 15}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">81-90 KM:</span> <strong>₹${config.slab10_rate !== undefined ? config.slab10_rate : 14}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">91-100 KM:</span> <strong>₹${config.slab11_rate !== undefined ? config.slab11_rate : 13}/km</strong></div>
+                            <div style="grid-column: span 2; background:rgba(10,132,255,0.1); border:1px solid rgba(10,132,255,0.2); padding:6px 10px; border-radius:6px; margin-top:4px; text-align:center;">
+                                <span style="color:var(--text-muted)">Above 100 KM Standard Rate:</span> <strong style="color:var(--info-blue)">₹${above100}/km</strong>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const jsonStr = t ? JSON.stringify(t).replace(/'/g, "&apos;") : '';
+
+                return `
+                    <div class="category-tariff-card">
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                <span style="font-weight:800; font-size:0.95rem; color:#fff; text-transform:uppercase; letter-spacing:0.5px;">${catMeta.label}</span>
+                                <span class="status-tag status-completed" style="font-size:0.65rem;">ACTIVE TARIFF</span>
+                            </div>
+                            <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:1rem; line-height:1.4;">${catMeta.desc}</p>
+                            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:12px; border-radius:12px; margin-bottom:1.25rem;">
+                                ${rateDetailsHtml}
+                            </div>
+                        </div>
+                        <div>
+                            ${t ? `<button class="btn btn-primary" style="width:100%; padding:0.65rem; font-size:0.82rem;" onclick='openTariffModal(${jsonStr})'>⚙️ Edit Rate Tariff Configuration</button>` : `<button class="btn" style="width:100%; padding:0.65rem; font-size:0.82rem; background:rgba(255,255,255,0.05); color:var(--text-muted);" disabled>Not Available</button>`}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            expView.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:1.25rem; margin-bottom:1.5rem;">
+                    <div style="display:flex; align-items:center; gap:14px; min-width:0;">
+                        <div style="font-size:2rem; width:52px; height:52px; flex-shrink:0; background:rgba(183,28,28,0.15); border:1px solid var(--primary-red); border-radius:14px; display:flex; align-items:center; justify-content:center;">${vehicleInfo.icon}</div>
+                        <div style="min-width:0;">
+                            <h2 style="margin:0; font-size:1.3rem; font-weight:800; color:#fff; word-break:break-word;">${vehicleInfo.name.toUpperCase()} RATE TARIFFS</h2>
+                            <span style="font-size:0.78rem; color:var(--text-muted);">${vehicleInfo.capacity} • Vehicle Key: <code style="color:var(--info-blue); font-weight:700;">${vehicleKey}</code></span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="collapseVehicleTariffView()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff; padding:0.6rem 1.2rem; font-size:0.82rem; white-space:nowrap; flex-shrink:0; margin-left:auto;">← Back to All Vehicles</button>
+                </div>
+                <div class="category-tariff-grid">
+                    ${categoriesHtml}
+                </div>
+            `;
+
+            expView.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function collapseVehicleTariffView() {
+            _activeVehicleKey = null;
+            const expView = document.getElementById('expanded-vehicle-tariff-view');
+            if (expView) expView.style.display = 'none';
+            if (window._adminTariffsData) {
+                renderVehicleTariffTiles(window._adminTariffsData);
+            }
+        }
+
+        function openTariffModal(t) {
+            const config = typeof t.config === 'string' ? JSON.parse(t.config) : t.config;
+            document.getElementById('edit-t-id').value = t.id;
+            document.getElementById('edit-t-category').value = t.category;
+            document.getElementById('tariff-info').textContent = `${t.vehicle_type.toUpperCase()} - RATE TARIFF CONFIGURATION`;
+            const container = document.getElementById('tariff-fields-container');
+            container.innerHTML = `
+                <div class="input-group">
+                    <label>Base Fare (₹)</label>
+                    <input type="number" step="0.01" id="edit-t-base" value="${config.base !== undefined ? config.base : 0}" required>
+                </div>
+                <div class="input-group">
+                    <label>Min KM Distance</label>
+                    <input type="number" id="edit-t-min" value="${config.minKm || 0}" required>
+                </div>
+                <div class="input-group">
+                    <label>Rate 0-5 KM (₹/km)</label>
+                    <input type="number" step="0.01" id="edit-t-slab1" value="${config.slab1_rate !== undefined ? config.slab1_rate : 30}" required>
+                </div>
+                <div class="input-group">
+                    <label>Rate 6-10 KM (₹/km)</label>
+                    <input type="number" step="0.01" id="edit-t-slab2" value="${config.slab2_rate !== undefined ? config.slab2_rate : 28}" required>
+                </div>
+                <div class="input-group">
+                    <label>Rate 11-20 KM (₹/km)</label>
+                    <input type="number" step="0.01" id="edit-t-slab3" value="${config.slab3_rate !== undefined ? config.slab3_rate : 26}" required>
+                </div>
+                <div class="input-group">
+                    <label>Rate 21-30 KM (₹/km)</label>
+                    <input type="number" step="0.01" id="edit-t-slab4" value="${config.slab4_rate !== undefined ? config.slab4_rate : 24}" required>
+                </div>
+                <div class="input-group">
+                    <label>Rate 31-40 KM (₹/km)</label>
+                    <input type="number" step="0.01" id="edit-t-slab5" value="${config.slab5_rate !== undefined ? config.slab5_rate : 22}" required>
+                </div>
+                <div class="input-group">
+                    <label>Rate 41-50 KM (₹/km)</label>
+                    <input type="number" step="0.01" id="edit-t-slab6" value="${config.slab6_rate !== undefined ? config.slab6_rate : 20}" required>
+                </div>
+                <div class="input-group">
+                    <label>Rate 51-60 KM (₹/km)</label>
+                    <input type="number" step="0.01" id="edit-t-slab7" value="${config.slab7_rate !== undefined ? config.slab7_rate : 18}" required>
+                </div>
+                <div class="input-group">
+                    <label>Rate 61-70 KM (₹/km)</label>
+                    <input type="number" step="0.01" id="edit-t-slab8" value="${config.slab8_rate !== undefined ? config.slab8_rate : 16}" required>
+                </div>
+                <div class="input-group">
+                    <label>Rate 71-80 KM (₹/km)</label>
+                    <input type="number" step="0.01" id="edit-t-slab9" value="${config.slab9_rate !== undefined ? config.slab9_rate : 15}" required>
+                </div>
+                <div class="input-group">
+                    <label>Rate 81-90 KM (₹/km)</label>
+                    <input type="number" step="0.01" id="edit-t-slab10" value="${config.slab10_rate !== undefined ? config.slab10_rate : 14}" required>
+                </div>
+                <div class="input-group">
+                    <label>Rate 91-100 KM (₹/km)</label>
+                    <input type="number" step="0.01" id="edit-t-slab11" value="${config.slab11_rate !== undefined ? config.slab11_rate : 13}" required>
+                </div>
+                <div class="input-group" style="grid-column: span 2;">
+                    <label style="color:var(--info-blue) !important; font-weight:800 !important;">Above 100 KM Standard Rate (₹/km)</label>
+                    <input type="number" step="0.01" id="edit-t-above100" value="${config.above100_rate !== undefined ? config.above100_rate : (config.slab11_rate || config.perKm || 13)}" required>
+                </div>
+            `;
+            document.getElementById('tariff-modal').style.display = 'flex';
+        }
+
+        function closeTariffModal() {
+            document.getElementById('tariff-modal').style.display = 'none';
+        }
+
+        document.getElementById('tariff-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-t-id').value;
+            const config = {
+                base: parseFloat(document.getElementById('edit-t-base').value) || 0,
+                minKm: parseInt(document.getElementById('edit-t-min').value) || 0,
+                slab1_rate: parseFloat(document.getElementById('edit-t-slab1').value) || 0,
+                slab2_rate: parseFloat(document.getElementById('edit-t-slab2').value) || 0,
+                slab3_rate: parseFloat(document.getElementById('edit-t-slab3').value) || 0,
+                slab4_rate: parseFloat(document.getElementById('edit-t-slab4').value) || 0,
+                slab5_rate: parseFloat(document.getElementById('edit-t-slab5').value) || 0,
+                slab6_rate: parseFloat(document.getElementById('edit-t-slab6').value) || 0,
+                slab7_rate: parseFloat(document.getElementById('edit-t-slab7').value) || 0,
+                slab8_rate: parseFloat(document.getElementById('edit-t-slab8').value) || 0,
+                slab9_rate: parseFloat(document.getElementById('edit-t-slab9').value) || 0,
+                slab10_rate: parseFloat(document.getElementById('edit-t-slab10').value) || 0,
+                slab11_rate: parseFloat(document.getElementById('edit-t-slab11').value) || 0,
+            };
+            try {
 const res = await fetch(`${API_BASE_URL}/api/admin/update-tariff`, {
 method: 'POST',
 headers: { 'Content-Type': 'application/json' },

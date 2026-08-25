@@ -7,7 +7,36 @@
     'use strict';
 
     const STORAGE_KEY = 'cityride_customer_notifications';
+    const SHOWN_TOASTS_KEY = 'cityride_shown_toast_keys';
     const MAX_HISTORY = 30;
+
+    // Clear any old stacked notifications from legacy storage on script load
+    try {
+        localStorage.removeItem(STORAGE_KEY);
+    } catch(e) {}
+
+    function isToastAlreadyShown(key) {
+        if (!key) return false;
+        try {
+            const raw = sessionStorage.getItem(SHOWN_TOASTS_KEY) || localStorage.getItem(SHOWN_TOASTS_KEY);
+            const list = raw ? JSON.parse(raw) : [];
+            return list.includes(key);
+        } catch(e) { return false; }
+    }
+
+    function markToastShown(key) {
+        if (!key) return;
+        try {
+            const raw = sessionStorage.getItem(SHOWN_TOASTS_KEY) || localStorage.getItem(SHOWN_TOASTS_KEY);
+            const list = raw ? JSON.parse(raw) : [];
+            if (!list.includes(key)) {
+                list.push(key);
+                if (list.length > 50) list.shift();
+                sessionStorage.setItem(SHOWN_TOASTS_KEY, JSON.stringify(list));
+                localStorage.setItem(SHOWN_TOASTS_KEY, JSON.stringify(list));
+            }
+        } catch(e) {}
+    }
 
     // --- 1. WEB AUDIO API CHIME GENERATOR ---
     let audioCtx = null;
@@ -64,6 +93,15 @@
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
                 osc.start(now);
                 osc.stop(now + 0.6);
+            } else if (type === 'chat_message' || type === 'chat') {
+                // High-pitch dual chime (A5 -> D6) for Chat Alert
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now); // A5
+                osc.frequency.setValueAtTime(1174.66, now + 0.12); // D6
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                osc.start(now);
+                osc.stop(now + 0.45);
             } else if (type === 'ride_cancelled' || type === 'error') {
                 // Low warning tone
                 osc.type = 'sawtooth';
@@ -87,26 +125,51 @@
         }
     }
 
-    // --- 2. BROWSER PUSH NOTIFICATION ---
+    // --- 2. CAPACITOR NATIVE & BROWSER PUSH NOTIFICATION ---
     function requestPushPermission() {
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
+            try {
+                window.Capacitor.Plugins.LocalNotifications.requestPermissions().catch(() => {});
+            } catch (e) {}
+        }
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission().catch(() => {});
         }
     }
 
     function sendPushNotification(title, body, iconUrl) {
+        // 1. Capacitor Native Android APK Notification
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
+            try {
+                window.Capacitor.Plugins.LocalNotifications.schedule({
+                    notifications: [
+                        {
+                            title: title,
+                            body: body,
+                            id: Math.floor(Math.random() * 100000) + 1,
+                            schedule: { at: new Date(Date.now() + 50) },
+                            sound: 'res://platform_default',
+                            actionTypeId: "",
+                            extra: null
+                        }
+                    ]
+                });
+            } catch (e) {
+                console.warn('[CustomerNotifications] Native LocalNotifications error:', e.message);
+            }
+        }
+
+        // 2. Web Browser Push Notification
         if ('Notification' in window && Notification.permission === 'granted') {
-            if (document.hidden) {
-                try {
-                    new Notification(title, {
-                        body: body,
-                        icon: iconUrl || '/car.png',
-                        badge: '/car.png',
-                        tag: 'cityride-activity-' + Date.now()
-                    });
-                } catch (e) {
-                    console.warn('[CustomerNotifications] Push notification error:', e.message);
-                }
+            try {
+                new Notification(title, {
+                    body: body,
+                    icon: iconUrl || '/car.png',
+                    badge: '/car.png',
+                    tag: 'cityride-activity-' + Date.now()
+                });
+            } catch (e) {
+                console.warn('[CustomerNotifications] Push notification error:', e.message);
             }
         }
     }
@@ -206,17 +269,13 @@
     };
 
     // --- 4. SHOW TOAST NOTIFICATION ---
-    function showToast(activityType, customTitle, message, duration = 5000, bookingId = null) {
-        // DEDUPLICATION: Check if this exact notification type for this exact booking was already shown
-        const history = getStoredNotifications();
-        if (bookingId) {
-            const alreadyShownForBooking = history.some(item => item.type === activityType && item.bookingId === bookingId);
-            if (alreadyShownForBooking) return;
-        } else {
-            // Fallback: If no bookingId, at least prevent identical spam in quick succession
-            const recentlyShown = history.slice(0, 5).some(item => item.type === activityType && item.message === message && (Date.now() - item.timestamp < 60000));
-            if (recentlyShown) return;
+    function showToast(activityType, customTitle, message, duration = 4000, bookingId = null) {
+        // STRICT DEDUPLICATION: Ensure each unique notification only pops up ONCE
+        const dedupeKey = bookingId ? `${bookingId}_${activityType}` : `${activityType}_${customTitle}_${message}`;
+        if (isToastAlreadyShown(dedupeKey)) {
+            return; // Never re-display a notification that was already shown!
         }
+        markToastShown(dedupeKey);
 
         const config = ACTIVITY_CONFIGS[activityType] || {
             title: customTitle || 'Activity Update',
@@ -227,6 +286,10 @@
 
         const displayTitle = customTitle || config.title;
         const container = getOrCreateToastContainer();
+
+        // Limit maximum active toasts on screen to 1 at a time so popups NEVER stack
+        const existingToasts = container.querySelectorAll('.cr-toast-card');
+        existingToasts.forEach(t => t.remove());
 
         const toast = document.createElement('div');
         toast.className = `cr-toast-card ${config.colorClass}`;
@@ -258,19 +321,7 @@
         // Push desktop notification
         sendPushNotification(displayTitle, message);
 
-        // Save to History Center
-        saveNotificationToHistory({
-            id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-            type: activityType,
-            title: displayTitle,
-            message: message,
-            timestamp: Date.now(),
-            icon: config.icon,
-            bookingId: bookingId,
-            read: false
-        });
-
-        // Auto remove
+        // Auto remove after duration
         setTimeout(() => {
             if (toast.parentNode) {
                 toast.classList.remove('active');
@@ -435,24 +486,151 @@
     function processSocketActivity(data) {
         if (!data) return;
         const status = (data.status || '').toLowerCase();
-        const bId = data.bookingId || data.id || null;
-        
-        if (status === 'assigned') {
-            const driverInfo = data.driverName ? `Captain ${data.driverName} (${data.carModel || ''} ${data.carNumber || ''}) accepted your ride.` : 'A captain has accepted your booking request!';
-            showToast('ride_accepted', '⚡ Captain Assigned!', driverInfo, 5000, bId);
+        const bId = data.bookingId || data.id || '';
+        const driverName = data.driverName || data.driver_name || '';
+        const carModel = data.carModel || data.car_model || '';
+        const carNumber = data.carNumber || data.car_number || '';
+        const otp = data.otp || data.journey_otp || '';
+        const dropLoc = data.dropLoc || data.drop_loc || '';
+        const fare = data.finalFare || data.fare || data.estimated_price || '';
+
+        if (status === 'pending' || status === 'ride_booked') {
+            showToast('ride_booked', '🚕 Ride Booked!', `Ride #B${bId} successfully placed. Searching for nearby drivers...`, 6000, bId + '_pending');
+        } else if (status === 'assigned' || status === 'ride_accepted') {
+            const vehicleInfo = carModel ? ` (${carModel}${carNumber ? ' - ' + carNumber : ''})` : '';
+            const msg = driverName ? `Captain ${driverName}${vehicleInfo} accepted your ride and is on the way!` : 'A captain has accepted your booking request and is en route!';
+            showToast('ride_accepted', '🚗 Driver Accepted!', msg, 6000, bId + '_assigned');
         } else if (status === 'reached_pickup') {
-            showToast('reached_pickup', '📍 Captain at Pickup!', data.message || 'Your captain has arrived at your pickup location!', 5000, bId);
-        } else if (status === 'ongoing') {
-            showToast('ride_ongoing', '🏁 Trip Started!', 'Your trip has started! Wishing you a safe & smooth journey.', 5000, bId);
-        } else if (status === 'completed' || status === 'finished') {
-            const fareMsg = data.finalFare ? `Total Fare: ${data.finalFare}.` : '';
-            showToast('ride_completed', '🎉 Trip Completed!', `You have reached your destination! ${fareMsg} Thank you for riding with us.`, 5000, bId);
-        } else if (status === 'cancelled') {
-            showToast('ride_cancelled', '❌ Ride Cancelled', `Booking #${bId || ''} has been cancelled.`, 5000, bId);
-        } else if (status === 'pending') {
-            showToast('ride_booked', '🚕 Ride Requested!', `Booking #${bId || ''} placed successfully. Finding your nearest driver...`, 5000, bId);
+            const otpText = otp ? ` Share OTP: ${otp} to start the ride.` : '';
+            const msg = driverName ? `Captain ${driverName} has arrived at your pickup location!${otpText}` : `Your captain has arrived at your pickup location!${otpText}`;
+            showToast('reached_pickup', '📍 Driver Arrived at Pickup!', msg, 7000, bId + '_reached');
+        } else if (status === 'ongoing' || status === 'ride_ongoing') {
+            const destText = dropLoc ? ` to ${dropLoc.split(',')[0]}` : '';
+            showToast('ride_ongoing', '🚀 Trip Started!', `Your trip${destText} has started. Wishing you a safe & comfortable journey!`, 6000, bId + '_ongoing');
+        } else if (status === 'completed' || status === 'finished' || status === 'ride_completed') {
+            const fareMsg = fare ? ` Total Fare: ₹${fare}.` : '';
+            showToast('ride_completed', '🏁 Trip Completed!', `You have reached your destination!${fareMsg} Thank you for riding with CityRide.`, 7000, bId + '_completed');
+        } else if (status === 'cancelled' || status === 'ride_cancelled') {
+            showToast('ride_cancelled', '❌ Ride Cancelled', `Booking #B${bId} has been cancelled.`, 6000, bId + '_cancelled');
         }
     }
+
+    // --- 6. HIGH-INTENSITY STRONG CHAT NOTIFICATION ENGINE ---
+    function showChatNotification(data, role) {
+        if (!data) return;
+        const senderName = data.senderName || (role === 'driver' ? 'Customer' : 'Driver');
+        const messageText = data.message || 'Sent a new message';
+        const bookingId = data.bookingId || '';
+
+        // 1. Strong Haptic Vibration Pattern (Vibrate 200ms - Pause 80ms - Vibrate 200ms - Pause 80ms - Vibrate 300ms)
+        if ('vibrate' in navigator) {
+            try {
+                navigator.vibrate([200, 80, 200, 80, 300]);
+            } catch (e) {}
+        }
+
+        // 2. Play Web Audio API Dual High-Pitch Chime
+        playChime('chat_message');
+
+        // 3. Capacitor Native Android APK Local Push & Web Push Notification
+        sendPushNotification(`💬 Message from ${senderName}`, messageText);
+
+        // 4. High-Visibility Glassmorphic Top Banner Toast with Action Button
+        const container = getOrCreateToastContainer();
+        const toast = document.createElement('div');
+        toast.className = 'cr-toast-card cr-toast-chat-strong';
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const targetRole = role || (window.location.pathname.includes('driver') ? 'driver' : 'user');
+        const chatUrl = `chat.html?bookingId=${bookingId}&role=${targetRole}`;
+
+        toast.innerHTML = `
+            <div class="cr-toast-icon" style="font-size: 1.6rem; filter: drop-shadow(0 2px 6px rgba(0,255,102,0.4));">💬</div>
+            <div class="cr-toast-content" style="flex:1;">
+                <div class="cr-toast-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="cr-toast-title" style="color:#ffffff; font-weight:800; font-size:0.95rem;">💬 ${escapeHtml(senderName)}</span>
+                    <span class="cr-toast-time" style="color:rgba(255,255,255,0.7); font-size:0.75rem;">${timestamp}</span>
+                </div>
+                <div class="cr-toast-message" style="color:rgba(255,255,255,0.95); font-weight:600; margin-top:2px; font-size:0.9rem;">"${escapeHtml(messageText)}"</div>
+                <div style="margin-top:8px;">
+                    <a href="${chatUrl}" class="cr-chat-toast-reply-btn">💬 Reply Now</a>
+                </div>
+            </div>
+            <button class="cr-toast-close" onclick="event.stopPropagation(); this.parentElement.remove()" title="Close" style="color:white; opacity:0.8;">&times;</button>
+        `;
+
+        toast.onclick = (e) => {
+            if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') {
+                window.location.href = chatUrl;
+            }
+        };
+
+        container.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('active'));
+
+        // Save to History Center
+        saveNotificationToHistory({
+            id: 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            type: 'chat_message',
+            title: `💬 ${senderName}`,
+            message: messageText,
+            timestamp: Date.now(),
+            icon: '💬',
+            bookingId: bookingId,
+            read: false
+        });
+
+        // Auto remove
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.classList.remove('active');
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, 8000);
+    }
+
+    // Dynamic style injection for Strong Chat Toast
+    const chatStyle = document.createElement('style');
+    chatStyle.textContent = `
+        .cr-toast-chat-strong {
+            background: linear-gradient(135deg, rgba(0, 107, 58, 0.96), rgba(0, 153, 84, 0.96)) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            color: #ffffff !important;
+            border: 2px solid #00FF66 !important;
+            box-shadow: 0 12px 36px rgba(0, 107, 58, 0.45), 0 0 25px rgba(0, 255, 102, 0.35) !important;
+            animation: chatToastPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+            cursor: pointer;
+        }
+        @keyframes chatToastPop {
+            0% { transform: translateY(-30px) scale(0.9); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .cr-chat-toast-reply-btn {
+            display: inline-block;
+            background: #00FF66;
+            color: #004D28 !important;
+            font-weight: 800;
+            font-size: 0.78rem;
+            padding: 5px 14px;
+            border-radius: 20px;
+            text-decoration: none !important;
+            box-shadow: 0 4px 12px rgba(0, 255, 102, 0.4);
+            transition: transform 0.15s ease;
+        }
+        .cr-chat-toast-reply-btn:hover {
+            transform: scale(1.05);
+        }
+        .chat-pulse-ring {
+            animation: chatPulseRing 1.2s infinite ease-out !important;
+        }
+        @keyframes chatPulseRing {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+            70% { box-shadow: 0 0 0 12px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+    `;
+    document.head.appendChild(chatStyle);
 
     // Auto-initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', () => {
@@ -468,10 +646,12 @@
     // Global Public API
     window.CustomerNotifications = {
         notify: showToast,
+        showChatNotification: showChatNotification,
         processSocketActivity: processSocketActivity,
         toggleDrawer: toggleNotificationDrawer,
         requestPermission: requestPushPermission,
         playChime: playChime
     };
+    window.DriverNotifications = window.CustomerNotifications;
 
 })(window);
