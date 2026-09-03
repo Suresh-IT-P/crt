@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">CityRide Association</string>
-    <string name="title_activity_main">CityRide Association</string>
-    <string name="package_name">com.cityride.association</string>
-    <string name="custom_url_scheme">com.cityride.association</string>
-</resources>
