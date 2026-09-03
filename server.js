@@ -1174,6 +1174,11 @@ const dbConfig = {
         keepAliveInitialDelay: 10000
     };
 
+    if (process.env.DB_SSL === 'true') {
+        dbConfig.ssl = { rejectUnauthorized: false };
+    }
+
+
     try {
         // 1. Ensure Database Exists (Safe check - fallback to pool directly if single connection drops)
         try {
@@ -1182,7 +1187,8 @@ const dbConfig = {
                 port: dbConfig.port,
                 user: dbConfig.user,
                 password: dbConfig.password,
-                connectTimeout: 5000
+                connectTimeout: 5000,
+                ssl: dbConfig.ssl
             });
             await tempConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
             await tempConn.end();
