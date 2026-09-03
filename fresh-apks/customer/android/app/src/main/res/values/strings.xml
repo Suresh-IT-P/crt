@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CityRide</string>
+    <string name="title_activity_main">CityRide</string>
+    <string name="package_name">com.cityride.customer</string>
+    <string name="custom_url_scheme">com.cityride.customer</string>
+</resources>

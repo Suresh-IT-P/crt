@@ -108,13 +108,13 @@ function getVehicleIcon(vType) {
 }
 
 const VEHICLE_ICONS = {
-    bike: `<img src="https://img.icons8.com/color/96/000000/motorcycle.png" alt="Bike" style="width:32px; height:32px; object-fit:contain;">`,
-    auto: `<img src="https://img.icons8.com/color/96/000000/auto-rickshaw.png" alt="Auto" style="width:32px; height:32px; object-fit:contain;">`,
-    hatchback: `<img src="https://img.icons8.com/color/96/000000/hatchback.png" alt="Hatchback" style="width:32px; height:32px; object-fit:contain;">`,
-    sedan: `<img src="https://img.icons8.com/color/96/000000/sedan.png" alt="Sedan" style="width:32px; height:32px; object-fit:contain;">`,
-    suv: `<img src="https://img.icons8.com/color/96/000000/suv.png" alt="SUV" style="width:32px; height:32px; object-fit:contain;">`,
-    '8plus1': `<img src="https://img.icons8.com/color/96/000000/van.png" alt="Tempo" style="width:32px; height:32px; object-fit:contain;">`,
-    van24: `<img src="https://img.icons8.com/color/96/000000/bus.png" alt="Bus" style="width:32px; height:32px; object-fit:contain;">`
+    bike: `<div style="font-size: 2.2rem; line-height: 1; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">🏍️</div>`,
+    auto: `<div style="font-size: 2.2rem; line-height: 1; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">🛺</div>`,
+    hatchback: `<div style="font-size: 2.2rem; line-height: 1; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">🚙</div>`,
+    sedan: `<div style="font-size: 2.2rem; line-height: 1; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">🚗</div>`,
+    suv: `<div style="font-size: 2.2rem; line-height: 1; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">🛻</div>`,
+    '8plus1': `<div style="font-size: 2.2rem; line-height: 1; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">🚐</div>`,
+    van24: `<div style="font-size: 2.2rem; line-height: 1; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">🚌</div>`
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -699,7 +699,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update hidden fields for booking
         vehicleSelect.value = selectedVehicleData.vType;
         currentTripType = selectedVehicleData.tripType;
-        fareVal.textContent = `₹${selectedVehicleData.fare} (Approx.)`;
+        fareVal.textContent = `\u20B9${selectedVehicleData.fare} (Approx.)`;
         distanceVal.textContent = selectedVehicleData.displayDistance;
         window.selectedDuration = selectedVehicleData.durationText;
 
@@ -710,7 +710,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const fsFare = document.getElementById('fs-fare');
         if (fsDistance) fsDistance.textContent = `${selectedVehicleData.distanceKm} KM`;
         if (fsDuration) fsDuration.textContent = selectedVehicleData.durationText || '—';
-        if (fsFare) fsFare.textContent = `₹${selectedVehicleData.fare}`;
+        if (fsFare) fsFare.textContent = `\u20B9${selectedVehicleData.fare}`;
         if (strip) strip.classList.add('visible');
 
         // Show/hide return date for round trips
@@ -759,15 +759,15 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('fb-distance').textContent = `${bd.distanceKm || lastCalculatedDistance || 0} KM`;
         document.getElementById('fb-duration').textContent = bd.durationText || window.selectedDuration || '—';
         document.getElementById('fb-vehicle').textContent = bd.vehicleName || '—';
-        document.getElementById('fb-rate').textContent = `₹${bd.perKm || '—'}`;
-        document.getElementById('fb-platform-fee').textContent = `₹${bd.gst || 0}`;
-        document.getElementById('fb-total').textContent = `₹${bd.total || 0}`;
+        document.getElementById('fb-rate').textContent = `\u20B9${bd.perKm || '—'}`;
+        document.getElementById('fb-platform-fee').textContent = `\u20B9${bd.gst || 0}`;
+        document.getElementById('fb-total').textContent = `\u20B9${bd.total || 0}`;
 
         const baseRow = document.getElementById('fb-base-row');
         if (bd.baseFare) {
             baseRow.className = 'fm-row';
             baseRow.innerHTML = `<span class="fm-label">🏠 Base Fare</span><span class="fm-value" id="fb-base-val"></span>`;
-            document.getElementById('fb-base-val').textContent = `₹${bd.baseFare}`;
+            document.getElementById('fb-base-val').textContent = `\u20B9${bd.baseFare}`;
         } else {
             baseRow.innerHTML = '';
         }
@@ -776,7 +776,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bd.driverAllowance) {
             allowanceRow.className = 'fm-row';
             allowanceRow.innerHTML = `<span class="fm-label">👨‍🚕 Driver Betta</span><span class="fm-value" id="fb-allowance-val"></span>`;
-            document.getElementById('fb-allowance-val').textContent = `₹${bd.driverAllowance}`;
+            document.getElementById('fb-allowance-val').textContent = `\u20B9${bd.driverAllowance}`;
         } else {
             allowanceRow.innerHTML = '';
         }
@@ -785,7 +785,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bd.peakCharge) {
             peakRow.className = 'fm-row';
             peakRow.innerHTML = `<span class="fm-label">⚡ Peak Surcharge</span><span class="fm-value" style="color:#ff9f0a;" id="fb-peak-val"></span>`;
-            document.getElementById('fb-peak-val').textContent = `₹${bd.peakCharge}`;
+            document.getElementById('fb-peak-val').textContent = `\u20B9${bd.peakCharge}`;
         } else {
             peakRow.innerHTML = '';
         }
@@ -796,7 +796,7 @@ document.addEventListener('DOMContentLoaded', () => {
             extraStopsRow.className = 'fm-row';
             extraStopsRow.innerHTML = `<span class="fm-label">🛑 Extra Stops (${bd.extraDropsCount})</span><span class="fm-value" id="fb-extra-stops-val"></span>`;
             peakRow.parentNode.insertBefore(extraStopsRow, peakRow.nextSibling);
-            document.getElementById('fb-extra-stops-val').textContent = `₹${bd.extraDropsCharge}`;
+            document.getElementById('fb-extra-stops-val').textContent = `\u20B9${bd.extraDropsCharge}`;
         } else {
             extraStopsRow.innerHTML = '';
             extraStopsRow.className = '';
@@ -810,7 +810,7 @@ document.addEventListener('DOMContentLoaded', () => {
             specialRow.innerHTML = `<span class="fm-label">🏛️ ${bd.specialLocationName || 'Special Location'} (+${(bd.specialSurchargePct || 0).toFixed(0)}%)</span><span class="fm-value" style="color:#6c63ff;" id="fb-special-val"></span>`;
             const insertAfter = extraStopsRow.parentNode ? extraStopsRow : peakRow;
             insertAfter.parentNode.insertBefore(specialRow, insertAfter.nextSibling);
-            document.getElementById('fb-special-val').textContent = `₹${bd.specialLocationCharge}`;
+            document.getElementById('fb-special-val').textContent = `\u20B9${bd.specialLocationCharge}`;
         } else {
             specialRow.innerHTML = '';
             specialRow.className = '';
@@ -868,7 +868,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tripType: selectedVehicleData.tripType,
             returnDate: selectedVehicleData.tripType === 'round' ? document.getElementById('return-date').value : null,
             rentalPackage: selectedVehicleData.tripType === 'rental' ? document.getElementById('rental-package').value : null,
-            fare: `₹${selectedVehicleData.fare}`,
+            fare: `\u20B9${selectedVehicleData.fare}`,
             distance: `${selectedVehicleData.distanceKm} KM`,
             estimatedDuration: window.selectedDuration || null,
             specialPlaceType: selectedVehicleData.specialPlaceType || null
@@ -913,7 +913,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:1px solid var(--cr-border-light);">
                     <div style="display:flex; align-items:center; gap:8px; color:var(--cr-text-muted); font-size:0.9rem;"><span style="font-size:1.1rem;">💰</span> Estimated Fare</div>
-                    <div id="cm-fare" style="text-align:right; font-size:1.1rem; font-weight:800; color:var(--cr-primary);">₹${selectedVehicleData.fare}</div>
+                    <div id="cm-fare" style="text-align:right; font-size:1.1rem; font-weight:800; color:var(--cr-primary);">\u20B9${selectedVehicleData.fare}</div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:1px solid var(--cr-border-light);">
                     <div style="display:flex; align-items:center; gap:8px; color:var(--cr-text-muted); font-size:0.9rem;"><span style="font-size:1.1rem;">💺</span> Seats Required</div>
@@ -932,13 +932,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastCalculatedDuration = 0;
 
     function calculateLocalSlabFare(dist, config) {
+        const baseFare = (config && config.base !== undefined) ? parseFloat(config.base) : 0;
         if (config && config.perKm !== undefined && config.slab1_rate === undefined) {
             const distanceFare = dist * config.perKm;
-            const baseFareLimit = config.base || 0;
-            return Math.max(baseFareLimit, distanceFare);
+            return Math.max(baseFare, distanceFare);
         }
 
-        let fare = 0;
+        let fare = baseFare;
         let d = dist;
         const r11 = (config && config.slab11_rate !== undefined) ? config.slab11_rate : 13;
         const r10 = (config && config.slab10_rate !== undefined) ? config.slab10_rate : 14;
@@ -1126,7 +1126,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     displayDistance = `${distance} KM`;
                     detailLabel = `Incl. Platform Fee.`;
                     if (extraDropsCount > 0) {
-                        detailLabel += ` (+₹${extraDropsCharge} for ${extraDropsCount} stop(s))`;
+                        detailLabel += ` (+\u20B9${extraDropsCharge} for ${extraDropsCount} stop(s))`;
                     }
                     if (peakMult > 0) detailLabel += ` [Peak Hour +25%]`;
                     if (specialSurchargePct > 0) detailLabel += ` [🏗️ ${specialDisplayName} +${specialSurchargePct.toFixed(0)}%]`;
@@ -1146,7 +1146,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     displayDistance = `${distance} KM`;
                     detailLabel = `Incl. Allowance & Platform Fee.`;
                     if (extraDropsCount > 0) {
-                        detailLabel += ` (+₹${extraDropsCharge} for ${extraDropsCount} stop(s))`;
+                        detailLabel += ` (+\u20B9${extraDropsCharge} for ${extraDropsCount} stop(s))`;
                     }
                     if (specialSurchargePct > 0) detailLabel += ` [🏗️ ${specialDisplayName} +${specialSurchargePct.toFixed(0)}%]`;
                     if (distance < minKm) detailLabel += ` [${minKm}KM Min Applied]`;
@@ -1176,7 +1176,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const specialCharge = Math.round(baseFare * specialSurchargePct / 100);
                     totalFare = baseFare + specialCharge + 5; // Rental incl special charge + Platform Fee
                     displayDistance = distance > 0 ? `${distance} KM` : 'Fixed Base';
-                    detailLabel = `${pMaxHrs}Hr/${pMaxKm}KM • Extra ₹${config.extraHour}/hr, ₹${config.extraKm}/km • Incl. Platform Fee.`;
+                    detailLabel = `${pMaxHrs}Hr/${pMaxKm}KM • Extra \u20B9${config.extraHour}/hr, \u20B9${config.extraKm}/km • Incl. Platform Fee.`;
                     if (specialSurchargePct > 0) detailLabel += ` [🏗️ ${specialDisplayName} +${specialSurchargePct.toFixed(0)}%]`;
                 }
 
@@ -1203,25 +1203,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.style.opacity = isDisabled ? '0.4' : '1';
                 card.style.cursor = isDisabled ? 'not-allowed' : 'pointer';
 
-                // Safe programmatic node construction to avoid dynamic HTML linter warnings
                 const iconDiv = document.createElement('div');
                 iconDiv.className = 'vc-icon';
-                const iconHtml = getVehicleIcon(vType);
-                if (iconHtml.trim().startsWith('<svg')) {
-                    try {
-                        const parser = new DOMParser();
-                        const svgDoc = parser.parseFromString(iconHtml, 'image/svg+xml');
-                        if (svgDoc && svgDoc.documentElement) {
-                            iconDiv.appendChild(svgDoc.documentElement);
-                        } else {
-                            iconDiv.textContent = '🚗';
-                        }
-                    } catch (e) {
-                        iconDiv.textContent = '🚗';
-                    }
-                } else {
-                    iconDiv.innerHTML = iconHtml;
-                }
+                iconDiv.innerHTML = getVehicleIcon(vType);
                 card.appendChild(iconDiv);
 
                 const nameDiv = document.createElement('div');
@@ -1242,7 +1226,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const fareDiv = document.createElement('div');
                 fareDiv.className = 'vc-fare';
-                fareDiv.textContent = `₹${totalFare}`;
+                fareDiv.textContent = `\u20B9${totalFare}`;
                 card.appendChild(fareDiv);
 
                 if (!isDisabled) {
@@ -1252,30 +1236,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         // Enable the select button
                         const vmBtn = document.getElementById('vm-select-btn');
-                        if (vmBtn) { vmBtn.disabled = false; vmBtn.textContent = `Select ${info.name} — ₹${totalFare} →`; }
+                        if (vmBtn) { vmBtn.disabled = false; vmBtn.textContent = `Select ${info.name} • \u20B9${totalFare}`; }
 
                         // Build breakdown for fare popup
                         const gst = 5;
                         const driverAllowanceAmt = (tType.id === 'oneway' || tType.id === 'round') && vType !== 'bike' ? (distance > 250 ? 600 : 400) : 0;
-                        const peakSurcharge = tType.id === 'local' ? Math.round(getPeakSurcharge(document.getElementById('pickup-time')?.value) * (Math.max(distance, info.local?.minKm || 0) * (info.local?.perKm || 0))) : 0;
                         const extraDropsCharge = tType.id === 'local' ? (extraDropsCount * 50) : (tType.id === 'oneway' ? (extraDropsCount * 50) : 0);
+
+                        // Get correct base fare for peak and special location charges
+                        let baseKmFareForSurcharge = 0;
+                        if (tType.id === 'local') {
+                            const config = info.local;
+                            const minKm = typeof config.minKm === 'number' ? config.minKm : 0;
+                            const billableDist = Math.max(distance, minKm);
+                            baseKmFareForSurcharge = calculateLocalSlabFare(billableDist, config);
+                        } else {
+                            const tripConfig = getTripPricing(info, tType.id);
+                            if (tripConfig) {
+                                const minKm = tripConfig.minKm || tripConfig.minKmPerDay || 0;
+                                const billableDist = Math.max(distance, minKm);
+                                baseKmFareForSurcharge = Math.max(tripConfig.base || 0, billableDist * (tripConfig.perKm || 0));
+                            }
+                        }
+
+                        const peakSurcharge = tType.id === 'local' ? Math.round(getPeakSurcharge(document.getElementById('pickup-time')?.value) * baseKmFareForSurcharge) : 0;
 
                         // Compute special location charge for breakdown
                         let specialLocationCharge = 0;
                         if (specialSurchargePct > 0) {
-                            const tripConfig = getTripPricing(info, tType.id);
-                            if (tType.id === 'local') {
-                                const config = info.local;
-                                const minKm = typeof config.minKm === 'number' ? config.minKm : 0;
-                                const billableDist = Math.max(distance, minKm);
-                                const baseKmFare = Math.max(config.base || 0, billableDist * config.perKm);
-                                specialLocationCharge = Math.round(baseKmFare * specialSurchargePct / 100);
-                            } else if (tripConfig) {
-                                const minKm = tripConfig.minKm || tripConfig.minKmPerDay || 0;
-                                const billableDist = Math.max(distance, minKm);
-                                const baseKmFare = Math.max(tripConfig.base || 0, billableDist * (tripConfig.perKm || 0));
-                                specialLocationCharge = Math.round(baseKmFare * specialSurchargePct / 100);
-                            }
+                            specialLocationCharge = Math.round(baseKmFareForSurcharge * specialSurchargePct / 100);
                         }
 
                         // Store selected vehicle data
@@ -1342,7 +1331,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Show "Did you mean" banner if query was spell-corrected
                         if (data.correctedQuery) {
                             const hint = document.createElement('div');
-                            hint.style.cssText = 'padding: 6px 12px; font-size: 11px; color: #9ca3af; background: rgba(245,158,11,0.08); border-bottom: 1px solid rgba(255,255,255,0.06); font-style: italic;';
+                            hint.style.cssText = 'padding: 6px 12px; font-size: 11px; color: #9ca3af; background: rgba(245\u20B958\u20B91,0.08); border-bottom: 1px solid rgba(255,255,255,0.06); font-style: italic;';
                             hint.innerHTML = `🔤 Showing results for: <strong style="color:#f59e0b">${data.correctedQuery}</strong>`;
                             box.appendChild(hint);
                         }
@@ -1409,6 +1398,59 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- GOOGLE PLAY LOCATION ACCURACY POPUP DIALOG ---
+    window.showGpsTurnOnPopup = function() {
+        let modal = document.getElementById('gps-popup-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'gps-popup-modal';
+            modal.className = 'gps-modal-overlay';
+            modal.innerHTML = `
+                <div class="gps-modal-card">
+                    <h3 class="gps-modal-title">To continue, your device will need to use Location Accuracy</h3>
+                    <p class="gps-modal-subtitle">The following settings should be on:</p>
+                    
+                    <div class="gps-setting-item">
+                        <div class="gps-setting-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#21355A" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        </div>
+                        <div class="gps-setting-text">
+                            <strong>Device location</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="gps-setting-item">
+                        <div class="gps-setting-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#21355A" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                        </div>
+                        <div class="gps-setting-text">
+                            <p><strong>Location Accuracy</strong>, which provides more accurate location for apps and services. To do this, Google periodically processes information about device sensors and wireless signals from your device to crowdsource wireless signal locations. These are used without identifying you to improve location accuracy and location-based services and to improve, provide, and maintain Google's services based on Google's and third parties' legitimate interests to serve users' needs.</p>
+                        </div>
+                    </div>
+                    
+                    <p class="gps-modal-footer-note">You can change this at any time in location settings. <a href="#" onclick="event.preventDefault(); alert('Please turn on GPS/Location in your device settings.');">Manage settings</a> or <a href="#" onclick="event.preventDefault();">learn more</a></p>
+                    
+                    <div class="gps-modal-actions">
+                        <button type="button" class="gps-btn-secondary" onclick="closeGpsModal()">No thanks</button>
+                        <button type="button" class="gps-btn-primary" onclick="retryEnableGps()">Turn on</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        modal.style.display = 'flex';
+    };
+
+    window.closeGpsModal = function() {
+        const modal = document.getElementById('gps-popup-modal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    window.retryEnableGps = function() {
+        window.closeGpsModal();
+        window.useLiveLocation(null, false);
+    };
+
     // --- MAP PICKER LOGIC (Leaflet + OSM) ---
     window.useLiveLocation = function(event, silent = false) {
         const btn = document.getElementById('live-loc-btn');
@@ -1420,49 +1462,83 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.style.pointerEvents = 'none';
         }
 
-        if (!silent) {
+        if (!silent && pickupInput) {
             pickupInput.placeholder = 'Detecting your location...';
             pickupInput.value = '';
         }
 
         if (!navigator.geolocation) {
-            if (!silent) alert('Geolocation is not supported by your browser.');
             if (btn) { btn.style.animation = ''; btn.style.pointerEvents = ''; }
+            if (!silent) window.showGpsTurnOnPopup();
             return;
         }
 
-        navigator.geolocation.getCurrentPosition(async (position) => {
+        // Analyze permissions if available
+        if (navigator.permissions && navigator.permissions.query) {
+            navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+                if (result.state === 'denied' && !silent) {
+                    if (btn) { btn.style.animation = ''; btn.style.pointerEvents = ''; }
+                    if (pickupInput) pickupInput.placeholder = 'Enter pickup address';
+                    window.showGpsTurnOnPopup();
+                }
+            }).catch(() => {});
+        }
+
+        const getPositionSuccess = async (position) => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             const coords = `${lng},${lat}`;
 
-            pickupInput.dataset.coords = coords;
-            pickupCoords = coords;
+            if (pickupInput) {
+                pickupInput.dataset.coords = coords;
+                pickupCoords = coords;
+            }
+
+            if (window.lmap) {
+                window.lmap.setView([lat, lng], 16, { animate: true });
+            }
 
             // Reverse Geocode via Proxy
             try {
-                const res = await fetch(`${API_BASE_URL}/api/proxy/reverse?lon=${lng}&lat=${lat}`);
+                const baseUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : '';
+                const res = await fetch(`${baseUrl}/api/proxy/reverse?lon=${lng}&lat=${lat}`);
                 const data = await res.json();
                 if (data.features && data.features.length > 0) {
                     const p = data.features[0].properties;
                     const parts = [p.name, p.road, p.suburb, p.city, p.state].filter(Boolean);
                     const address = parts.length > 0 ? parts.join(', ') : (p.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-                    pickupInput.value = address;
-                    pickupInput.placeholder = 'Enter pickup address';
+                    if (pickupInput) {
+                        pickupInput.value = address;
+                        pickupInput.placeholder = 'Enter pickup address';
+                    }
                     if (window.updateMapMarkers) window.updateMapMarkers();
                 }
             } catch (e) {
-                console.warn('Reverse geocode failed');
-                pickupInput.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                console.warn('Reverse geocode failed', e);
+                if (pickupInput) pickupInput.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
             }
 
             if (btn) { btn.style.animation = ''; btn.style.pointerEvents = ''; }
-            calculateFare();
-        }, (err) => {
-            if (btn) { btn.style.animation = ''; btn.style.pointerEvents = ''; }
-            pickupInput.placeholder = 'Enter pickup address';
-            if (!silent) alert('Please allow location access to use Live Location.');
-        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
+            if (typeof calculateFare === 'function') calculateFare();
+        };
+
+        const getPositionError = (err) => {
+            // Try fallback with low accuracy if high accuracy timed out or failed
+            navigator.geolocation.getCurrentPosition(
+                getPositionSuccess,
+                (fallbackErr) => {
+                    if (btn) { btn.style.animation = ''; btn.style.pointerEvents = ''; }
+                    if (pickupInput) pickupInput.placeholder = 'Enter pickup address';
+                    console.warn('GPS location error:', fallbackErr);
+                    if (!silent) {
+                        window.showGpsTurnOnPopup();
+                    }
+                },
+                { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000 }
+            );
+        };
+
+        navigator.geolocation.getCurrentPosition(getPositionSuccess, getPositionError, { enableHighAccuracy: true, timeout: 6000, maximumAge: 10000 });
     };
 
     // Auto-detect pickup location silently on page load
@@ -1546,7 +1622,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (currentPickingType === 'pickup' && !dropCoords && currentCategory !== 'rental') {
             setTimeout(() => {
-                if (confirm("Now select your destination on the map?")) {
+                if (confirm("Now select your destination on the map")) {
                     openMapPicker('drop');
                 }
             }, 500);
@@ -1613,12 +1689,30 @@ document.addEventListener('DOMContentLoaded', () => {
         pendingBookingData = null;
     };
 
-    window.confirmBookingWithTerms = async function() {
+    window.applyAirBoostAndBook = async function(boostKm, incentiveFee) {
+        if (typeof Swal !== 'undefined') Swal.close();
+        if (!pendingBookingData) return;
+        pendingBookingData.airDistanceBoostKm = boostKm;
+        pendingBookingData.pickupIncentiveFare = incentiveFee;
+
+        // Parse base fare & update total fare with incentive
+        const baseFareNum = parseFloat(String(pendingBookingData.fare || '0').replace(/[^0-9.]/g, '')) || 0;
+        const totalFareNum = baseFareNum + incentiveFee;
+        pendingBookingData.fare = `\u20B9${totalFareNum.toFixed(0)}`;
+
+        confirmBookingWithTerms(true);
+    };
+
+    window.confirmBookingWithTerms = async function(skipCheck = false) {
         if (!pendingBookingData) return;
         const cmBtn = document.getElementById('cm-confirm-btn');
-        if (cmBtn) { cmBtn.textContent = '⏳ Booking...'; cmBtn.disabled = true; }
+        if (cmBtn) { cmBtn.textContent = '⏳ Checking Driver Proximity...'; cmBtn.disabled = true; }
         
         try {
+            // Pre-booking Air Distance check removed. This logic is now delayed and handled in active-ride.html.
+
+            if (cmBtn) { cmBtn.textContent = '⏳ Booking...'; cmBtn.disabled = true; }
+
             const response = await fetch(`${API_BASE_URL}/api/bookings/create`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1797,7 +1891,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainLogo = document.querySelector('.logo');
     if (mainLogo) {
         mainLogo.addEventListener('dblclick', () => {
-            if (confirm("Enter Admin Panel?")) window.location.href = 'admin.html';
+            if (confirm("Enter Admin Panel")) window.location.href = 'admin.html';
         });
     }
 });
@@ -1835,7 +1929,7 @@ function _makeDropIcon() {
                 <path d="M16 0C7.163 0 0 7.163 0 16c0 10.667 16 24 16 24S32 26.667 32 16C32 7.163 24.837 0 16 0z" fill="#ef4444"/>
                 <rect x="12" y="7" width="12" height="2" rx="1" fill="white"/>
                 <rect x="12" y="7" width="2" height="12" rx="1" fill="white"/>
-                <polygon points="14,12 20,9 20,15" fill="white"/>
+                <polygon points="14,7 20,11 14,15" fill="white"/>
             </svg>
             <div style="position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);width:10px;height:4px;background:rgba(0,0,0,0.2);border-radius:50%;"></div>
         </div>`;

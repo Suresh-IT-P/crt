@@ -1,0 +1,13 @@
+node_modules/
+*.zip
+*.rar
+*.log
+*.sqlite
+fresh-apks/output/
+server.log
+server.log.bak
+capacitor-apps/*/android/
+capacitor-apps/*/node_modules/
+mobile-app/node_modules/
+mobile-app/.expo/
+.env

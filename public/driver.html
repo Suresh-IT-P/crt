@@ -31,17 +31,80 @@
     <!-- SweetAlert2 for Alerts -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" crossorigin="anonymous" defer></script>
     
-    <!-- API Config -->
-    <script src="config.js" defer></script>
+    <!-- Platform Config (Defines API_BASE_URL) -->
+    <script src="config.js"></script>
 
-    <style>:root{--bg-dark:#F7FAF6;--bg-card:#FFFFFF;--accent-brand:#006B3A;--accent-brand-pista:#70C157;--accent-brand-glow:rgba(0,107,58,0.18);--text-white:#000000;--text-gray:#1C2B23;--text-muted:#2C3E35;--border-color:rgba(0,107,58,0.12);--danger-red:#DC2626;--warning-amber:#D97706;--success-green:#006B3A;--font-family:'Outfit','Inter',sans-serif;}*{box-sizing:border-box;margin:0;padding:0;font-family:var(--font-family);}[class^="ph-"],[class*=" ph-"]{font-family:"Phosphor-Bold","Phosphor-Fill","Phosphor-Regular","Phosphor" !important;}body{background-color:var(--bg-dark);color:#000000;overflow:hidden;height:100vh;height:100dvh;}.swal2-popup,.swal2-popup.dark-popup{background:#FFFFFF !important;color:#000000 !important;border:1px solid var(--border-color) !important;border-radius:24px !important;box-shadow:0 20px 50px rgba(0,0,0,0.12) !important;}.swal2-title,.swal2-title.dark-popup-title{color:#000000 !important;font-family:var(--font-family) !important;font-weight:800 !important;}.swal2-html-container,.swal2-html-container.dark-popup-html{color:#1C2B23 !important;font-family:var(--font-family) !important;font-weight:600 !important;}.swal2-input,.swal2-textarea,.swal2-select{background:#F7FAF6 !important;color:#000000 !important;border:1px solid rgba(0,107,58,0.2) !important;color-scheme:light !important;font-weight:700 !important;}input,select,textarea{background:#F7FAF6 !important;color:#000000 !important;border:1px solid rgba(0,107,58,0.2) !important;color-scheme:light !important;font-weight:700 !important;}label{color:#000000 !important;font-weight:800 !important;}#splash-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:#F7FAF6;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.25s ease,visibility 0.25s ease;}#splash-screen.splash-hidden{opacity:0;visibility:hidden;pointer-events:none;}.splash-logo{width:80px;margin-bottom:20px;filter:drop-shadow(0 0 15px rgba(0,107,58,0.3));animation:pulse 1s infinite;}.splash-status{color:var(--text-gray);font-size:0.9rem;margin-top:20px;font-weight:500;letter-spacing:1px;}@keyframes pulse{0%{transform:scale(0.95);opacity:0.8;}50%{transform:scale(1.05);opacity:1;}100%{transform:scale(0.95);opacity:0.8;}}.app-container{max-width:480px;margin:0 auto;height:100%;background:var(--bg-dark);display:flex;flex-direction:column;position:relative;box-shadow:0 10px 40px rgba(0,107,58,0.1);border-left:1px solid var(--border-color);border-right:1px solid var(--border-color);overflow:hidden;}.top-header{background:rgba(255,255,255,0.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:15px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);position:sticky;top:0;z-index:100;color:var(--text-white);}.logo-wrap{display:flex;align-items:center;gap:8px;}.logo-img{height:32px;width:auto;}.logo-text{font-weight:800;font-size:1.1rem;letter-spacing:0.5px;color:var(--text-white);}.logo-text span{color:var(--accent-brand);}.profile-btn{background:rgba(255,255,255,0.8);border:1px solid var(--border-color);color:var(--text-white);padding:6px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.1s ease;}.profile-btn:hover{border-color:var(--accent-brand);}.duty-status-bar{background:rgba(245,248,244,0.9);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);color:var(--text-white);}.driver-info-badge{display:flex;flex-direction:column;gap:2px;min-width:120px;}.driver-info-name{font-weight:700;font-size:0.95rem;color:var(--text-white);}.driver-info-car{font-size:0.75rem;color:var(--text-gray);}.duty-toggle{display:flex;align-items:center;gap:8px;padding:6px 16px;border-radius:30px;cursor:pointer;font-weight:800;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.8px;transition:all 0.15s cubic-bezier(0.4,0,0.2,1);user-select:none;}.duty-toggle.offline{background:rgba(0,0,0,0.05);color:var(--text-gray);border:1px solid var(--border-color);}.duty-toggle.online{background:var(--accent-brand);color:#ffffff;box-shadow:0 4px 15px var(--accent-brand-glow);}.duty-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}.offline .duty-dot{background:var(--text-muted);}.online .duty-dot{background:#fff;animation:pulse-dot 0.75s infinite;}@keyframes pulse-dot{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:0.5;}}.online-scanning-bar{background:rgba(0,107,58,0.08);border-bottom:1px solid rgba(0,107,58,0.2);padding:8px 20px;font-size:0.75rem;font-weight:600;color:var(--accent-brand);display:flex;align-items:center;gap:10px;justify-content:center;}.scanning-radar{width:10px;height:10px;border-radius:50%;background:var(--accent-brand);position:relative;}.scanning-radar::after{content:'';position:absolute;top:-5px;left:-5px;right:-5px;bottom:-5px;border:1.5px solid var(--accent-brand);border-radius:50%;animation:pulse-radar 0.75s infinite;}@keyframes pulse-radar{0%{transform:scale(0.6);opacity:1;}100%{transform:scale(1.8);opacity:0;}}.radar-container{width:120px;height:120px;margin:0 auto;position:relative;background:radial-gradient(circle,rgba(0,107,58,0.08) 0%,rgba(0,0,0,0) 70%);border-radius:50%;}.radar-ring{position:absolute;top:0;left:0;right:0;bottom:0;border:1px solid rgba(0,107,58,0.18);border-radius:50%;transform:scale(0.1);opacity:0;}.ripple-1{animation:radar-ripple 2s infinite linear;}.ripple-2{animation:radar-ripple 2s infinite linear;animation-delay:0.665s;}.ripple-3{animation:radar-ripple 2s infinite linear;animation-delay:1.33s;}.radar-sweep{position:absolute;top:0;left:0;right:0;bottom:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(0,107,58,0.25) 0deg,rgba(0,107,58,0) 120deg);animation:radar-sweep 1.25s infinite linear;}.radar-beacon{position:absolute;top:calc(50% - 6px);left:calc(50% - 6px);width:12px;height:12px;background:var(--accent-brand);border-radius:50%;box-shadow:0 0 15px var(--accent-brand);animation:beacon-pulse 0.75s infinite ease-in-out;}@keyframes radar-ripple{0%{transform:scale(0.1);opacity:0.8;}100%{transform:scale(1.1);opacity:0;}}@keyframes radar-sweep{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}@keyframes beacon-pulse{0%,100%{transform:scale(0.85);opacity:0.8;}50%{transform:scale(1.15);opacity:1;}}.view-content{flex:1 1 auto;display:flex;flex-direction:column;padding:12px;gap:12px;overflow-y:auto !important;overflow-x:hidden !important;max-width:100%;min-height:0;height:auto;padding-bottom:120px !important;-webkit-overflow-scrolling:touch !important;touch-action:pan-y !important;overscroll-behavior-y:contain;scrollbar-width:none;-ms-overflow-style:none;}.view-content::-webkit-scrollbar{display:none;}.tab-view{display:flex;flex-direction:column;gap:12px;width:100%;max-width:100%;overflow-x:hidden !important;touch-action:pan-y !important;flex-shrink:0 !important;height:auto !important;}.hidden{display:none !important;}.offline-hero{background:rgba(255,255,255,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:24px;padding:30px 20px;text-align:center;border:1px solid rgba(255,255,255,0.7);margin-top:10px;box-shadow:0 4px 16px rgba(0,0,0,0.03);}.offline-hero-icon{font-size:3.5rem;color:var(--accent-brand);margin-bottom:15px;animation:bounce-soft 1.5s infinite ease-in-out;}@keyframes bounce-soft{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}.offline-hero-title{font-size:1.3rem;font-weight:800;margin-bottom:8px;color:var(--text-white);}.offline-hero-desc{font-size:0.85rem;color:var(--text-gray);line-height:1.4;max-width:280px;margin:0 auto;}.glass-card{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:16px;border:1px solid rgba(255,255,255,0.7);padding:14px 16px;display:flex;flex-direction:column;position:relative;box-shadow:0 4px 16px rgba(0,0,0,0.03);max-width:100%;box-sizing:border-box;flex-shrink:0 !important;height:auto !important;}.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}.card-title{font-size:0.85rem;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-gray);display:flex;align-items:center;gap:6px;}.card-title i{font-size:1.1rem;color:var(--accent-brand);}.quick-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}.quick-stat-card{background:rgba(0,107,58,0.04);border:1px solid var(--border-color);border-radius:12px;padding:10px 8px;text-align:center;display:flex;flex-direction:column;gap:2px;}.quick-stat-val{font-size:1.05rem;font-weight:800;color:var(--text-white);}.quick-stat-lbl{font-size:0.6rem;color:var(--text-gray);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;}.map-section{position:relative;border-radius:24px;overflow:hidden;border:1px solid var(--border-color);box-shadow:0 8px 30px rgba(0,107,58,0.08);background:#f0f4f1;}#dashboard-map{height:250px;width:100%;z-index:10;}.gps-status-overlay{position:absolute;top:15px;right:15px;z-index:100;background:rgba(255,255,255,0.9);backdrop-filter:blur(12px);border:1px solid var(--border-color);padding:6px 14px;border-radius:30px;display:flex;align-items:center;gap:8px;font-size:0.7rem;font-weight:700;color:var(--text-white);}.gps-status-indicator{width:6px;height:6px;border-radius:50%;}.gps-status-indicator.searching{background:var(--warning-amber);animation:pulse-dot 0.5s infinite;}.gps-status-indicator.locked{background:var(--success-green);}.gps-status-indicator.disabled{background:var(--danger-red);}.map-floating-btn{position:absolute;bottom:15px;right:15px;z-index:100;background:var(--danger-red);color:#ffffff;border:none;width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;cursor:pointer;box-shadow:0 4px 20px rgba(220,38,38,0.35);transition:all 0.1s ease;}.map-floating-btn:hover{transform:scale(1.05);}.ping-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(240,244,241,0.98);backdrop-filter:blur(14px);z-index:2000;display:flex;flex-direction:column;justify-content:space-between;padding:30px 24px;animation:slideInUp 0.175s cubic-bezier(0.16,1,0.3,1);color:var(--text-white);}@keyframes slideInUp{from{transform:translateY(100%);}to{transform:translateY(0);}}.ping-header{text-align:center;margin-top:10px;}.ping-subtitle{font-size:0.75rem;color:var(--accent-brand);text-transform:uppercase;letter-spacing:2px;font-weight:800;margin-bottom:6px;}.ping-title{font-size:1.6rem;font-weight:800;color:var(--text-white);}.ping-timer-wrap{display:flex;justify-content:center;align-items:center;margin:25px 0;position:relative;}.ping-timer-svg{transform:rotate(-90deg);}.ping-timer-circle-bg{fill:none;stroke:rgba(0,107,58,0.1);stroke-width:8;}.ping-timer-circle-val{fill:none;stroke:var(--accent-brand);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.5s linear;}.ping-timer-number{position:absolute;font-size:2.8rem;font-weight:800;color:var(--text-white);}.ping-details-card{background:rgba(255,255,255,0.9);backdrop-filter:blur(12px);border-radius:20px;border:1px solid rgba(255,255,255,0.7);padding:20px;display:flex;flex-direction:column;gap:15px;box-shadow:0 8px 30px rgba(0,0,0,0.06);}.ping-metrics-row{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:12px;}.ping-metric{display:flex;flex-direction:column;gap:4px;}.ping-metric-label{font-size:0.65rem;color:var(--text-gray);font-weight:600;text-transform:uppercase;}.ping-metric-val{font-size:1.2rem;font-weight:800;color:var(--text-white);}.ping-metric-val.fare{color:var(--accent-brand);}.ping-route-flow{display:flex;flex-direction:column;gap:12px;position:relative;padding-left:20px;}.ping-route-flow::before{content:'';position:absolute;top:6px;left:5px;bottom:6px;width:1px;border-left:2px dashed var(--text-muted);}.ping-route-node{position:relative;}.ping-route-dot{position:absolute;left:-20px;top:5px;width:10px;height:10px;border-radius:50%;}.ping-route-dot.pickup{background:var(--accent-brand);border:2.5px solid #fff;}.ping-route-dot.drop{background:var(--danger-red);border:2.5px solid #fff;}.ping-route-lbl{font-size:0.65rem;color:var(--text-gray);text-transform:uppercase;font-weight:600;}.ping-route-val{font-size:0.9rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;color:var(--text-white);}.ping-passenger-row{display:flex;justify-content:space-between;align-items:center;background:rgba(0,107,58,0.04);padding:10px 14px;border-radius:12px;font-size:0.8rem;border:1px solid var(--border-color);color:var(--text-white);}.ping-btn-group{display:grid;grid-template-columns:1fr 2.5fr;gap:12px;margin-bottom:10px;}.btn{border-radius:16px;padding:16px;font-weight:800;font-size:0.95rem;text-transform:uppercase;letter-spacing:0.8px;cursor:pointer;border:none;text-align:center;transition:all 0.1s cubic-bezier(0.4,0,0.2,1);}.btn:hover{transform:translateY(-2px);}.btn-secondary{background:rgba(0,0,0,0.05);color:var(--text-white);border:1px solid var(--border-color);}.btn-primary{background:var(--accent-brand);color:#ffffff;box-shadow:0 6px 20px var(--accent-brand-glow);}.active-ride-card{background:rgba(255,255,255,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-left:4px solid var(--accent-brand);border-radius:16px;border-top:1px solid rgba(255,255,255,0.7);border-right:1px solid rgba(255,255,255,0.7);border-bottom:1px solid rgba(255,255,255,0.7);box-shadow:0 6px 24px rgba(0,0,0,0.04);}.active-ride-status{font-size:0.7rem;background:rgba(0,107,58,0.1);color:var(--accent-brand);padding:3px 8px;border-radius:5px;font-weight:800;display:inline-block;margin-bottom:8px;text-transform:uppercase;}.active-metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;background:rgba(0,107,58,0.03);padding:10px;border-radius:12px;border:1px solid var(--border-color);margin:10px 0;}.active-metric-box{display:flex;flex-direction:column;gap:2px;}.active-metric-lbl{font-size:0.6rem;color:var(--text-gray);font-weight:500;text-transform:uppercase;}.active-metric-val{font-size:0.85rem;font-weight:800;color:var(--text-white);}.active-metric-val.green{color:var(--accent-brand);}.navigation-row{display:flex;gap:6px;margin-top:8px;}.nav-btn{flex:1;padding:6px 10px;font-size:0.7rem;font-weight:700;border-radius:8px;background:rgba(255,255,255,0.9);color:var(--text-white);border:1px solid var(--border-color);display:inline-flex;align-items:center;justify-content:center;gap:4px;text-decoration:none;}.nav-btn.pickup{border-color:rgba(0,107,58,0.3);color:var(--accent-brand);}.nav-btn.drop{border-color:rgba(220,38,38,0.3);color:var(--danger-red);}.chart-container{position:relative;height:140px;width:100%;margin-top:8px;}.performance-rings{display:flex;justify-content:space-around;margin-top:8px;}.perf-item{text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;}.perf-circle{width:50px;height:50px;border-radius:50%;border:3px solid var(--border-color);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;position:relative;}.perf-circle.rating{border-color:var(--accent-brand);color:var(--accent-brand);}.perf-circle.accept{border-color:var(--success-green);color:var(--success-green);}.perf-circle.cancel{border-color:var(--danger-red);color:var(--danger-red);}.perf-label{font-size:0.6rem;color:var(--text-gray);font-weight:600;text-transform:uppercase;}.wallet-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}.wallet-bal-wrap{display:flex;flex-direction:column;gap:2px;}.wallet-bal-num{font-size:1.8rem;font-weight:800;color:var(--text-white);}.wallet-bal-num span{color:var(--accent-brand);}.payout-btn{background:var(--accent-brand);color:#ffffff;font-weight:800;font-size:0.8rem;padding:8px 16px;border-radius:20px;border:none;cursor:pointer;transition:all 0.1s ease;box-shadow:0 4px 12px var(--accent-brand-glow);}.payout-btn:hover{transform:translateY(-1px);}.ledger-list{display:flex;flex-direction:column;gap:12px;margin-top:10px;}.ledger-item{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.6);border-radius:14px;padding:12px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,0.03);}.ledger-info{display:flex;flex-direction:column;gap:2px;}.ledger-desc{font-size:0.8rem;font-weight:700;color:var(--text-white);}.ledger-date{font-size:0.65rem;color:var(--text-gray);}.ledger-amount{font-weight:800;font-size:0.95rem;}.ledger-amount.credit{color:var(--success-green);}.ledger-amount.debit{color:var(--danger-red);}.doc-list{display:flex;flex-direction:column;gap:10px;}.doc-item{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.6);border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,0.03);}.doc-label{font-size:0.85rem;font-weight:700;display:flex;align-items:center;gap:10px;color:var(--text-white);}.doc-label i{font-size:1.15rem;color:var(--accent-brand);}.doc-status-badge{font-size:0.65rem;font-weight:800;padding:3px 8px;border-radius:6px;text-transform:uppercase;}.doc-status-badge.verified{background:rgba(0,107,58,0.1);color:var(--success-green);}.doc-status-badge.pending{background:rgba(217,119,6,0.1);color:var(--warning-amber);}.history-card{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.6);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:transform 0.2s ease;box-shadow:0 4px 14px rgba(0,0,0,0.03);}.history-card:hover{transform:translateY(-2px);}.history-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:8px;}.history-id{font-size:0.8rem;font-weight:800;color:var(--text-white);}.history-status{font-size:0.65rem;font-weight:800;padding:3px 8px;border-radius:6px;text-transform:uppercase;}.history-status.completed{background:rgba(0,107,58,0.1);color:var(--success-green);}.history-status.finished{background:rgba(0,107,58,0.1);color:var(--accent-brand);}.history-status.cancelled{background:rgba(220,38,38,0.1);color:var(--danger-red);}.history-datetime{font-size:0.7rem;color:var(--text-gray);display:flex;align-items:center;gap:4px;}.history-route{display:flex;flex-direction:column;gap:6px;font-size:0.75rem;padding-left:4px;}.history-node{display:flex;align-items:flex-start;gap:8px;}.history-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;}.history-dot.pickup{background:var(--success-green);}.history-dot.drop{background:var(--danger-red);}.history-addr{color:var(--text-white);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:calc(100% - 20px);}.history-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-color);padding-top:8px;margin-top:2px;}.history-metrics{display:flex;gap:12px;font-size:0.75rem;color:var(--text-gray);font-weight:600;}.history-metrics span span{color:var(--text-white);font-weight:700;}.history-fare{font-size:1rem;font-weight:800;color:var(--accent-brand);}.bottom-nav{position:absolute;bottom:0;left:0;right:0;height:70px;background:rgba(255,255,255,0.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--border-color);display:flex;justify-content:space-around;align-items:center;z-index:1000;}.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text-gray);cursor:pointer;text-decoration:none;transition:all 0.1s ease;width:20%;}.nav-item i{font-size:1.3rem;}.nav-item-lbl{font-size:0.65rem;font-weight:700;}.nav-item.active{color:var(--accent-brand);}.offline-notice-banner{background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);color:var(--danger-red);border-radius:16px;padding:12px 16px;font-size:0.8rem;font-weight:700;display:flex;align-items:center;gap:10px;}.swal2-popup.dark-popup{background:rgba(255,255,255,0.95) !important;color:var(--text-white) !important;border:1px solid var(--border-color) !important;border-radius:24px !important;box-shadow:0 20px 50px rgba(0,0,0,0.12) !important;}.swal2-title.dark-popup-title{color:var(--text-white) !important;font-family:var(--font-family) !important;}.swal2-html-container.dark-popup-html{color:var(--text-gray) !important;font-family:var(--font-family) !important;}.swal2-confirm.dark-popup-confirm{background-color:var(--accent-brand) !important;color:#ffffff !important;font-weight:700 !important;border-radius:12px !important;padding:12px 28px !important;font-size:1rem !important;border:none !important;box-shadow:0 4px 15px var(--accent-brand-glow) !important;transition:all 0.3s ease !important;margin:5px !important;}.swal2-cancel.dark-popup-cancel{background-color:rgba(0,0,0,0.05) !important;color:var(--text-gray) !important;border-radius:12px !important;padding:12px 28px !important;font-size:1rem !important;border:none !important;transition:all 0.3s ease !important;margin:5px !important;}.map-marker-pulse{width:14px;height:14px;border-radius:50%;border:2.5px solid white;box-shadow:0 0 10px rgba(0,0,0,0.5);position:relative;}.map-marker-pulse.driver{background:var(--accent-brand);}.map-marker-pulse.driver::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid var(--accent-brand);border-radius:50%;animation:pulse-radar 1s infinite;}.opp-card-list{display:flex;flex-direction:column;gap:12px;}.opp-card{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:18px;border:1px solid rgba(255,255,255,0.6);padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 4px 14px rgba(0,0,0,0.03);}.opp-card-row{display:flex;justify-content:space-between;align-items:center;}.opp-badge-row{display:flex;gap:6px;}.opp-badge{font-size:0.65rem;padding:3px 8px;border-radius:6px;font-weight:800;text-transform:uppercase;}.opp-badge.vehicle{background:rgba(0,0,0,0.05);color:var(--text-gray);}.opp-badge.type{background:rgba(0,107,58,0.1);color:var(--accent-brand);}.opp-badge.vendor{background:rgba(0,107,58,0.1);color:var(--success-green);}.opp-fare{font-size:1.15rem;font-weight:800;color:var(--accent-brand);}.opp-loc-line{display:flex;flex-direction:column;gap:4px;font-size:0.8rem;color:var(--text-white);}.opp-dist{font-size:0.75rem;color:var(--text-gray);}.ride-stats-floating{display:flex;flex-direction:row;justify-content:space-between;gap:12px;margin-bottom:15px;width:100%;pointer-events:none;}.ride-stat-float-card{pointer-events:auto;background:rgba(255,255,255,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.6);border-radius:16px;padding:10px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,0.06);min-width:140px;transition:all 0.15s cubic-bezier(0.4,0,0.2,1);}.ride-stat-float-card:hover{border-color:var(--accent-brand);transform:translateY(-2px);}.ride-stat-float-card .icon-wrap{width:36px;height:36px;border-radius:50%;background:rgba(0,107,58,0.12);border:1px solid rgba(0,107,58,0.25);display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:var(--accent-brand);}.ride-stat-float-card.dist-card .icon-wrap{background:rgba(0,107,58,0.12);border-color:rgba(0,107,58,0.25);}.ride-stat-float-card .stat-content{display:flex;flex-direction:column;align-items:flex-start;}.ride-stat-float-card .value{font-size:1.5rem;font-weight:800;color:var(--text-white);line-height:1.1;}.ride-stat-float-card .unit{font-size:0.65rem;color:var(--text-gray);font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}#processing-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(240,244,241,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:20000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity 0.15s ease,visibility 0.15s ease;}#processing-overlay.visible{opacity:1;visibility:visible;}.processing-content{background:rgba(255,255,255,0.92);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.7);border-radius:24px;padding:30px 40px;width:90%;max-width:360px;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.1);}.hourglass-wrapper{margin-bottom:20px;filter:drop-shadow(0 0 15px rgba(217,119,6,0.3));}.hourglass-svg{animation:hourglass-flip 1.25s cubic-bezier(0.77,0,0.175,1) infinite;transform-origin:50% 50%;}.sand-top{animation:sand-empty 1.25s cubic-bezier(0.77,0,0.175,1) infinite;transform-origin:50% 49px;}.sand-bottom{animation:sand-fill 1.25s cubic-bezier(0.77,0,0.175,1) infinite;transform-origin:50% 80px;}.sand-drip{stroke-dasharray:4,6;animation:drip-flow 0.2s linear infinite;}.processing-title{font-size:0.75rem;font-weight:800;color:var(--accent-brand);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;}.processing-message{font-size:0.9rem;font-weight:500;color:var(--text-white);line-height:1.4;}@keyframes hourglass-flip{0%,85%{transform:rotate(0deg);}100%{transform:rotate(180deg);}}@keyframes sand-empty{0%{transform:scaleY(1) scaleX(1);opacity:1;}45%,100%{transform:scaleY(0) scaleX(0.4);opacity:0;}}@keyframes sand-fill{0%{transform:scaleY(0);}45%,100%{transform:scaleY(1);}}@keyframes drip-flow{from{stroke-dashoffset:0;}to{stroke-dashoffset:10;}}</style>
+    <!-- Main Style CSS for Splash Screen & Base Tokens -->
+    <link rel="stylesheet" href="style.css?v=2">
+
+    <style>:root{--bg-dark:#F7FAF6;--bg-card:#FFFFFF;--accent-brand:#006B3A;--accent-brand-pista:#93C572;--accent-brand-glow:rgba(0,107,58,0.18);--text-white:#000000;--text-gray:#1C2B23;--text-muted:#2C3E35;--border-color:rgba(0,107,58,0.12);--danger-red:#DC2626;--warning-amber:#D97706;--success-green:#006B3A;--font-family:'Outfit','Inter',sans-serif;}*{box-sizing:border-box;margin:0;padding:0;font-family:var(--font-family);}[class^="ph-"],[class*=" ph-"]{font-family:"Phosphor-Bold","Phosphor-Fill","Phosphor-Regular","Phosphor" !important;}body{background-color:var(--bg-dark);color:#000000;overflow:hidden;height:100vh;height:100dvh;}.swal2-popup,.swal2-popup.dark-popup{background:#FFFFFF !important;color:#000000 !important;border:1px solid var(--border-color) !important;border-radius:24px !important;box-shadow:0 20px 50px rgba(0,0,0,0.12) !important;}.swal2-title,.swal2-title.dark-popup-title{color:#000000 !important;font-family:var(--font-family) !important;font-weight:800 !important;}.swal2-html-container,.swal2-html-container.dark-popup-html{color:#1C2B23 !important;font-family:var(--font-family) !important;font-weight:600 !important;}.swal2-input,.swal2-textarea,.swal2-select{background:#F7FAF6 !important;color:#000000 !important;border:1px solid rgba(0,107,58,0.2) !important;color-scheme:light !important;font-weight:700 !important;}input,select,textarea{background:#F7FAF6 !important;color:#000000 !important;border:1px solid rgba(0,107,58,0.2) !important;color-scheme:light !important;font-weight:700 !important;}label{color:#000000 !important;font-weight:800 !important;}.app-container{max-width:480px;margin:0 auto;height:100%;background:var(--bg-dark);display:flex;flex-direction:column;position:relative;box-shadow:0 10px 40px rgba(0,107,58,0.1);border-left:1px solid var(--border-color);border-right:1px solid var(--border-color);overflow:hidden;}.top-header{background:rgba(255,255,255,0.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:15px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);position:sticky;top:0;z-index:100;color:var(--text-white);}.logo-wrap{display:flex;align-items:center;gap:8px;}.logo-img{height:32px;width:auto;}.logo-text{font-weight:800;font-size:1.1rem;letter-spacing:0.5px;color:var(--text-white);}.logo-text span{color:var(--accent-brand);}.profile-btn{background:rgba(255,255,255,0.8);border:1px solid var(--border-color);color:var(--text-white);padding:6px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.1s ease;}.profile-btn:hover{border-color:var(--accent-brand);}.duty-status-bar{background:rgba(245,248,244,0.9);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);color:var(--text-white);}.driver-info-badge{display:flex;flex-direction:column;gap:2px;min-width:120px;}.driver-info-name{font-weight:700;font-size:0.95rem;color:var(--text-white);}.driver-info-car{font-size:0.75rem;color:var(--text-gray);}.duty-toggle{display:flex;align-items:center;gap:8px;padding:6px 16px;border-radius:30px;cursor:pointer;font-weight:800;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.8px;transition:all 0.15s cubic-bezier(0.4,0,0.2,1);user-select:none;}.duty-toggle.offline{background:rgba(0,0,0,0.05);color:var(--text-gray);border:1px solid var(--border-color);}.duty-toggle.online{background:var(--accent-brand);color:#ffffff;box-shadow:0 4px 15px var(--accent-brand-glow);}.duty-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}.offline .duty-dot{background:var(--text-muted);}.online .duty-dot{background:#fff;animation:pulse-dot 0.75s infinite;}@keyframes pulse-dot{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:0.5;}}.online-scanning-bar{background:rgba(0,107,58,0.08);border-bottom:1px solid rgba(0,107,58,0.2);padding:8px 20px;font-size:0.75rem;font-weight:600;color:var(--accent-brand);display:flex;align-items:center;gap:10px;justify-content:center;}.scanning-radar{width:10px;height:10px;border-radius:50%;background:var(--accent-brand);position:relative;}.scanning-radar::after{content:'';position:absolute;top:-5px;left:-5px;right:-5px;bottom:-5px;border:1.5px solid var(--accent-brand);border-radius:50%;animation:pulse-radar 0.75s infinite;}@keyframes pulse-radar{0%{transform:scale(0.6);opacity:1;}100%{transform:scale(1.8);opacity:0;}}.radar-container{width:120px;height:120px;margin:0 auto;position:relative;background:radial-gradient(circle,rgba(0,107,58,0.08) 0%,rgba(0,0,0,0) 70%);border-radius:50%;}.radar-ring{position:absolute;top:0;left:0;right:0;bottom:0;border:1px solid rgba(0,107,58,0.18);border-radius:50%;transform:scale(0.1);opacity:0;}.ripple-1{animation:radar-ripple 2s infinite linear;}.ripple-2{animation:radar-ripple 2s infinite linear;animation-delay:0.665s;}.ripple-3{animation:radar-ripple 2s infinite linear;animation-delay:1.33s;}.radar-sweep{position:absolute;top:0;left:0;right:0;bottom:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(0,107,58,0.25) 0deg,rgba(0,107,58,0) 120deg);animation:radar-sweep 1.25s infinite linear;}.radar-beacon{position:absolute;top:calc(50% - 6px);left:calc(50% - 6px);width:12px;height:12px;background:var(--accent-brand);border-radius:50%;box-shadow:0 0 15px var(--accent-brand);animation:beacon-pulse 0.75s infinite ease-in-out;}@keyframes radar-ripple{0%{transform:scale(0.1);opacity:0.8;}100%{transform:scale(1.1);opacity:0;}}@keyframes radar-sweep{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}@keyframes beacon-pulse{0%,100%{transform:scale(0.85);opacity:0.8;}50%{transform:scale(1.15);opacity:1;}}.view-content{flex:1 1 auto;display:flex;flex-direction:column;padding:12px;gap:12px;overflow-y:auto !important;overflow-x:hidden !important;max-width:100%;min-height:0;height:auto;padding-bottom:120px !important;-webkit-overflow-scrolling:touch !important;touch-action:pan-y !important;overscroll-behavior-y:contain;scrollbar-width:none;-ms-overflow-style:none;}.view-content::-webkit-scrollbar{display:none;}.tab-view{display:flex;flex-direction:column;gap:12px;width:100%;max-width:100%;overflow-x:hidden !important;touch-action:pan-y !important;flex-shrink:0 !important;height:auto !important;}.hidden{display:none !important;}.offline-hero{background:rgba(255,255,255,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:24px;padding:30px 20px;text-align:center;border:1px solid rgba(255,255,255,0.7);margin-top:10px;box-shadow:0 4px 16px rgba(0,0,0,0.03);}.offline-hero-icon{font-size:3.5rem;color:var(--accent-brand);margin-bottom:15px;animation:bounce-soft 1.5s infinite ease-in-out;}@keyframes bounce-soft{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}.offline-hero-title{font-size:1.3rem;font-weight:800;margin-bottom:8px;color:var(--text-white);}.offline-hero-desc{font-size:0.85rem;color:var(--text-gray);line-height:1.4;max-width:280px;margin:0 auto;}.glass-card{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:16px;border:1px solid rgba(255,255,255,0.7);padding:14px 16px;display:flex;flex-direction:column;position:relative;box-shadow:0 4px 16px rgba(0,0,0,0.03);max-width:100%;box-sizing:border-box;flex-shrink:0 !important;height:auto !important;}.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}.card-title{font-size:0.85rem;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-gray);display:flex;align-items:center;gap:6px;}.card-title i{font-size:1.1rem;color:var(--accent-brand);}.quick-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}.quick-stat-card{background:rgba(0,107,58,0.04);border:1px solid var(--border-color);border-radius:12px;padding:10px 8px;text-align:center;display:flex;flex-direction:column;gap:2px;}.quick-stat-val{font-size:1.05rem;font-weight:800;color:var(--text-white);}.quick-stat-lbl{font-size:0.6rem;color:var(--text-gray);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;}.map-section{position:relative;border-radius:24px;overflow:hidden;border:1px solid var(--border-color);box-shadow:0 8px 30px rgba(0,107,58,0.08);background:#f0f4f1;}#dashboard-map{height:250px;width:100%;z-index:10;}.gps-status-overlay{position:absolute;top:15px;right:15px;z-index:100;background:rgba(255,255,255,0.9);backdrop-filter:blur(12px);border:1px solid var(--border-color);padding:6px 14px;border-radius:30px;display:flex;align-items:center;gap:8px;font-size:0.7rem;font-weight:700;color:var(--text-white);}.gps-status-indicator{width:6px;height:6px;border-radius:50%;}.gps-status-indicator.searching{background:var(--warning-amber);animation:pulse-dot 0.5s infinite;}.gps-status-indicator.locked{background:var(--success-green);}.gps-status-indicator.disabled{background:var(--danger-red);}.map-floating-btn{position:absolute;bottom:15px;right:15px;z-index:100;background:var(--danger-red);color:#ffffff;border:none;width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;cursor:pointer;box-shadow:0 4px 20px rgba(220,38,38,0.35);transition:all 0.1s ease;}.map-floating-btn:hover{transform:scale(1.05);}.ping-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(240,244,241,0.98);backdrop-filter:blur(14px);z-index:2000;display:flex;flex-direction:column;justify-content:space-between;padding:30px 24px;animation:slideInUp 0.175s cubic-bezier(0.16,1,0.3,1);color:var(--text-white);}@keyframes slideInUp{from{transform:translateY(100%);}to{transform:translateY(0);}}.ping-header{text-align:center;margin-top:10px;}.ping-subtitle{font-size:0.75rem;color:var(--accent-brand);text-transform:uppercase;letter-spacing:2px;font-weight:800;margin-bottom:6px;}.ping-title{font-size:1.6rem;font-weight:800;color:var(--text-white);}.ping-timer-wrap{display:flex;justify-content:center;align-items:center;margin:25px 0;position:relative;}.ping-timer-svg{transform:rotate(-90deg);}.ping-timer-circle-bg{fill:none;stroke:rgba(0,107,58,0.1);stroke-width:8;}.ping-timer-circle-val{fill:none;stroke:var(--accent-brand);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.5s linear;}.ping-timer-number{position:absolute;font-size:2.8rem;font-weight:800;color:var(--text-white);}.ping-details-card{background:rgba(255,255,255,0.9);backdrop-filter:blur(12px);border-radius:20px;border:1px solid rgba(255,255,255,0.7);padding:20px;display:flex;flex-direction:column;gap:15px;box-shadow:0 8px 30px rgba(0,0,0,0.06);}.ping-metrics-row{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:12px;}.ping-metric{display:flex;flex-direction:column;gap:4px;}.ping-metric-label{font-size:0.65rem;color:var(--text-gray);font-weight:600;text-transform:uppercase;}.ping-metric-val{font-size:1.2rem;font-weight:800;color:var(--text-white);}.ping-metric-val.fare{color:var(--accent-brand);}.ping-route-flow{display:flex;flex-direction:column;gap:12px;position:relative;padding-left:20px;}.ping-route-flow::before{content:'';position:absolute;top:6px;left:5px;bottom:6px;width:1px;border-left:2px dashed var(--text-muted);}.ping-route-node{position:relative;}.ping-route-dot{position:absolute;left:-20px;top:5px;width:10px;height:10px;border-radius:50%;}.ping-route-dot.pickup{background:var(--accent-brand);border:2.5px solid #fff;}.ping-route-dot.drop{background:var(--danger-red);border:2.5px solid #fff;}.ping-route-lbl{font-size:0.65rem;color:var(--text-gray);text-transform:uppercase;font-weight:600;}.ping-route-val{font-size:0.9rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;color:var(--text-white);}.ping-passenger-row{display:flex;justify-content:space-between;align-items:center;background:rgba(0,107,58,0.04);padding:10px 14px;border-radius:12px;font-size:0.8rem;border:1px solid var(--border-color);color:var(--text-white);}.ping-btn-group{display:grid;grid-template-columns:1fr 2.5fr;gap:12px;margin-bottom:10px;}.btn{border-radius:16px;padding:16px;font-weight:800;font-size:0.95rem;text-transform:uppercase;letter-spacing:0.8px;cursor:pointer;border:none;text-align:center;transition:all 0.1s cubic-bezier(0.4,0,0.2,1);}.btn:hover{transform:translateY(-2px);}.btn-secondary{background:rgba(0,0,0,0.05);color:var(--text-white);border:1px solid var(--border-color);}.btn-primary{background:var(--accent-brand);color:#ffffff;box-shadow:0 6px 20px var(--accent-brand-glow);}.active-ride-card{background:rgba(255,255,255,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-left:4px solid var(--accent-brand);border-radius:16px;border-top:1px solid rgba(255,255,255,0.7);border-right:1px solid rgba(255,255,255,0.7);border-bottom:1px solid rgba(255,255,255,0.7);box-shadow:0 6px 24px rgba(0,0,0,0.04);}.active-ride-status{font-size:0.7rem;background:rgba(0,107,58,0.1);color:var(--accent-brand);padding:3px 8px;border-radius:5px;font-weight:800;display:inline-block;margin-bottom:8px;text-transform:uppercase;}.active-metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;background:rgba(0,107,58,0.03);padding:10px;border-radius:12px;border:1px solid var(--border-color);margin:10px 0;}.active-metric-box{display:flex;flex-direction:column;gap:2px;}.active-metric-lbl{font-size:0.6rem;color:var(--text-gray);font-weight:500;text-transform:uppercase;}.active-metric-val{font-size:0.85rem;font-weight:800;color:var(--text-white);}.active-metric-val.green{color:var(--accent-brand);}.navigation-row{display:flex;gap:6px;margin-top:8px;}.nav-btn{flex:1;padding:6px 10px;font-size:0.7rem;font-weight:700;border-radius:8px;background:rgba(255,255,255,0.9);color:var(--text-white);border:1px solid var(--border-color);display:inline-flex;align-items:center;justify-content:center;gap:4px;text-decoration:none;}.nav-btn.pickup{border-color:rgba(0,107,58,0.3);color:var(--accent-brand);}.nav-btn.drop{border-color:rgba(220,38,38,0.3);color:var(--danger-red);}.chart-container{position:relative;height:140px;width:100%;margin-top:8px;}.performance-rings{display:flex;justify-content:space-around;margin-top:8px;}.perf-item{text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;}.perf-circle{width:50px;height:50px;border-radius:50%;border:3px solid var(--border-color);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;position:relative;}.perf-circle.rating{border-color:var(--accent-brand);color:var(--accent-brand);}.perf-circle.accept{border-color:var(--success-green);color:var(--success-green);}.perf-circle.cancel{border-color:var(--danger-red);color:var(--danger-red);}.perf-label{font-size:0.6rem;color:var(--text-gray);font-weight:600;text-transform:uppercase;}.wallet-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}.wallet-bal-wrap{display:flex;flex-direction:column;gap:2px;}.wallet-bal-num{font-size:1.8rem;font-weight:800;color:var(--text-white);}.wallet-bal-num span{color:var(--accent-brand);}.payout-btn{background:var(--accent-brand);color:#ffffff;font-weight:800;font-size:0.8rem;padding:8px 16px;border-radius:20px;border:none;cursor:pointer;transition:all 0.1s ease;box-shadow:0 4px 12px var(--accent-brand-glow);}.payout-btn:hover{transform:translateY(-1px);}.ledger-list{display:flex;flex-direction:column;gap:12px;margin-top:10px;}.ledger-item{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.6);border-radius:14px;padding:12px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,0.03);}.ledger-info{display:flex;flex-direction:column;gap:2px;}.ledger-desc{font-size:0.8rem;font-weight:700;color:var(--text-white);}.ledger-date{font-size:0.65rem;color:var(--text-gray);}.ledger-amount{font-weight:800;font-size:0.95rem;}.ledger-amount.credit{color:var(--success-green);}.ledger-amount.debit{color:var(--danger-red);}.doc-list{display:flex;flex-direction:column;gap:10px;}.doc-item{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.6);border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,0.03);}.doc-label{font-size:0.85rem;font-weight:700;display:flex;align-items:center;gap:10px;color:var(--text-white);}.doc-label i{font-size:1.15rem;color:var(--accent-brand);}.doc-status-badge{font-size:0.65rem;font-weight:800;padding:3px 8px;border-radius:6px;text-transform:uppercase;}.doc-status-badge.verified{background:rgba(0,107,58,0.1);color:var(--success-green);}.doc-status-badge.pending{background:rgba(217,119,6,0.1);color:var(--warning-amber);}.history-card{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.6);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:transform 0.2s ease;box-shadow:0 4px 14px rgba(0,0,0,0.03);}.history-card:hover{transform:translateY(-2px);}.history-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:8px;}.history-id{font-size:0.8rem;font-weight:800;color:var(--text-white);}.history-status{font-size:0.65rem;font-weight:800;padding:3px 8px;border-radius:6px;text-transform:uppercase;}.history-status.completed{background:rgba(0,107,58,0.1);color:var(--success-green);}.history-status.finished{background:rgba(0,107,58,0.1);color:var(--accent-brand);}.history-status.cancelled{background:rgba(220,38,38,0.1);color:var(--danger-red);}.history-datetime{font-size:0.7rem;color:var(--text-gray);display:flex;align-items:center;gap:4px;}.history-route{display:flex;flex-direction:column;gap:6px;font-size:0.75rem;padding-left:4px;}.history-node{display:flex;align-items:flex-start;gap:8px;}.history-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;}.history-dot.pickup{background:var(--success-green);}.history-dot.drop{background:var(--danger-red);}.history-addr{color:var(--text-white);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:calc(100% - 20px);}.history-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-color);padding-top:8px;margin-top:2px;}.history-metrics{display:flex;gap:12px;font-size:0.75rem;color:var(--text-gray);font-weight:600;}.history-metrics span span{color:var(--text-white);font-weight:700;}.history-fare{font-size:1rem;font-weight:800;color:var(--accent-brand);}.bottom-nav{position:absolute;bottom:0;left:0;right:0;height:70px;background:rgba(255,255,255,0.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--border-color);display:flex;justify-content:space-around;align-items:center;z-index:1000;}.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text-gray);cursor:pointer;text-decoration:none;transition:all 0.1s ease;width:20%;}.nav-item i{font-size:1.3rem;}.nav-item-lbl{font-size:0.65rem;font-weight:700;}.nav-item.active{color:var(--accent-brand);}.offline-notice-banner{background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);color:var(--danger-red);border-radius:16px;padding:12px 16px;font-size:0.8rem;font-weight:700;display:flex;align-items:center;gap:10px;}.swal2-popup.dark-popup{background:rgba(255,255,255,0.95) !important;color:var(--text-white) !important;border:1px solid var(--border-color) !important;border-radius:24px !important;box-shadow:0 20px 50px rgba(0,0,0,0.12) !important;}.swal2-title.dark-popup-title{color:var(--text-white) !important;font-family:var(--font-family) !important;}.swal2-html-container.dark-popup-html{color:var(--text-gray) !important;font-family:var(--font-family) !important;}.swal2-confirm.dark-popup-confirm{background-color:var(--accent-brand) !important;color:#ffffff !important;font-weight:700 !important;border-radius:12px !important;padding:12px 28px !important;font-size:1rem !important;border:none !important;box-shadow:0 4px 15px var(--accent-brand-glow) !important;transition:all 0.3s ease !important;margin:5px !important;}.swal2-cancel.dark-popup-cancel{background-color:rgba(0,0,0,0.05) !important;color:var(--text-gray) !important;border-radius:12px !important;padding:12px 28px !important;font-size:1rem !important;border:none !important;transition:all 0.3s ease !important;margin:5px !important;}.map-marker-pulse{width:14px;height:14px;border-radius:50%;border:2.5px solid white;box-shadow:0 0 10px rgba(0,0,0,0.5);position:relative;}.map-marker-pulse.driver{background:var(--accent-brand);}.map-marker-pulse.driver::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid var(--accent-brand);border-radius:50%;animation:pulse-radar 1s infinite;}.opp-card-list{display:flex;flex-direction:column;gap:12px;}.opp-card{background:rgba(255,255,255,0.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:18px;border:1px solid rgba(255,255,255,0.6);padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 4px 14px rgba(0,0,0,0.03);}.opp-card-row{display:flex;justify-content:space-between;align-items:center;}.opp-badge-row{display:flex;gap:6px;}.opp-badge{font-size:0.65rem;padding:3px 8px;border-radius:6px;font-weight:800;text-transform:uppercase;}.opp-badge.vehicle{background:rgba(0,0,0,0.05);color:var(--text-gray);}.opp-badge.type{background:rgba(0,107,58,0.1);color:var(--accent-brand);}.opp-badge.vendor{background:rgba(0,107,58,0.1);color:var(--success-green);}.opp-fare{font-size:1.15rem;font-weight:800;color:var(--accent-brand);}.opp-loc-line{display:flex;flex-direction:column;gap:4px;font-size:0.8rem;color:var(--text-white);}.opp-dist{font-size:0.75rem;color:var(--text-gray);}.ride-stats-floating{display:flex;flex-direction:row;justify-content:space-between;gap:12px;margin-bottom:15px;width:100%;pointer-events:none;}.ride-stat-float-card{pointer-events:auto;background:rgba(255,255,255,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.6);border-radius:16px;padding:10px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,0.06);min-width:140px;transition:all 0.15s cubic-bezier(0.4,0,0.2,1);}.ride-stat-float-card:hover{border-color:var(--accent-brand);transform:translateY(-2px);}.ride-stat-float-card .icon-wrap{width:36px;height:36px;border-radius:50%;background:rgba(0,107,58,0.12);border:1px solid rgba(0,107,58,0.25);display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:var(--accent-brand);}.ride-stat-float-card.dist-card .icon-wrap{background:rgba(0,107,58,0.12);border-color:rgba(0,107,58,0.25);}.ride-stat-float-card .stat-content{display:flex;flex-direction:column;align-items:flex-start;}.ride-stat-float-card .value{font-size:1.5rem;font-weight:800;color:var(--text-white);line-height:1.1;}.ride-stat-float-card .unit{font-size:0.65rem;color:var(--text-gray);font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}#processing-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(240,244,241,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:20000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity 0.15s ease,visibility 0.15s ease;}#processing-overlay.visible{opacity:1;visibility:visible;}.processing-content{background:rgba(255,255,255,0.92);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.7);border-radius:24px;padding:30px 40px;width:90%;max-width:360px;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.1);}.hourglass-wrapper{margin-bottom:20px;filter:drop-shadow(0 0 15px rgba(217,119,6,0.3));}.hourglass-svg{animation:hourglass-flip 1.25s cubic-bezier(0.77,0,0.175,1) infinite;transform-origin:50% 50%;}.sand-top{animation:sand-empty 1.25s cubic-bezier(0.77,0,0.175,1) infinite;transform-origin:50% 49px;}.sand-bottom{animation:sand-fill 1.25s cubic-bezier(0.77,0,0.175,1) infinite;transform-origin:50% 80px;}.sand-drip{stroke-dasharray:4,6;animation:drip-flow 0.2s linear infinite;}.processing-title{font-size:0.75rem;font-weight:800;color:var(--accent-brand);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;}.processing-message{font-size:0.9rem;font-weight:500;color:var(--text-white);line-height:1.4;}@keyframes hourglass-flip{0%,85%{transform:rotate(0deg);}100%{transform:rotate(180deg);}}@keyframes sand-empty{0%{transform:scaleY(1) scaleX(1);opacity:1;}45%,100%{transform:scaleY(0) scaleX(0.4);opacity:0;}}@keyframes sand-fill{0%{transform:scaleY(0);}45%,100%{transform:scaleY(1);}}@keyframes drip-flow{from{stroke-dashoffset:0;}to{stroke-dashoffset:10;}}</style>
 </head>
 <body>
 
-    <!-- Loading Splash Screen -->
+<!-- Full Screen Ride Request Overlay -->
+<div id="ride-request-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:999999; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:sans-serif;">
+    <audio id="ride-alert-audio" loop>
+        <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+    </audio>
+    <div style="text-align:center; margin-bottom: 30px;">
+        <h1 style="color:#4ade80; font-size:2rem; margin:0 0 10px 0;">New Ride Request!</h1>
+        <div style="font-size:1.5rem; font-weight:bold; color:#facc15;" id="overlay-fare">₹0.00</div>
+    </div>
+    
+    <div style="background:#1f2937; padding:20px; border-radius:12px; width:85%; max-width:400px; margin-bottom:40px;">
+        <div style="margin-bottom:15px;">
+            <div style="color:#9ca3af; font-size:0.8rem; text-transform:uppercase;">Pickup</div>
+            <div id="overlay-pickup" style="font-size:1.1rem; font-weight:600;">Location A</div>
+        </div>
+        <div>
+            <div style="color:#9ca3af; font-size:0.8rem; text-transform:uppercase;">Dropoff</div>
+            <div id="overlay-drop" style="font-size:1.1rem; font-weight:600;">Location B</div>
+        </div>
+    </div>
+
+    <!-- SVG Countdown Timer -->
+    <div style="position:relative; width:120px; height:120px; margin-bottom:40px;">
+        <svg viewBox="0 0 100 100" style="transform: rotate(-90deg); width:100%; height:100%;">
+            <circle cx="50" cy="50" r="45" fill="none" stroke="#374151" stroke-width="8" />
+            <circle id="overlay-timer-circle" cx="50" cy="50" r="45" fill="none" stroke="#4ade80" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="0" style="transition: stroke-dashoffset 1s linear;" />
+        </svg>
+        <div id="overlay-timer-text" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:2rem; font-weight:bold;">15</div>
+    </div>
+
+    <div style="display:flex; gap:20px; width:85%; max-width:400px;">
+        <button onclick="handleOverlayReject()" style="flex:1; padding:15px; border-radius:30px; border:none; background:#ef4444; color:white; font-size:1.1rem; font-weight:bold; cursor:pointer;">REJECT</button>
+        <button onclick="handleOverlayAccept()" style="flex:1; padding:15px; border-radius:30px; border:none; background:#22c55e; color:white; font-size:1.1rem; font-weight:bold; cursor:pointer;">ACCEPT</button>
+    </div>
+</div>
+    <!-- Loading Splash Screen (Admin Panel Style) -->
     <div id="splash-screen">
-        <img src="logo.png" class="splash-logo" alt="CityRideTaxi">
-        <div style="font-size: 1.5rem; font-weight: 800; margin-bottom: 5px;"><span>CityRide</span>Partner</div>
+        <div class="splash-grid"></div>
+        <div class="splash-orb"></div>
+        <div class="splash-ring"></div>
+        <div class="splash-ring splash-ring-2"></div>
+        <div class="splash-logo-wrap">
+            <img src="logo.png" class="splash-logo" alt="CityRideTaxi" width="220" height="160">
+            <div class="splash-brand"><span>CityRide</span>Partner</div>
+            <div class="splash-tagline">Driver Command Center</div>
+        </div>
+        <div class="splash-road-wrap">
+            <div class="splash-road"></div>
+            <svg class="splash-car" width="64" height="28" viewBox="0 0 64 28" fill="none">
+                <rect x="8" y="12" width="48" height="12" rx="4" fill="#93C572" />
+                <path d="M18 12 L22 4 L42 4 L46 12Z" fill="#84B067" />
+                <rect x="23" y="5" width="8" height="6" rx="1" fill="rgba(150,220,255,0.7)" />
+                <rect x="33" y="5" width="8" height="6" rx="1" fill="rgba(150,220,255,0.7)" />
+                <circle cx="18" cy="24" r="4" fill="#1a1a1a" stroke="#555" stroke-width="1.5" />
+                <circle cx="18" cy="24" r="1.5" fill="#888" />
+                <circle cx="46" cy="24" r="4" fill="#1a1a1a" stroke="#555" stroke-width="1.5" />
+                <circle cx="46" cy="24" r="1.5" fill="#888" />
+                <ellipse cx="57" cy="16" rx="5" ry="3" fill="rgba(255,220,100,0.5)" />
+                <rect x="54" y="14" width="3" height="4" rx="1" fill="#ffd700" />
+            </svg>
+        </div>
+        <div class="splash-progress-wrap">
+            <div class="splash-progress-bar"></div>
+        </div>
         <div class="splash-status">Authenticating Pilot Systems...</div>
     </div>
 
@@ -111,10 +174,7 @@
                     <div class="offline-hero-icon"><i class="ph-bold ph-steering-wheel"></i></div>
                     <div class="offline-hero-title">Ready to Earn?</div>
                     <div class="offline-hero-desc">Toggle the switch at the top to go ONLINE. You will start receiving live ride pings.</div>
-                    <div style="margin-top: 14px; padding: 10px 16px; background: rgba(230,46,45,0.1); border: 1px solid rgba(230,46,45,0.25); border-radius: 12px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;" onclick="enableFloatingWidgetPrompt()">
-                        <span style="font-size: 1.1rem;">🚖</span>
-                        <span style="font-size: 0.8rem; font-weight: 700; color: #ff6b6b;">Floating Widget (Ola/Uber Mode): <span id="floating-widget-status-txt" style="color:#10b981;">Active</span></span>
-                    </div>
+                    
                 </div>
 
                 <!-- Active Ongoing Ride Tracking Widget -->
@@ -224,23 +284,6 @@
                 </div>
 
                 <!-- Live Speed & Odometer widgets (Outside the map) -->
-                <div class="ride-stats-floating hidden" id="ride-stats-floating" style="display: flex;">
-                    <div class="ride-stat-float-card speed-card" style="flex: 1; justify-content: center;">
-                        <div class="icon-wrap">⚡</div>
-                        <div class="stat-content">
-                            <span class="value" id="float-speed-val">0</span>
-                            <span class="unit">KM/H</span>
-                        </div>
-                    </div>
-                    <div class="ride-stat-float-card dist-card" style="flex: 1; justify-content: center;">
-                        <div class="icon-wrap">🛣️</div>
-                        <div class="stat-content">
-                            <span class="value" id="float-dist-val">0.000</span>
-                            <span class="unit">KM</span>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Live Map View when Online -->
                 <div class="map-section hidden" id="map-tracking-panel">
                     <div class="gps-status-overlay">
@@ -294,6 +337,27 @@
 
             <!-- TAB 2: EARNINGS -->
             <section id="view-earnings" class="tab-view hidden">
+
+                <!-- Date Filter -->
+                <div class="glass-card" style="margin-bottom: 12px; padding: 12px;">
+                    <div style="font-weight: 800; font-size: 0.9rem; margin-bottom: 8px; color: var(--text-white); display: flex; align-items: center; gap: 6px;">
+                        <i class="ph-bold ph-funnel"></i> Filter Earnings
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <div style="flex: 1;">
+                            <label style="display:block; font-size:0.7rem; color:var(--text-gray); margin-bottom:4px; font-weight:700;">From Date</label>
+                            <input type="date" id="filter-from-date" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: var(--text-white); font-family: var(--font-family); box-sizing: border-box;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display:block; font-size:0.7rem; color:var(--text-gray); margin-bottom:4px; font-weight:700;">To Date</label>
+                            <input type="date" id="filter-to-date" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: var(--text-white); font-family: var(--font-family); box-sizing: border-box;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="applyDateFilter()" class="btn btn-primary" style="flex: 1; padding: 10px; border-radius: 8px; font-weight: 800; font-size: 0.85rem;"><i class="ph-bold ph-check"></i> Apply</button>
+                        <button onclick="clearDateFilter()" class="btn" style="flex: 1; padding: 10px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; background: rgba(255,255,255,0.1); color: var(--text-white); border: none;"><i class="ph-bold ph-x"></i> Clear</button>
+                    </div>
+                </div>
                 <div class="glass-card">
                     <div class="card-header">
                         <div class="card-title"><i class="ph-bold ph-chart-bar"></i> Earnings Summary</div>
@@ -315,6 +379,28 @@
 
                     <div class="chart-container">
                         <canvas id="earningsChart"></canvas>
+                    </div>
+                </div>
+
+                
+                <!-- Day-wise Data -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="ph-bold ph-calendar-blank"></i> Day-wise Earnings</div>
+                    </div>
+                    <div id="day-wise-earnings-list" style="display:flex; flex-direction:column; gap:8px;">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Transaction Ledger moved here -->
+                <!-- Ledger list of transactions -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="ph-bold ph-list-dashes"></i> Transaction Ledger</div>
+                    </div>
+                    <div class="ledger-list" id="transaction-ledger-list">
+                        <!-- Loaded dynamically -->
                     </div>
                 </div>
 
@@ -396,15 +482,7 @@
                     </div>
                 </div>
 
-                <!-- Ledger list of transactions -->
-                <div class="glass-card">
-                    <div class="card-header">
-                        <div class="card-title"><i class="ph-bold ph-list-dashes"></i> Transaction Ledger</div>
-                    </div>
-                    <div class="ledger-list" id="transaction-ledger-list">
-                        <!-- Loaded dynamically -->
-                    </div>
-                </div>
+                
             </section>
 
 
@@ -526,11 +604,33 @@
                 <div class="ping-passenger-row" style="margin-top: 4px; background: rgba(0,107,58,0.06);">
                     <span style="font-weight: 800; color: var(--accent-brand);" id="ping-seating-capacity">💺 Seats Required: 1 Passenger</span>
                 </div>
+
+                <!-- Live wallet balance indicator on ping card -->
+                <div class="ping-passenger-row" style="margin-top: 6px; background: rgba(0,0,0,0.04); border-radius: 8px; justify-content: space-between;">
+                    <span style="font-size:0.8rem; color:var(--text-gray);">💼 Your Wallet</span>
+                    <span style="font-weight:800; font-size:0.88rem;" id="ping-wallet-balance-lbl">...</span>
+                </div>
+            </div>
+
+            <!-- Vendor Assignment Badge (shown only for vendor dispatched rides) -->
+            <div id="ping-vendor-badge" class="hidden" style="margin-bottom:12px; padding:8px 14px; background:rgba(147,197,114,0.15); border:1px solid #93C572; border-radius:10px; display:flex; align-items:center; gap:8px;">
+                <span style="font-size:1rem;">📋</span>
+                <span style="font-size:0.82rem; font-weight:700; color:#93C572;">Vendor Assigned Ride — Accept or Decline</span>
+            </div>
+
+            <!-- Low Wallet Balance Lock Banner (shown when balance is insufficient) -->
+            <div id="ping-low-balance-banner" class="hidden" style="margin-bottom:12px; padding:12px 16px; background:rgba(255,80,80,0.12); border:1.5px solid #ff5050; border-radius:12px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                    <span style="font-size:1.1rem;">🔒</span>
+                    <strong style="color:#ff5050; font-size:0.88rem;">Insufficient Wallet Balance</strong>
+                </div>
+                <div style="font-size:0.8rem; color:#ff9999; line-height:1.4;" id="ping-low-balance-msg">You need at least ₹10 to accept this ride.</div>
+                <div style="font-size:0.78rem; color:#aaa; margin-top:4px;">Top up your wallet to unlock ride acceptance.</div>
             </div>
 
             <!-- Action buttons -->
             <div class="ping-btn-group">
-                <button class="btn btn-secondary" onclick="declinePing()">Pass</button>
+                <button class="btn btn-secondary" id="ping-decline-btn" onclick="declinePing()">Pass</button>
                 <button class="btn btn-primary" id="ping-accept-btn">Accept</button>
             </div>
         </div>
@@ -1059,6 +1159,143 @@ async function proceedToOnline() {
     });
 }
 
+    // --- DRIVER GOOGLE PLAY LOCATION ACCURACY POPUP MODAL ---
+    window.showGpsTurnOnPopupDriver = function() {
+        let modal = document.getElementById('gps-popup-modal-driver');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'gps-popup-modal-driver';
+            modal.className = 'gps-modal-overlay';
+            modal.innerHTML = `
+                <div class="gps-modal-card">
+                    <h3 class="gps-modal-title">To continue, your device will need to use Location Accuracy</h3>
+                    <p class="gps-modal-subtitle">The following settings should be on:</p>
+                    
+                    <div class="gps-setting-item">
+                        <div class="gps-setting-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#21355A" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        </div>
+                        <div class="gps-setting-text">
+                            <strong>Device location</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="gps-setting-item">
+                        <div class="gps-setting-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#21355A" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                        </div>
+                        <div class="gps-setting-text">
+                            <p><strong>Location Accuracy</strong>, which provides more accurate location for apps and services. To do this, Google periodically processes information about device sensors and wireless signals from your device to crowdsource wireless signal locations. These are used without identifying you to improve location accuracy and location-based services and to improve, provide, and maintain Google's services based on Google's and third parties' legitimate interests to serve users' needs.</p>
+                        </div>
+                    </div>
+                    
+                    <p class="gps-modal-footer-note">You can change this at any time in location settings. <a href="#" onclick="event.preventDefault(); alert('Please turn on Location/GPS in your Android device settings.');">Manage settings</a> or <a href="#" onclick="event.preventDefault();">learn more</a></p>
+                    
+                    <div class="gps-modal-actions">
+                        <button type="button" class="gps-btn-secondary" onclick="closeGpsModalDriver()">No thanks</button>
+                        <button type="button" class="gps-btn-primary" onclick="retryEnableGpsDriver()">Turn on</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        modal.style.display = 'flex';
+    };
+
+    window.closeGpsModalDriver = function() {
+        const modal = document.getElementById('gps-popup-modal-driver');
+        if (modal) modal.style.display = 'none';
+    };
+
+    window.retryEnableGpsDriver = function() {
+        window.closeGpsModalDriver();
+        if (typeof toggleDutyStatus === 'function') toggleDutyStatus();
+    };
+
+
+let overlayTimerInterval = null;
+let currentOverlayRideId = null;
+
+async function requestOverlayPermission() {
+    if (!window.Capacitor || !window.Capacitor.Plugins) return true;
+    try {
+        const { App } = window.Capacitor.Plugins;
+        if (window.Capacitor.Plugins.IntentLauncher && App) {
+            console.log('Requesting SYSTEM_ALERT_WINDOW permission...');
+            const info = await App.getInfo();
+            await window.Capacitor.Plugins.IntentLauncher.startActivity({
+                action: 'android.settings.action.MANAGE_OVERLAY_PERMISSION',
+                data: 'package:' + info.id
+            });
+        }
+        return true;
+    } catch(e) {
+        console.warn('Could not launch overlay permission intent', e);
+        return true;
+    }
+}
+
+function showRideOverlay(rideData) {
+    currentOverlayRideId = rideData.bookingId || rideData.id;
+    document.getElementById('overlay-pickup').textContent = rideData.pickupLocation || rideData.pickup_loc || 'Unknown';
+    document.getElementById('overlay-drop').textContent = rideData.dropLocation || rideData.drop_loc || 'Unknown';
+    document.getElementById('overlay-fare').textContent = '₹' + (rideData.fare || '0');
+    
+    const overlay = document.getElementById('ride-request-overlay');
+    overlay.style.display = 'flex';
+    
+    const audio = document.getElementById('ride-alert-audio');
+    audio.currentTime = 0;
+    audio.play().catch(e => console.log('Audio autoplay blocked', e));
+
+    let timeLeft = 15;
+    const circle = document.getElementById('overlay-timer-circle');
+    const text = document.getElementById('overlay-timer-text');
+    const circumference = 2 * Math.PI * 45; // 283
+    
+    circle.style.strokeDashoffset = '0';
+    text.textContent = timeLeft;
+
+    clearInterval(overlayTimerInterval);
+    overlayTimerInterval = setInterval(() => {
+        timeLeft--;
+        text.textContent = timeLeft;
+        const offset = circumference - (timeLeft / 15) * circumference;
+        circle.style.strokeDashoffset = offset;
+        
+        if (timeLeft <= 0) {
+            handleOverlayReject();
+        }
+    }, 1000);
+}
+
+function hideRideOverlay() {
+    clearInterval(overlayTimerInterval);
+    document.getElementById('ride-request-overlay').style.display = 'none';
+    document.getElementById('ride-alert-audio').pause();
+}
+
+async function handleOverlayAccept() {
+    hideRideOverlay();
+    if (currentOverlayRideId && typeof acceptRide === 'function') {
+        acceptRide(currentOverlayRideId);
+    }
+}
+
+async function handleOverlayReject() {
+    hideRideOverlay();
+    if (currentOverlayRideId) {
+        try {
+            await fetch('/api/drivers/reject-ride', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookingId: currentOverlayRideId, driverId: driverData.id })
+            });
+        } catch(e) { console.error('Error rejecting ride', e); }
+    }
+}
+
+
 async function toggleDutyStatus() {
     const btn = document.getElementById('duty-toggle-btn');
     const txt = document.getElementById('duty-status-txt');
@@ -1068,19 +1305,11 @@ async function toggleDutyStatus() {
     const oppsPanel = document.getElementById('opportunities-panel');
     if (!isOnline) {
         if (!navigator.geolocation) {
-            Swal.fire({ title: 'GPS Error', text: 'Geolocation is not supported by your browser.', icon: 'error', ...swalDarkOpts });
+            window.showGpsTurnOnPopupDriver();
             return;
         }
 
-        // Immediately check device location status & push Google Play Services Location Turn On dialogue if off
-        if (window.ensureLocationEnabled) {
-            try {
-                await window.ensureLocationEnabled();
-            } catch(e) {
-                console.warn("Google location prompt check error:", e);
-            }
-        }
-
+        // Analyze device GPS availability
         Swal.fire({
             title: 'Verifying GPS Signal...',
             text: 'Please wait while we lock onto your location coordinates.',
@@ -1093,42 +1322,18 @@ async function toggleDutyStatus() {
                         proceedToOnline();
                     },
                     (error) => {
-                        console.warn('High accuracy GPS failed, falling back to low accuracy...', error);
-                        // Fallback to low accuracy for testing/weak GPS
+                        console.warn('High accuracy GPS failed, trying fallback...', error);
                         navigator.geolocation.getCurrentPosition(
                             (pos) => {
                                 Swal.close();
                                 proceedToOnline();
                             },
-                            async (err2) => {
+                            (err2) => {
                                 Swal.close();
-                                if (window.ensureLocationEnabled) {
-                                    await window.ensureLocationEnabled();
-                                }
-                                let errMsg = 'Please turn on your GPS location to go online.';
-                                if (err2.code === err2.PERMISSION_DENIED) {
-                                    errMsg = 'Location permission is denied. Please allow location access in your browser or device settings to go online.';
-                                } else if (err2.code === err2.POSITION_UNAVAILABLE) {
-                                    errMsg = 'Location information is unavailable. Please strictly turn on your device GPS location to proceed.';
-                                } else if (err2.code === err2.TIMEOUT) {
-                                    errMsg = 'The request to get user location timed out. Please check your GPS signal and ensure location is turned on.';
-                                }
-                                
-                                Swal.fire({
-                                    title: 'Location Required',
-                                    text: errMsg,
-                                    icon: 'warning',
-                                    showCancelButton: true,
-                                    confirmButtonText: 'Turn On Location',
-                                    cancelButtonText: 'Cancel',
-                                    confirmButtonColor: '#006B3A'
-                                }).then(async (res) => {
-                                    if (res.isConfirmed && window.ensureLocationEnabled) {
-                                        await window.ensureLocationEnabled();
-                                    }
-                                });
+                                console.warn('GPS signal unavailable, popping up Google Play Location Accuracy prompt');
+                                window.showGpsTurnOnPopupDriver();
                             },
-                            { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+                            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
                         );
                     },
                     { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
@@ -1605,9 +1810,9 @@ if (skeleton) skeleton.classList.add('hidden');
 document.getElementById('opportunities-container').classList.add('hidden');
 document.getElementById('active-mission-panel').classList.remove('hidden');
 if (ongoing.trip_type !== 'rental') {
-document.getElementById('ride-stats-floating').classList.remove('hidden');
+document.getElementById('ride-stats-floating')?.classList.remove('hidden');
 } else {
-document.getElementById('ride-stats-floating').classList.add('hidden');
+document.getElementById('ride-stats-floating')?.classList.add('hidden');
 }
 acceptedOpportunityId = ongoing.id;
 activeRideObj = ongoing;
@@ -1618,7 +1823,7 @@ if (isOnline) {
 document.getElementById('opportunities-container').classList.remove('hidden');
 }
 document.getElementById('active-mission-panel').classList.add('hidden');
-document.getElementById('ride-stats-floating').classList.add('hidden');
+document.getElementById('ride-stats-floating')?.classList.add('hidden');
 window.localDistanceCovered = 0;
 window.lastOdometerCoords = null;
 acceptedOpportunityId = null;
@@ -1842,7 +2047,79 @@ const reqSeats = job.passengers || job.seatingCapacity || 1;
 const capEl = document.getElementById('ping-seating-capacity');
 if (capEl) capEl.innerHTML = `💺 Seats Required: ${reqSeats} Passenger${reqSeats > 1 ? 's' : ''}`;
 document.getElementById('ping-accept-btn').onclick = () => acceptBookingPing(job.id);
+
+// Vendor badge / decline button wiring
+const vendorBadge = document.getElementById('ping-vendor-badge');
+const pingDeclineBtn = document.getElementById('ping-decline-btn');
+if (job.isVendorAssigned || job.requireAccept) {
+    if (vendorBadge) vendorBadge.classList.remove('hidden');
+    if (pingDeclineBtn) {
+        pingDeclineBtn.textContent = 'Decline';
+        pingDeclineBtn.style.background = 'rgba(255,107,107,0.15)';
+        pingDeclineBtn.style.borderColor = '#ff6b6b';
+        pingDeclineBtn.style.color = '#ff6b6b';
+        pingDeclineBtn.onclick = () => declineVendorPing(job.id);
+    }
+} else {
+    if (vendorBadge) vendorBadge.classList.add('hidden');
+    if (pingDeclineBtn) {
+        pingDeclineBtn.textContent = 'Pass';
+        pingDeclineBtn.style = '';
+        pingDeclineBtn.onclick = declinePing;
+    }
+}
 document.getElementById('incoming-ping-screen').classList.remove('hidden');
+
+// Fetch LIVE wallet balance and show lock banner if insufficient
+(async () => {
+    const isVendorRide2 = !!(job.vendor_id || job.vendor_profit > 0 || job.isVendorAssigned);
+    const vendorMarkup2 = parseFloat(job.vendor_profit || job.vendor_markup || 0);
+    const requiredBal = 10 + (isVendorRide2 ? vendorMarkup2 : 0) + 5; // accept fee + completion fee
+    const pingWalletLbl = document.getElementById('ping-wallet-balance-lbl');
+    const lowBanner = document.getElementById('ping-low-balance-banner');
+    const lowMsg = document.getElementById('ping-low-balance-msg');
+    const acceptBtn = document.getElementById('ping-accept-btn');
+
+    let liveBal = parseFloat(driverData?.wallet_balance || 0);
+    try {
+        const tokenRaw = localStorage.getItem('cityride_pilot');
+        let authToken = '';
+        try { const p = JSON.parse(tokenRaw); authToken = p?.token || p || ''; } catch { authToken = tokenRaw || ''; }
+        const wRes = await fetch(`${API_BASE_URL}/api/driver/wallet-balance`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (wRes.ok) {
+            const wData = await wRes.json();
+            liveBal = parseFloat(wData.balance || wData.wallet_balance || 0);
+            if (driverData) driverData.wallet_balance = liveBal;
+        }
+    } catch(e) { /* use stale balance as fallback */ }
+
+    if (pingWalletLbl) {
+        const balColor = liveBal >= requiredBal ? '#93C572' : '#ff5050';
+        pingWalletLbl.textContent = `₹${liveBal.toFixed(2)}`;
+        pingWalletLbl.style.color = balColor;
+    }
+
+    if (liveBal < requiredBal) {
+        if (lowBanner) lowBanner.classList.remove('hidden');
+        if (lowMsg) lowMsg.textContent = `You need at least ₹${requiredBal.toFixed(2)} (₹10 accept fee + ₹5 completion fee${vendorMarkup2 > 0 ? ` + ₹${vendorMarkup2.toFixed(2)} vendor share` : ''}). Current: ₹${liveBal.toFixed(2)}.`;
+        if (acceptBtn) {
+            acceptBtn.disabled = true;
+            acceptBtn.style.opacity = '0.4';
+            acceptBtn.style.cursor = 'not-allowed';
+            acceptBtn.title = 'Top up your wallet to accept rides';
+        }
+    } else {
+        if (lowBanner) lowBanner.classList.add('hidden');
+        if (acceptBtn) {
+            acceptBtn.disabled = false;
+            acceptBtn.style.opacity = '';
+            acceptBtn.style.cursor = '';
+            acceptBtn.title = '';
+        }
+    }
+})();
 
 // Show Floating Heads-up Ride Card over Google Maps / other apps if minimized
 if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.DriverBackgroundPlugin) {
@@ -1911,15 +2188,28 @@ pingTimerInterval = null;
 activePingId = null;
 }
 async function acceptBookingPing(rideId) {
+const acceptBtn = document.getElementById('ping-accept-btn');
+if (acceptBtn && acceptBtn.disabled) {
+    Swal.fire({
+        title: 'Wallet Locked 🔒',
+        html: 'Your wallet balance is too low to accept rides. Please top up your wallet first.',
+        icon: 'error',
+        ...swalDarkOpts
+    });
+    return;
+}
 declinePing();
 const bookingObj = allOpportunities.find(j => j.id === rideId);
 const isVendorRide = bookingObj && (bookingObj.vendor_id || bookingObj.vendor_profit > 0);
 const vendorMarkup = bookingObj ? (parseFloat(bookingObj.vendor_profit) || 0) : 0;
 const requiredBalance = 10 + (isVendorRide ? vendorMarkup : 0);
-if (parseFloat(driverData.wallet_balance || 0) < requiredBalance) {
+
+// Re-check live balance from driverData (was refreshed when ping appeared)
+const liveBalance = parseFloat(driverData?.wallet_balance || 0);
+if (liveBalance < requiredBalance) {
 Swal.fire({
-title: 'Wallet Balance Low',
-html: `Accepting this ride requires at least ₹${requiredBalance.toFixed(2)} wallet balance (₹10 ride accept fee + ₹5 completion fee). Please add money to your wallet.`,
+title: 'Insufficient Wallet Balance 🔒',
+html: `You need <strong>₹${requiredBalance.toFixed(2)}</strong> to accept this ride.<br>Your current balance: <strong style="color:#ff5050;">₹${liveBalance.toFixed(2)}</strong><br><br>Please top up your wallet to continue accepting rides.`,
 icon: 'error',
 ...swalDarkOpts
 });
@@ -1965,6 +2255,40 @@ Swal.fire('Accept Failed', err.error || 'Failed', 'error');
 Swal.fire('Error', 'Failed to submit acceptance.', 'error');
 }
 }
+
+async function declineVendorPing(rideId) {
+    declinePing();
+    try {
+        const tokenRaw = localStorage.getItem('cityride_pilot');
+        let authToken = '';
+        try {
+            const parsed = JSON.parse(tokenRaw);
+            authToken = parsed?.token || parsed || '';
+        } catch { authToken = tokenRaw || ''; }
+
+        const res = await fetch(`${API_BASE_URL}/api/bookings/driver-cancel`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ bookingId: rideId, reason: 'Driver declined vendor-assigned ride' })
+        });
+        if (res.ok) {
+            Swal.fire({
+                title: 'Ride Declined',
+                text: 'You have declined this vendor-assigned ride. The vendor has been notified.',
+                icon: 'info',
+                timer: 2500,
+                showConfirmButton: false,
+                ...swalDarkOpts
+            });
+        } else {
+            const err = await res.json();
+            console.error('[declineVendorPing]', err.error);
+        }
+    } catch (err) {
+        console.error('[declineVendorPing] Error:', err);
+    }
+}
+
 function clearActiveRouteMap() {
 if (activeRouteLine) { activeRouteLine.remove(); activeRouteLine = null; }
 if (activePickupMarker) { activePickupMarker.remove(); activePickupMarker = null; }
@@ -2122,7 +2446,16 @@ function startWaitingTimer(ride) {
             elapsedDisplay.textContent = `${String(eH).padStart(2,'0')}:${String(eM).padStart(2,'0')}:${String(eS).padStart(2,'0')}`;
             elapsedDisplay.style.color = 'var(--text-white)';
         }
-        currentElapsedSecs++;
+        if (ride.journey_start_time) {
+            const parsed = new Date(ride.journey_start_time);
+            if (!isNaN(parsed.getTime())) {
+                currentElapsedSecs = Math.max(0, Math.floor((new Date() - parsed) / 1000));
+            } else {
+                currentElapsedSecs++;
+            }
+        } else {
+            currentElapsedSecs++;
+        }
     }
     updateTimer();
     waitingTimerInterval = setInterval(updateTimer, 1000);
@@ -2176,21 +2509,21 @@ function startPreRideWaitingTimer(ride) {
             const rS = remainingSecs % 60;
             if (elapsedDisplay) {
                 elapsedDisplay.textContent = `00:${String(rM).padStart(2,'0')}:${String(rS).padStart(2,'0')}`;
-                elapsedDisplay.style.color = 'var(--success-green)';
+                elapsedDisplay.style.color = 'var(--danger-red)';
             }
             if (badge) {
                 badge.textContent = 'GRACE PERIOD';
-                badge.style.background = 'rgba(0, 107, 58, 0.12)';
-                badge.style.color = 'var(--success-green)';
+                badge.style.background = 'rgba(220, 38, 38, 0.12)';
+                badge.style.color = 'var(--danger-red)';
             }
             if (bar) {
-                bar.style.background = 'var(--success-green)';
+                bar.style.background = 'var(--danger-red)';
                 const pct = Math.min(100, (elapsedSecs / allowedSecs) * 100);
                 bar.style.width = `${pct}%`;
             }
             if (waitingTimeEl) waitingTimeEl.textContent = "0:00";
             if (waitingChargeEl) waitingChargeEl.textContent = "₹0";
-           } else {
+        } else {
             const waitingSecs = elapsedSecs - allowedSecs;
             const wH = Math.floor(waitingSecs / 3600);
             const wM = Math.floor((waitingSecs % 3600) / 60);
@@ -2202,25 +2535,43 @@ function startPreRideWaitingTimer(ride) {
                 const totalM = Math.floor((elapsedSecs % 3600) / 60);
                 const totalS = elapsedSecs % 60;
                 elapsedDisplay.textContent = `${String(totalH).padStart(2,'0')}:${String(totalM).padStart(2,'0')}:${String(totalS).padStart(2,'0')}`;
-                elapsedDisplay.style.color = 'var(--danger-red)';
+                elapsedDisplay.style.color = 'var(--success-green)';
             }
             if (badge) {
                 badge.textContent = 'WAITING CHARGES';
-                badge.style.background = 'rgba(220, 38, 38, 0.12)';
-                badge.style.color = 'var(--danger-red)';
+                badge.style.background = 'rgba(0, 107, 58, 0.12)';
+                badge.style.color = 'var(--success-green)';
             }
             if (bar) {
-                bar.style.background = 'var(--danger-red)';
+                bar.style.background = 'var(--success-green)';
                 bar.style.width = '100%';
             }
             
             const wTimeStr = wH > 0 ? `${wH}:${String(wM).padStart(2,'0')}:${String(wS).padStart(2,'0')}` : `${wM}:${String(wS).padStart(2,'0')}`;
-            
             if (waitingTimeEl) waitingTimeEl.textContent = wTimeStr;
             if (waitingChargeEl) waitingChargeEl.textContent = `₹${waitingCharge}`;
             if (activeWaitingChargeEl) activeWaitingChargeEl.textContent = `₹${waitingCharge}`;
         }
-        currentElapsedSecs++;
+
+        // Broadcast exact driver timer calculation over WebSocket for perfect sync
+        if (window._driverSocket && ride && ride.id) {
+            window._driverSocket.emit('waiting_timer_update', {
+                bookingId: ride.id,
+                elapsedSeconds: elapsedSecs,
+                reachedPickupTime: ride.reached_pickup_time
+            });
+        }
+
+        if (ride.reached_pickup_time) {
+            const parsed = new Date(ride.reached_pickup_time);
+            if (!isNaN(parsed.getTime())) {
+                currentElapsedSecs = Math.max(0, Math.floor((new Date() - parsed) / 1000));
+            } else {
+                currentElapsedSecs++;
+            }
+        } else {
+            currentElapsedSecs++;
+        }
     }
     updateTimer();
     preRideTimerInterval = setInterval(updateTimer, 1000);
@@ -2352,6 +2703,25 @@ if (ride.extra_drops) {
 
 document.getElementById('nav-pickup-btn').href = `https://www.google.com/maps/search/?api=1&query=${pLngLat}`;
 document.getElementById('nav-drop-btn').href = navDropUrl;
+
+const navPickupBtn = document.getElementById('nav-pickup-btn');
+const navDropBtn = document.getElementById('nav-drop-btn');
+if (ride.status === 'assigned' || ride.status === 'reached_pickup') {
+    navPickupBtn.style.opacity = '1';
+    navPickupBtn.style.pointerEvents = 'auto';
+    navDropBtn.style.opacity = '0.4';
+    navDropBtn.style.pointerEvents = 'none';
+} else if (ride.status === 'ongoing') {
+    navPickupBtn.style.opacity = '0.4';
+    navPickupBtn.style.pointerEvents = 'none';
+    navDropBtn.style.opacity = '1';
+    navDropBtn.style.pointerEvents = 'auto';
+} else {
+    navPickupBtn.style.opacity = '0.4';
+    navPickupBtn.style.pointerEvents = 'none';
+    navDropBtn.style.opacity = '0.4';
+    navDropBtn.style.pointerEvents = 'none';
+}
 document.getElementById('call-passenger-btn').href = `tel:${ride.customer_phone || ''}`;
 // Store for call/chat overlay
 window._activePassengerName  = ride.customer_name  || 'Passenger';
@@ -2752,7 +3122,10 @@ if (res.ok) {
             // Secondary fetch to get the full fare breakdown
             let breakdown = null;
             try {
-                const bdRes = await fetch(`${API_BASE_URL}/api/bookings/fare-breakdown/${rideId}`);
+                const driverToken = (() => { try { return JSON.parse(localStorage.getItem('cityride_driver'))?.token || ''; } catch(e) { return ''; } })();
+                const bdRes = await fetch(`${API_BASE_URL}/api/bookings/fare-breakdown/${rideId}`, {
+                    headers: driverToken ? { 'Authorization': `Bearer ${driverToken}` } : {}
+                });
                 if (bdRes.ok) {
                     breakdown = await bdRes.json();
                 }
@@ -2762,6 +3135,8 @@ if (res.ok) {
 
             let breakdownHtml = '';
             if (breakdown) {
+                const isLocal = breakdown.tripType === 'local';
+                const effectivePerKmRate = breakdown.effectivePerKmRate || breakdown.perKmRate || 0;
                 if (breakdown.tripType === 'rental') {
                     breakdownHtml = `
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
@@ -2783,12 +3158,13 @@ if (res.ok) {
                     `;
                 } else {
                     breakdownHtml = `
+                    ${!isLocal && breakdown.baseFare > 0 ? `
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                         <span>Base Fare:</span>
                         <span style="font-weight:700;">₹${breakdown.baseFare}</span>
-                    </div>
+                    </div>` : ''}
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                        <span>Distance Charge (${breakdown.distance} KM):</span>
+                        <span>Distance Charge (${breakdown.distance} KM × ₹${effectivePerKmRate}):</span>
                         <span style="font-weight:700;">₹${breakdown.distanceFare}</span>
                     </div>
                     ${breakdown.minKmVal > 0 ? `
@@ -2818,6 +3194,12 @@ if (res.ok) {
                     <span>₹${breakdown.extraDropsCharge}</span>
                 </div>
                 ` : ''}
+                ${breakdown.specialLocationCharge > 0 ? `
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:#ff9f0a;">
+                    <span>${breakdown.specialLocationDisplayName ? breakdown.specialLocationDisplayName + ' Surcharge' : 'Special Location Surcharge'} (${breakdown.specialLocationSurchargePercent}%):</span>
+                    <span>₹${breakdown.specialLocationCharge}</span>
+                </div>
+                ` : ''}
                 ${breakdown.waitingCharge > 0 ? `
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:var(--danger-red);">
                     <span>Waiting Charges:</span>
@@ -2825,10 +3207,11 @@ if (res.ok) {
                 </div>
                 ` : ''}
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                    <span>Platform Fee:</span>
-                    <span style="font-weight:700;">₹${breakdown.platformFee}</span>
+                    <span>${breakdown.platformFeeDesc || 'Platform Fee'}:</span>
+                    <span style="font-weight:700;">₹${breakdown.platformFee || 5}</span>
                 </div>
                 `;
+
             } else {
                 breakdownHtml = `
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
@@ -3204,6 +3587,26 @@ localStorage.setItem(offlineKey, JSON.stringify(offlineLogs));
 }
 }
 // Sync statistics details
+
+function applyDateFilter() {
+    const f = document.getElementById('filter-from-date').value;
+    const t = document.getElementById('filter-to-date').value;
+    if(!f || !t) {
+        Swal.fire('Validation Error', 'Please select both From and To dates', 'error');
+        return;
+    }
+    if(new Date(f) > new Date(t)) {
+        Swal.fire('Validation Error', 'From date cannot be after To date', 'error');
+        return;
+    }
+    syncDashboardStats();
+}
+function clearDateFilter() {
+    document.getElementById('filter-from-date').value = '';
+    document.getElementById('filter-to-date').value = '';
+    syncDashboardStats();
+}
+
 async function syncDashboardStats() {
     try {
         if (!driverData || !driverData.id) return;
@@ -3213,7 +3616,10 @@ async function syncDashboardStats() {
         // Sync Profile details & wallet IN PARALLEL
         const [resProfile, resStats] = await Promise.all([
             fetch(`${API_BASE_URL}/api/driver/info/${driverData.id}`, { signal: controller.signal }).catch(() => null),
-            fetch(`${API_BASE_URL}/api/driver/dashboard-stats/${driverData.id}`, { signal: controller.signal }).catch(() => null)
+            fetch(`${API_BASE_URL}/api/driver/dashboard-stats/${driverData.id}${
+                document.getElementById('filter-from-date')?.value && document.getElementById('filter-to-date')?.value ? 
+                '?startDate=' + document.getElementById('filter-from-date').value + '&endDate=' + document.getElementById('filter-to-date').value : ''
+            }`, { signal: controller.signal }).catch(() => null)
         ]);
         clearTimeout(timeoutId);
         if (resProfile && resProfile.ok) {
@@ -3628,26 +4034,108 @@ icon: 'success',
 function renderEarningsChart() {
 const ctx = document.getElementById('earningsChart');
 if (!ctx) return;
-const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const earningsMap = { 'Sun': 0, 'Mon': 0, 'Tue': 0, 'Wed': 0, 'Thu': 0, 'Fri': 0, 'Sat': 0 };
-if (window.weeklyEarningsData) {
-window.weeklyEarningsData.forEach(ride => {
-if (ride.status === 'completed') {
-const date = new Date(ride.journey_end_time || ride.created_at);
-const dayName = days[date.getDay()];
-const fareNum = parseFloat(ride.fare.replace(/[^0-9.]/g, '')) || 0;
-earningsMap[dayName] += fareNum;
+
+const fDate = document.getElementById('filter-from-date')?.value;
+const tDate = document.getElementById('filter-to-date')?.value;
+
+let labels = [];
+let chartData = [];
+let daysForList = [];
+let earningsMapForList = {};
+
+if (fDate && tDate) {
+    // Custom Date Range
+    let currDate = new Date(fDate);
+    let endDateObj = new Date(tDate);
+    
+    // Safety check, max 31 days to avoid massive arrays
+    let diffTime = Math.abs(endDateObj - currDate);
+    let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    if (diffDays > 31) endDateObj = new Date(currDate.getTime() + (31 * 24 * 60 * 60 * 1000));
+    
+    while(currDate <= endDateObj) {
+        const dStr = currDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const ymd = currDate.toISOString().split('T')[0];
+        labels.push(dStr);
+        daysForList.push({ key: ymd, display: dStr });
+        earningsMapForList[ymd] = 0;
+        currDate.setDate(currDate.getDate() + 1);
+    }
+    
+    if (window.weeklyEarningsData) {
+        window.weeklyEarningsData.forEach(ride => {
+            if (ride.status === 'completed') {
+                const date = new Date(ride.journey_end_time || ride.created_at);
+                const ymd = date.toISOString().split('T')[0];
+                const fareNum = parseFloat(ride.fare.replace(/[^0-9.]/g, '')) || 0;
+                if (earningsMapForList[ymd] !== undefined) {
+                    earningsMapForList[ymd] += fareNum;
+                }
+            }
+        });
+    }
+    chartData = daysForList.map(d => earningsMapForList[d.key]);
+    
+} else {
+    // Default 7 days of the week view
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const earningsMap = { 'Sun': 0, 'Mon': 0, 'Tue': 0, 'Wed': 0, 'Thu': 0, 'Fri': 0, 'Sat': 0 };
+    if (window.weeklyEarningsData) {
+        window.weeklyEarningsData.forEach(ride => {
+            if (ride.status === 'completed') {
+                const date = new Date(ride.journey_end_time || ride.created_at);
+                const dayName = days[date.getDay()];
+                const fareNum = parseFloat(ride.fare.replace(/[^0-9.]/g, '')) || 0;
+                earningsMap[dayName] += fareNum;
+            }
+        });
+    }
+    labels = days;
+    chartData = days.map(d => earningsMap[d]);
+    daysForList = days.map((d, i) => ({ key: i, display: d }));
+    daysForList.forEach(d => { earningsMapForList[d.key] = earningsMap[d.display]; });
 }
-});
+
+const dayWiseList = document.getElementById('day-wise-earnings-list');
+if (dayWiseList) {
+    dayWiseList.innerHTML = '';
+    daysForList.forEach(day => {
+        const profit = earningsMapForList[day.key] || 0;
+        let rideCount = 0;
+        if (window.weeklyEarningsData) {
+            rideCount = window.weeklyEarningsData.filter(r => {
+                if(r.status !== 'completed') return false;
+                const date = new Date(r.journey_end_time || r.created_at);
+                if (fDate && tDate) {
+                    return date.toISOString().split('T')[0] === day.key;
+                } else {
+                    return date.getDay() === day.key;
+                }
+            }).length;
+        }
+        if (profit > 0 || rideCount > 0) {
+            dayWiseList.innerHTML += `
+                <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid rgba(255,255,255,0.05); align-items:center;">
+                    <div style="display:flex; flex-direction:column;">
+                        <span style="font-weight:700; color:var(--text-white);">${day.display}</span>
+                        <span style="font-size:0.75rem; color:var(--text-gray);">${rideCount} Ride${rideCount !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div style="font-weight:800; color:var(--success-green);">₹${profit.toFixed(2)}</div>
+                </div>`;
+        }
+    });
+    if (dayWiseList.innerHTML === '') {
+        dayWiseList.innerHTML = '<div style="text-align:center; color:var(--text-gray); font-size:0.8rem; padding:10px;">No earnings found for this period</div>';
+    }
 }
-const chartData = days.map(d => earningsMap[d]);
+
 if (earningsChartInstance) {
 earningsChartInstance.destroy();
 }
 earningsChartInstance = new Chart(ctx, {
 type: 'line',
 data: {
-labels: days,
+labels: labels,
 datasets: [{
 label: 'Earnings (₹)',
 data: chartData,

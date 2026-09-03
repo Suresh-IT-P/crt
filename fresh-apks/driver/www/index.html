@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityRide Driver</title>
+    <style>body{background:#090a0f;color:#fff;margin:0;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;}</style>
+    <script>
+        (function() {
+            var target = 'driver.html';
+            var loginPage = 'driver-login.html';
+            var authKey = 'cityride_pilot';
+            var isLoggedIn = false;
+            try {
+                var stored = localStorage.getItem(authKey);
+                if (stored && stored !== 'null' && stored !== 'undefined') {
+                    var parsed = JSON.parse(stored);
+                    if (parsed && (parsed.id || parsed.token || parsed.email || parsed.name || parsed.vendor_id)) {
+                        isLoggedIn = true;
+                    }
+                }
+            } catch(e) {}
+
+            if (isLoggedIn) {
+                window.location.replace(target);
+            } else {
+                window.location.replace(loginPage);
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div style="text-align:center;">
+        <div style="font-size:1.2rem;font-weight:700;margin-bottom:8px;">CityRide Driver</div>
+        <div style="font-size:0.85rem;color:#888;">Initializing secure session...</div>
+    </div>
+</body>
+</html>

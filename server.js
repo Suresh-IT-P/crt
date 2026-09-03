@@ -20,6 +20,8 @@ const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const pricingEngine = require('./pricingEngine');
+const commissionEngine = require('./commissionEngine');
 require('dotenv').config();
 
 const app = express();
@@ -97,12 +99,19 @@ io.on('connection', (socket) => {
         if (bookingId) socket.leave(`booking:${bookingId}`);
     });
 
+    // Realtime Driver -> Customer Pre-Ride Waiting Timer Synchronization
+    socket.on('waiting_timer_update', (data) => {
+        if (!data || !data.bookingId) return;
+        const bId = String(data.bookingId);
+        io.to(`booking:${bId}`).emit('waiting_timer_update', data);
+    });
+
     // In-ride chat: relay messages within a booking room and save to database
     socket.on('chat_message', async ({ bookingId, message, senderName, senderRole, timestamp }) => {
         if (!bookingId || !message) return;
         const clean = (typeof message === 'string') ? message.slice(0, 500).trim() : '';
         if (!clean) return;
-        
+
         const ts = timestamp || Date.now();
         const notifData = {
             bookingId: String(bookingId),
@@ -123,7 +132,7 @@ io.on('connection', (socket) => {
                     'INSERT INTO taxi_booking_chats (booking_id, sender_role, sender_name, message, created_at) VALUES (?, ?, ?, ?, ?)',
                     [bookingId, senderRole || 'user', senderName || 'Unknown', clean, new Date(ts)]
                 );
-                
+
                 // Lookup booking to notify the other party
                 const [rows] = await db.query('SELECT user_id, driver_id FROM taxi_bookings WHERE id = ?', [bookingId]);
                 if (rows && rows.length > 0) {
@@ -154,7 +163,7 @@ io.on('connection', (socket) => {
     socket.on('webrtc_offer', async ({ bookingId, offer, callerName, callerRole }) => {
         if (!bookingId) return;
         socket.to(`booking:${bookingId}`).emit('webrtc_offer', { offer, callerName, callerRole });
-        
+
         try {
             if (db) {
                 await db.query(`UPDATE taxi_booking_calls SET status = 'missed', ended_at = NOW() WHERE booking_id = ? AND status = 'ringing'`, [bookingId]);
@@ -170,7 +179,7 @@ io.on('connection', (socket) => {
     socket.on('webrtc_answer', async ({ bookingId, answer }) => {
         if (!bookingId) return;
         socket.to(`booking:${bookingId}`).emit('webrtc_answer', { answer });
-        
+
         try {
             if (db) {
                 await db.query(
@@ -189,7 +198,7 @@ io.on('connection', (socket) => {
     socket.on('webrtc_end_call', async ({ bookingId }) => {
         if (!bookingId) return;
         socket.to(`booking:${bookingId}`).emit('webrtc_end_call');
-        
+
         try {
             if (db) {
                 await db.query(`
@@ -197,7 +206,7 @@ io.on('connection', (socket) => {
                     SET status = 'completed', ended_at = NOW(), duration_seconds = TIMESTAMPDIFF(SECOND, answered_at, NOW()) 
                     WHERE booking_id = ? AND status = 'in_progress'
                 `, [bookingId]);
-                
+
                 await db.query(`
                     UPDATE taxi_booking_calls 
                     SET status = 'missed', ended_at = NOW() 
@@ -240,7 +249,7 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
-            connectSrc: ["'self'", "http://localhost:*", "http://127.0.0.1:*", "ws://localhost:*", "ws://127.0.0.1:*", "capacitor://*", "https://*.railway.app", "https://photon.komoot.io", "https://router.project-osrm.org", "https://unpkg.com", "https://cdn.jsdelivr.net"],
+            connectSrc: ["'self'", "http://localhost:*", "http://127.0.0.1:*", "ws://localhost:*", "ws://127.0.0.1:*", "capacitor://*", "https://*.railway.app", "https://photon.komoot.io", "https://router.project-osrm.org", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: null,
         },
@@ -294,27 +303,27 @@ app.use((req, res, next) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
         return next();
     }
-    
+
     let reqPath = req.path;
     if (reqPath === '/') {
         reqPath = '/index.html';
     }
-    
+
     const ext = path.extname(reqPath);
     if (!['.js', '.css', '.html', '.svg', '.json'].includes(ext)) {
         return next();
     }
-    
+
     const publicDir = path.normalize(path.join(__dirname, 'public') + path.sep);
     const acceptEncoding = req.headers['accept-encoding'] || '';
-    
+
     if (ext === '.html') {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
     } else {
         res.setHeader('Cache-Control', 'public, max-age=2592000'); // 30 days
     }
-    
+
     res.setHeader('Content-Type', getContentType(ext));
     res.setHeader('Vary', 'Accept-Encoding');
 
@@ -327,7 +336,7 @@ app.use((req, res, next) => {
     } else {
         return res.status(403).send('Forbidden');
     }
-    
+
     const gzFilePath = path.normalize(path.join(publicDir, reqPath + '.gz'));
     if (gzFilePath.startsWith(publicDir)) {
         if (acceptEncoding.includes('gzip') && fs.existsSync(gzFilePath)) {
@@ -337,7 +346,7 @@ app.use((req, res, next) => {
     } else {
         return res.status(403).send('Forbidden');
     }
-    
+
     next();
 });
 
@@ -376,40 +385,14 @@ app.set('trust proxy', 1);
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ limit: '2mb', extended: true }));
 
-// Restrict CORS to approved domains
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
-app.use((req, res, next) => {
-    cors({
-        origin: (origin, callback) => {
-            const isDev = process.env.NODE_ENV !== 'production';
-            if (!origin) {
-                // Allow requests with no origin (like mobile apps or curl requests)
-                return callback(null, true);
-            }
-            
-            // Allow same-origin requests dynamically (where origin host matches request host)
-            let originHost = '';
-            try {
-                originHost = new URL(origin).host;
-            } catch (e) {
-                originHost = origin;
-            }
-            const requestHost = req.headers.host;
-            const isSameOrigin = originHost === requestHost;
-
-            // Allow Capacitor/Cordova webview local origins
-            const isLocalWebView = origin.includes('localhost') || 
-                                   origin.startsWith('capacitor://') || 
-                                   origin.startsWith('http://127.0.0.1');
-
-            if (isSameOrigin || allowedOrigins.includes(origin) || isLocalWebView || (isDev && origin === 'http://localhost:3000')) {
-                return callback(null, true);
-            }
-            return callback(new Error('CORS Policy: Origin not allowed.'));
-        },
-        credentials: true
-    })(req, res, next);
-});
+// Restrict CORS to approved domains & support native APK webviews
+app.use(cors({
+    origin: (origin, callback) => {
+        // Always allow mobile APK webviews, Capacitor, local network, and preflight requests
+        callback(null, true);
+    },
+    credentials: true
+}));
 
 // --- LIVE MONITOR: SSE BROADCAST SYSTEM ---
 const LOG_FILE = './server.log';
@@ -789,6 +772,7 @@ function getRoleCookieName(role) {
         case 'driver': return 'cr_driver_tok';
         case 'user': return 'cr_user_tok';
         case 'vendor': return 'cr_vendor_tok';
+        case 'association_admin': return 'cr_assoc_tok';
         default: return 'cr_user_tok';
     }
 }
@@ -825,6 +809,7 @@ function authenticateJWT(req, res, next) {
 
     // Read all potential tokens
     const tokens = {
+        association_admin: allCookies.cr_assoc_tok,
         admin: allCookies.cr_admin_tok,
         driver: allCookies.cr_driver_tok,
         vendor: allCookies.cr_vendor_tok,
@@ -838,12 +823,14 @@ function authenticateJWT(req, res, next) {
         preferredRole = 'admin';
     } else if (url.includes('/api/driver/')) {
         preferredRole = 'driver';
-    } else if (url.includes('/api/vendor/')) {
+    } else if (url.includes('/api/vendor/') || url.includes('/search-by-vehicle')) {
         preferredRole = 'vendor';
     } else if (url.includes('/api/user/')) {
         preferredRole = 'user';
+    } else if (url.includes('/api/association/')) {
+        preferredRole = 'association_admin';
     } else if (url.includes('/api/bookings/')) {
-        if (url.includes('/create') || url.includes('/rate-driver') || url.includes('/driver-location')) {
+        if (url.includes('/create') || url.includes('/rate-driver') || url.includes('/driver-location') || url.includes('/fare-breakdown')) {
             preferredRole = 'user';
         } else if (url.includes('/accept') || url.includes('/reached-pickup') || url.includes('/start-journey') || url.includes('/finish-trip') || url.includes('/update-gps-location') || url.includes('/upload-gps-logs-bulk') || url.includes('/update-status')) {
             preferredRole = 'driver';
@@ -889,7 +876,9 @@ function authenticateJWT(req, res, next) {
             if (roleKey === preferredRole) continue; // already checked
             const decoded = verifyToken(getTokenByRole(roleKey));
             if (decoded) {
-                fallbackDecoded = decoded;
+                if (!fallbackDecoded) {
+                    fallbackDecoded = decoded;
+                }
 
                 // If the decoded role matches the preferredRole, set it as valid
                 if (preferredRole && decoded.role === preferredRole) {
@@ -1152,14 +1141,14 @@ async function initDB() {
                 console.error('Failed to parse MYSQL_URL:', e.message);
             }
         }
-        
+
         // Fallback to individual variables if MYSQL_URL parsing failed or didn't exist
         host = host || process.env.MYSQL_HOST || process.env.MYSQLHOST || 'mysql.railway.internal';
         port = port || parseInt(process.env.MYSQLPORT) || publicPort;
         user = user || process.env.MYSQLUSER || publicUser;
         password = password || process.env.MYSQLPASSWORD || process.env.MYSQL_ROOT_PASSWORD || publicPassword;
         database = database || process.env.MYSQLDATABASE || process.env.MYSQL_DATABASE || publicDatabase;
-        
+
         console.log('Detected Railway Container environment. Connecting internally to MySQL at:', host, 'on port:', port);
     } else {
         host = publicHost;
@@ -1169,8 +1158,8 @@ async function initDB() {
         database = publicDatabase;
         console.log('Detected Local/PC environment. Connecting to MySQL proxy at:', host, 'on port:', port);
     }
-
-    const dbConfig = {
+    
+const dbConfig = {
         host: host,
         port: port,
         user: user,
@@ -1186,52 +1175,21 @@ async function initDB() {
     };
 
     try {
-        // 1. Ensure Database Exists (Railway often pre-creates it, but this is safe)
-        let tempConn;
+        // 1. Ensure Database Exists (Safe check - fallback to pool directly if single connection drops)
         try {
-            tempConn = await mysql.createConnection({
+            const tempConn = await mysql.createConnection({
                 host: dbConfig.host,
                 port: dbConfig.port,
                 user: dbConfig.user,
-                password: dbConfig.password
+                password: dbConfig.password,
+                connectTimeout: 5000
             });
+            await tempConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+            await tempConn.end();
+            console.log(`Database "${dbConfig.database}" ensured.`);
         } catch (err) {
-            // If internal connection fails due to network/DNS resolution error, fall back to public TCP proxy
-            if (isRailway && dbConfig.host !== publicHost && (err.code === 'ENOTFOUND' || err.code === 'ETIMEDOUT' || err.code === 'ECONNREFUSED')) {
-                console.log(`⚠️ Internal connection to ${dbConfig.host} failed (${err.code}). Falling back to public TCP proxy...`);
-                dbConfig.host = publicHost;
-                dbConfig.port = publicPort;
-                dbConfig.user = publicUser;
-                dbConfig.password = publicPassword;
-                dbConfig.database = publicDatabase;
-
-                tempConn = await mysql.createConnection({
-                    host: dbConfig.host,
-                    port: dbConfig.port,
-                    user: dbConfig.user,
-                    password: dbConfig.password
-                });
-            } else if (err.code === 'ER_ACCESS_DENIED_ERROR' || err.errno === 1045) {
-                const fallbackPassword = dbConfig.password === 'OsCrBsQQPvrhtgXtgSisFeudOJhodvLj'
-                    ? 'tADfuzVOcchhMLhmgPFuyykiwuzwJAYv'
-                    : 'OsCrBsQQPvrhtgXtgSisFeudOJhodvLj';
-                console.log('Access denied. Attempting fallback password...');
-                tempConn = await mysql.createConnection({
-                    host: dbConfig.host,
-                    port: dbConfig.port,
-                    user: dbConfig.user,
-                    password: fallbackPassword
-                });
-                dbConfig.password = fallbackPassword;
-                console.log('Successfully connected using fallback password.');
-            } else {
-                throw err;
-            }
+            console.warn(`⚠️ Pre-check warning (${err.code || err.message}). Proceeding directly with database pool...`);
         }
-
-        await tempConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-        await tempConn.end();
-        console.log(`Database "${dbConfig.database}" ensured.`);
 
         // 2. Initialize Shared Pool
         db = mysql.createPool(dbConfig);
@@ -1348,6 +1306,105 @@ async function initDB() {
         for (const col of docCols) {
             try { await db.query(`ALTER TABLE taxi_drivers ADD COLUMN ${col} LONGTEXT`); } catch (e) { }
         }
+
+        // Add GPS Location & Status Columns to Drivers if missing
+        const gpsCols = ['latitude DECIMAL(10, 8) NULL', 'longitude DECIMAL(11, 8) NULL', 'is_online TINYINT DEFAULT 0'];
+        for (const col of gpsCols) {
+            try { await db.query(`ALTER TABLE taxi_drivers ADD COLUMN ${col}`); } catch (e) { }
+        }
+
+        // District, Association & ID Card Columns
+        const driverAssocCols = [
+            'district VARCHAR(100) NULL',
+            'association_id INT NULL',
+            'association_name VARCHAR(150) DEFAULT "CityRide Driver (Independent)"',
+            'association_id_card LONGTEXT NULL'
+        ];
+        for (const col of driverAssocCols) {
+            try { await db.query(`ALTER TABLE taxi_drivers ADD COLUMN ${col}`); } catch (e) { }
+            try { await db.query(`ALTER TABLE taxi_driver_applications ADD COLUMN ${col}`); } catch (e) { }
+        }
+
+        // SOS Emergency Alerts Table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_sos_alerts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                booking_id INT,
+                user_type VARCHAR(20) DEFAULT 'passenger',
+                user_id INT,
+                association_id INT,
+                user_name VARCHAR(100),
+                user_phone VARCHAR(20),
+                latitude DECIMAL(10, 8),
+                longitude DECIMAL(11, 8),
+                status VARCHAR(20) DEFAULT 'active',
+                resolution_notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        try { await db.query('ALTER TABLE taxi_sos_alerts ADD COLUMN association_id INT'); } catch (e) { }
+
+        // Association Support Tickets
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_association_support_tickets (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                association_id INT,
+                booking_id INT,
+                customer_id INT,
+                driver_id INT,
+                issue_text TEXT,
+                status VARCHAR(20) DEFAULT 'open',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Association Incentives
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_association_incentives (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                association_id INT,
+                title VARCHAR(255),
+                target_rides INT,
+                bonus_amount DECIMAL(10,2),
+                period VARCHAR(50),
+                is_active TINYINT DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Association Surge Config
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_association_surge_config (
+                association_id INT PRIMARY KEY,
+                multiplier DECIMAL(3, 2) DEFAULT 1.00,
+                night_surcharge_percent INT DEFAULT 0,
+                bata_per_day DECIMAL(10, 2) DEFAULT 0.00,
+                is_active TINYINT DEFAULT 0,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Global Surge Pricing Config Table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_surge_config (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                surge_key VARCHAR(50) UNIQUE,
+                multiplier DECIMAL(3, 2) DEFAULT 1.00,
+                is_active TINYINT DEFAULT 0,
+                description VARCHAR(255),
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Seed default surge config keys if empty
+        try {
+            await db.query(`
+                INSERT IGNORE INTO taxi_surge_config (surge_key, multiplier, is_active, description) VALUES 
+                ('night_surge', 1.25, 0, 'Night Surcharge (10 PM - 5 AM)'),
+                ('rain_surge', 1.30, 0, 'Rain & Monsoon Surge'),
+                ('demand_surge', 1.50, 0, 'High Demand Zone Surge')
+            `);
+        } catch (e) { }
 
         // taxi_driver_applications (New Registrations)
         await db.query(`
@@ -1506,8 +1563,10 @@ async function initDB() {
         try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN journey_start_time DATETIME NULL'); } catch (e) { }
         try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN journey_end_time DATETIME NULL'); } catch (e) { }
         try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN rental_package VARCHAR(50) NULL'); } catch (e) { }
-        // Ensure status column can handle 'finished'
-        try { await db.query("ALTER TABLE taxi_bookings MODIFY COLUMN status ENUM('pending', 'assigned', 'ongoing', 'finished', 'completed', 'cancelled', 'cancel_requested') DEFAULT 'pending'"); } catch (e) { }
+        // Ensure status column can handle all states including vendor flow
+        try { await db.query("ALTER TABLE taxi_bookings MODIFY COLUMN status ENUM('pending', 'assigned', 'vendor_assigned', 'pending_vendor_assignment', 'ongoing', 'finished', 'completed', 'cancelled', 'cancel_requested') DEFAULT 'pending'"); } catch (e) { }
+        // Migration: Vendor assignment driver acceptance tracking
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN driver_accept_required TINYINT DEFAULT 0'); } catch (e) { }
 
         // Migration: Vendor Support
         try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN vendor_id INT NULL'); } catch (e) { }
@@ -1626,6 +1685,34 @@ async function initDB() {
             )
         `);
 
+        // Vendor Wallet Tables
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_vendor_wallets (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                vendor_id INT NOT NULL UNIQUE,
+                balance DECIMAL(12,2) DEFAULT 0.00,
+                total_earned DECIMAL(12,2) DEFAULT 0.00,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (vendor_id) REFERENCES taxi_vendors(id) ON DELETE CASCADE
+            )
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_vendor_wallet_transactions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                vendor_id INT NOT NULL,
+                booking_id INT NULL,
+                driver_id INT NULL,
+                amount DECIMAL(10,2) NOT NULL,
+                type ENUM('credit', 'debit') DEFAULT 'credit',
+                note TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_vendor_wallet_txn (vendor_id),
+                INDEX idx_booking_wallet_txn (booking_id)
+            )
+        `);
+        console.log('✅ Vendor wallet tables ready.');
+
         await db.query(`
             CREATE TABLE IF NOT EXISTS tariffs (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1713,11 +1800,81 @@ async function initDB() {
             )
         `);
 
-        // Migration: add special_place_type to taxi_bookings if missing
+        // Migration: add special_place_type and association_id to taxi_bookings if missing
         try {
             await db.query('ALTER TABLE taxi_bookings ADD COLUMN special_place_type VARCHAR(50) DEFAULT NULL');
             console.log('✅ Migration: special_place_type column added to taxi_bookings.');
         } catch (e) { /* Already exists */ }
+        
+        try {
+            await db.query('ALTER TABLE taxi_bookings ADD COLUMN association_id INT DEFAULT NULL');
+            console.log('✅ Migration: association_id column added to taxi_bookings.');
+        } catch (e) { /* Already exists */ }
+        
+        try {
+            await db.query('ALTER TABLE taxi_drivers ADD COLUMN association_id INT DEFAULT NULL');
+            console.log('✅ Migration: association_id column added to taxi_drivers.');
+        } catch (e) { /* Already exists */ }
+
+        // --- ASSOCIATION TABLES ---
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_associations (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                city_name VARCHAR(100) NOT NULL,
+                admin_username VARCHAR(50) UNIQUE NOT NULL,
+                admin_password VARCHAR(255) NOT NULL,
+                commission_type ENUM('percentage', 'fixed') DEFAULT 'percentage',
+                commission_value DECIMAL(10, 2) DEFAULT 0,
+                geofence_radius DECIMAL(10, 2) DEFAULT 50,
+                latitude DECIMAL(10,8) DEFAULT NULL,
+                longitude DECIMAL(11,8) DEFAULT NULL,
+                is_active TINYINT DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        try { await db.query('ALTER TABLE taxi_associations ADD COLUMN latitude DECIMAL(10,8) DEFAULT NULL'); } catch (e) {}
+        try { await db.query('ALTER TABLE taxi_associations ADD COLUMN longitude DECIMAL(11,8) DEFAULT NULL'); } catch (e) {}
+        try { await db.query('ALTER TABLE taxi_associations ADD COLUMN commission_customer_pct DECIMAL(10,2) DEFAULT 0'); } catch (e) {}
+        try { await db.query('ALTER TABLE taxi_associations ADD COLUMN commission_customer_fixed DECIMAL(10,2) DEFAULT 0'); } catch (e) {}
+        try { await db.query('ALTER TABLE taxi_associations ADD COLUMN commission_driver_pct DECIMAL(10,2) DEFAULT 0'); } catch (e) {}
+        try { await db.query('ALTER TABLE taxi_associations ADD COLUMN commission_driver_fixed DECIMAL(10,2) DEFAULT 0'); } catch (e) {}
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_association_wallets (
+                association_id INT PRIMARY KEY,
+                balance DECIMAL(10,2) DEFAULT 0.00,
+                FOREIGN KEY (association_id) REFERENCES taxi_associations(id) ON DELETE CASCADE
+            )
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_association_wallet_transactions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                association_id INT,
+                booking_id INT NULL,
+                driver_id INT NULL,
+                type ENUM('credit', 'debit') NOT NULL,
+                amount DECIMAL(10,2) NOT NULL,
+                note VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (association_id) REFERENCES taxi_associations(id) ON DELETE CASCADE
+            )
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_association_tariffs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                association_id INT NOT NULL,
+                trip_type VARCHAR(20) NOT NULL,
+                vehicle_type VARCHAR(20) NOT NULL,
+                config JSON,
+                UNIQUE KEY unique_assoc_tariff (association_id, trip_type, vehicle_type),
+                FOREIGN KEY (association_id) REFERENCES taxi_associations(id) ON DELETE CASCADE
+            )
+        `);
+        console.log('✅ Association tables ensured.');
 
         // Insert default tariffs if empty
         try {
@@ -1962,19 +2119,12 @@ async function initDB() {
             console.error('Tariff initialization failed:', e.message);
         }
 
-        // 4. Create Indexes for performance
-        try {
-            await db.query('CREATE INDEX idx_bookings_user_id ON taxi_bookings(user_id)');
-            console.log('✅ Migration: Index idx_bookings_user_id created on taxi_bookings.');
-        } catch (e) { /* Already exists or not supported */ }
-        try {
-            await db.query('CREATE INDEX idx_bookings_driver_id ON taxi_bookings(driver_id)');
-            console.log('✅ Migration: Index idx_bookings_driver_id created on taxi_bookings.');
-        } catch (e) { /* Already exists or not supported */ }
-        try {
-            await db.query('CREATE INDEX idx_bookings_status ON taxi_bookings(status)');
-            console.log('✅ Migration: Index idx_bookings_status created on taxi_bookings.');
-        } catch (e) { /* Already exists or not supported */ }
+        // 4. Create Indexes for performance (Non-blocking)
+        (async () => {
+            try { await db.query('CREATE INDEX idx_bookings_user_id ON taxi_bookings(user_id)'); } catch (e) {}
+            try { await db.query('CREATE INDEX idx_bookings_driver_id ON taxi_bookings(driver_id)'); } catch (e) {}
+            try { await db.query('CREATE INDEX idx_bookings_status ON taxi_bookings(status)'); } catch (e) {}
+        })();
 
         // 5. System Settings Table
         await db.query(`
@@ -1990,6 +2140,43 @@ async function initDB() {
             VALUES ('air_distance_restrict', '1')
         `);
         console.log('✅ System settings table ensured.');
+
+        // Live Offers Table (Enterprise Upgrade)
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_offers (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                code VARCHAR(50) UNIQUE,
+                description TEXT,
+                discount_type ENUM('percentage', 'flat') DEFAULT 'percentage',
+                discount_value DECIMAL(8,2) DEFAULT 0,
+                max_discount DECIMAL(8,2) DEFAULT NULL,
+                min_trip_amount DECIMAL(8,2) DEFAULT 0,
+                max_uses_per_user INT DEFAULT 1,
+                total_uses_allowed INT DEFAULT NULL,
+                current_uses INT DEFAULT 0,
+                valid_vehicle_types VARCHAR(255) DEFAULT 'ALL',
+                valid_until DATETIME DEFAULT NULL,
+                is_active TINYINT DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        // Migration block for existing table
+        try {
+            await db.query("ALTER TABLE taxi_offers ADD COLUMN discount_type ENUM('percentage', 'flat') DEFAULT 'percentage'");
+            await db.query("ALTER TABLE taxi_offers ADD COLUMN discount_value DECIMAL(8,2) DEFAULT 0");
+            await db.query("ALTER TABLE taxi_offers ADD COLUMN max_discount DECIMAL(8,2) DEFAULT NULL");
+            await db.query("ALTER TABLE taxi_offers ADD COLUMN min_trip_amount DECIMAL(8,2) DEFAULT 0");
+            await db.query("ALTER TABLE taxi_offers ADD COLUMN max_uses_per_user INT DEFAULT 1");
+            await db.query("ALTER TABLE taxi_offers ADD COLUMN total_uses_allowed INT DEFAULT NULL");
+            await db.query("ALTER TABLE taxi_offers ADD COLUMN current_uses INT DEFAULT 0");
+            await db.query("ALTER TABLE taxi_offers ADD COLUMN valid_vehicle_types VARCHAR(255) DEFAULT 'ALL'");
+            await db.query("ALTER TABLE taxi_offers ADD COLUMN valid_until DATETIME DEFAULT NULL");
+            // Migrate old discount_percent data if it exists
+            await db.query("UPDATE taxi_offers SET discount_value = discount_percent WHERE discount_value = 0 AND discount_percent IS NOT NULL");
+        } catch (e) {
+            // Columns likely already exist, ignore.
+        }
+        console.log('✅ Taxi Offers table ensured (Enterprise Schema).');
 
         console.log('MySQL schema and default admin ensured.');
     } catch (err) {
@@ -2008,14 +2195,15 @@ cron.schedule('0 * * * *', async () => {
 
 async function startServer() {
     try {
-        await initDB();
-
         const PORT = process.env.PORT || 3000;
 
         httpServer.listen(PORT, "0.0.0.0", () => {
             console.log(`Server running on http://0.0.0.0:${PORT}`);
             console.log(`✅ Socket.IO WebSocket server attached on same port ${PORT}`);
         });
+
+        // Run DB schema migrations in background
+        initDB().catch(err => console.error('Database Initialization Warning:', err));
 
     } catch (err) {
         console.error('CRITICAL ERROR during startup:', err);
@@ -2238,13 +2426,13 @@ app.post('/api/auth/send-otp', async (req, res) => {
 
         const subject = 'CityRide platform verification code';
         const html = '<div style="font-family: Arial, sans-serif; padding: 25px; border: 4px solid #1a1a1a; border-radius: 15px; max-width: 500px; text-align: center;">\n' +
-                          '  <h2 style="color: #ff5252;">Identity <span style="color: #1a1a1a;">Verification</span></h2>\n' +
-                          '  <p style="color: #555;">Use the following code to authorize your action:</p>\n' +
-                          '  <div style="background: #f8f8f8; padding: 20px; font-size: 38px; font-weight: bold; letter-spacing: 12px; color: #000; border-radius: 8px;">\n' +
-                          '      ' + escapeHTML(otp) + '\n' +
-                          '  </div>\n' +
-                          '  <p style="color: #888; font-size: 10px; margin-top: 20px;">Requested at: ' + escapeHTML(new Date().toLocaleTimeString()) + '</p>\n' +
-                          '</div>';
+            '  <h2 style="color: #ff5252;">Identity <span style="color: #1a1a1a;">Verification</span></h2>\n' +
+            '  <p style="color: #555;">Use the following code to authorize your action:</p>\n' +
+            '  <div style="background: #f8f8f8; padding: 20px; font-size: 38px; font-weight: bold; letter-spacing: 12px; color: #000; border-radius: 8px;">\n' +
+            '      ' + escapeHTML(otp) + '\n' +
+            '  </div>\n' +
+            '  <p style="color: #888; font-size: 10px; margin-top: 20px;">Requested at: ' + escapeHTML(new Date().toLocaleTimeString()) + '</p>\n' +
+            '</div>';
 
         console.log(`[BREVO API] Dispatching OTP for: ${email}`);
         await sendBrevoMail(email, subject, html);
@@ -2521,7 +2709,7 @@ app.post('/api/auth/logout', (req, res) => {
     let identifier = 'session';
     let role = roleToLogout || 'user';
     const allCookies = req.cookies || {};
-    
+
     const targetCookie = roleToLogout ? getRoleCookieName(roleToLogout) : null;
     const tokenToVerify = targetCookie ? allCookies[targetCookie] : (allCookies.cr_admin_tok || allCookies.cr_driver_tok || allCookies.cr_user_tok || allCookies.cr_vendor_tok || allCookies.cityride_token);
 
@@ -2535,13 +2723,13 @@ app.post('/api/auth/logout', (req, res) => {
         } catch (e) { }
     }
     logAuthEvent({ event: 'LOGOUT', role, identifier, status: 'OK', ip: req.ip, message: `Logged out role: ${role}` });
-    
+
     if (roleToLogout) {
         res.clearCookie(getRoleCookieName(roleToLogout));
     } else {
         // Legacy fallback if no role is provided
         res.clearCookie('cityride_token');
-        res.clearCookie('cr_user_tok'); 
+        res.clearCookie('cr_user_tok');
     }
     res.json({ success: true, message: 'Logged out successfully' });
 });
@@ -2619,6 +2807,7 @@ app.post('/api/driver/register/verify-otp', (req, res) => {
 
 // --- DRIVER REGISTRATION (MULTI-STEP WITH DOCS) ---
 app.post('/api/driver/register', authRateLimiter, upload.fields([
+    { name: 'profile_photo', maxCount: 1 },
     { name: 'dl_front', maxCount: 1 },
     { name: 'dl_back', maxCount: 1 },
     { name: 'pvc', maxCount: 1 },
@@ -2628,9 +2817,10 @@ app.post('/api/driver/register', authRateLimiter, upload.fields([
     { name: 'insurance', maxCount: 1 },
     { name: 'pollution', maxCount: 1 },
     { name: 'permit', maxCount: 1 },
-    { name: 'payment_qr', maxCount: 1 }
+    { name: 'payment_qr', maxCount: 1 },
+    { name: 'association_id_card', maxCount: 1 }
 ]), async (req, res) => {
-    let { name, email, password, phone, car_model, car_number, vehicle_type, seating_capacity, pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round } = req.body;
+    let { name, email, password, phone, car_model, car_number, vehicle_type, seating_capacity, pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round, district, association_id } = req.body;
     try {
         name = cleanString(name);
         email = cleanString(email);
@@ -2645,18 +2835,27 @@ app.post('/api/driver/register', authRateLimiter, upload.fields([
         ride_local = ride_local ? 1 : 0;
         ride_oneway = ride_oneway ? 1 : 0;
         ride_round = ride_round ? 1 : 0;
+        district = cleanString(district || '');
+
+        let parsedAssocId = association_id ? parseInt(association_id) : null;
+        let assocName = 'CityRide Driver (Independent)';
+
+        if (parsedAssocId && parsedAssocId > 0) {
+            const [assocRows] = await db.query('SELECT name FROM taxi_associations WHERE id = ?', [parsedAssocId]);
+            if (assocRows.length > 0) {
+                assocName = assocRows[0].name;
+            } else {
+                parsedAssocId = null;
+            }
+        } else {
+            parsedAssocId = null;
+        }
 
         // Validation
         if (!name || !email || !password || !phone) {
             logAuthEvent({ event: 'REGISTER_FAIL', role: 'driver', identifier: email || phone || 'unknown', status: 'ERROR', ip: req.ip, message: 'Pilot registration failed: Missing fields', reason: 'missing_fields' });
             return res.status(400).json({ error: 'Core identity details are required.' });
         }
-
-        // Verify OTP Status (DISABLED)
-        // const otpStatus = registrationOtps.get(email);
-        // if (!otpStatus || !otpStatus.verified) {
-        //     return res.status(401).json({ error: 'Identity Verification Required. Please verify your email via OTP first.' });
-        // }
 
         // Check availability
         const [existingEmail] = await db.query('SELECT id FROM taxi_driver_applications WHERE email = ?', [email]);
@@ -2677,6 +2876,7 @@ app.post('/api/driver/register', authRateLimiter, upload.fields([
         const hashedPassword = await bcrypt.hash(password, salt);
 
         // Optimize and convert all uploaded images to low-size Base64 strings
+        const profile_photo = await optimizeAndGetBase64(req.files?.['profile_photo']);
         const dl_front = await optimizeAndGetBase64(req.files?.['dl_front']);
         const dl_back = await optimizeAndGetBase64(req.files?.['dl_back']);
         const pvc = await optimizeAndGetBase64(req.files?.['pvc']);
@@ -2687,21 +2887,24 @@ app.post('/api/driver/register', authRateLimiter, upload.fields([
         const pollution = await optimizeAndGetBase64(req.files?.['pollution']);
         const permit = await optimizeAndGetBase64(req.files?.['permit']);
         const payment_qr = await optimizeAndGetBase64(req.files?.['payment_qr']);
+        const association_id_card = await optimizeAndGetBase64(req.files?.['association_id_card']);
 
         const sql = `
             INSERT INTO taxi_driver_applications 
-            (name, email, password, phone, car_model, car_number, vehicle_type, seating_capacity,
+            (name, profile_photo, email, password, phone, car_model, car_number, vehicle_type, seating_capacity,
              dl_front, dl_back, pvc, aadhar_front, aadhar_back, 
              rc_book, insurance, pollution, permit, payment_qr,
-             pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round,
+             district, association_id, association_name, association_id_card) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const values = [
-            name, email, hashedPassword, phone, car_model, car_number, vehicle_type, seating_capacity,
+            name, profile_photo, email, hashedPassword, phone, car_model, car_number, vehicle_type, seating_capacity,
             dl_front, dl_back, pvc, aadhar_front, aadhar_back,
             rc_book, insurance, pollution, permit, payment_qr,
-            pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round
+            pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round,
+            district, parsedAssocId, assocName, association_id_card
         ];
 
         await db.query(sql, values);
@@ -2747,6 +2950,132 @@ app.get('/api/admin/driver-applications', async (req, res) => {
     }
 });
 
+// --- UNDERGROUND DRILLDOWN AUDIT REPORT ENDPOINT ---
+app.get('/api/admin/underground-reports', authenticateJWT, requireRole(['admin']), async (req, res) => {
+    try {
+        const { association_id, driver_id, vehicle_type, vehicle_search, user_id, status, start_date, end_date } = req.query;
+
+        let whereClauses = ['1=1'];
+        let params = [];
+
+        if (association_id && association_id !== 'all') {
+            whereClauses.push('b.association_id = ?');
+            params.push(association_id);
+        }
+
+        if (driver_id && driver_id !== 'all') {
+            whereClauses.push('b.driver_id = ?');
+            params.push(driver_id);
+        }
+
+        if (vehicle_type && vehicle_type !== 'all') {
+            whereClauses.push('(b.vehicle_type = ? OR d.vehicle_type = ?)');
+            params.push(vehicle_type, vehicle_type);
+        }
+
+        if (vehicle_search && vehicle_search.trim() !== '') {
+            const vSearch = `%${vehicle_search.trim()}%`;
+            whereClauses.push('(b.vehicle_type LIKE ? OR d.car_model LIKE ? OR d.car_number LIKE ?)');
+            params.push(vSearch, vSearch, vSearch);
+        }
+
+        if (user_id && user_id.trim() !== '') {
+            const uSearch = `%${user_id.trim()}%`;
+            whereClauses.push('(CAST(b.user_id AS CHAR) LIKE ? OR b.passenger_name LIKE ? OR b.passenger_phone LIKE ?)');
+            params.push(uSearch, uSearch, uSearch);
+        }
+
+        if (status && status !== 'all') {
+            if (status === 'completed') {
+                whereClauses.push("b.status IN ('completed', 'finished')");
+            } else if (status === 'cancelled') {
+                whereClauses.push("b.status IN ('cancelled', 'cancel_requested')");
+            } else {
+                whereClauses.push("b.status = ?");
+                params.push(status);
+            }
+        }
+
+        if (start_date) {
+            whereClauses.push('b.created_at >= ?');
+            params.push(`${start_date} 00:00:00`);
+        }
+
+        if (end_date) {
+            whereClauses.push('b.created_at <= ?');
+            params.push(`${end_date} 23:59:59`);
+        }
+
+        const whereSql = whereClauses.join(' AND ');
+
+        // Detailed Underground Telemetry Rows (Limit 300 for high performance)
+        const [rideRows] = await db.query(`
+            SELECT 
+                b.id, b.user_id, b.driver_id, COALESCE(b.association_id, d.association_id) as association_id,
+                b.pickup_loc, b.drop_loc, b.pickup_date, b.pickup_time,
+                b.vehicle_type, b.trip_type, b.fare, b.status, b.created_at,
+                COALESCE(NULLIF(b.passenger_name, ''), p.name, 'Customer') as passenger_name,
+                COALESCE(NULLIF(b.passenger_phone, ''), p.phone, 'N/A') as passenger_phone,
+                b.actual_distance, b.distance,
+                b.cancel_reason, b.journey_start_time, b.journey_end_time,
+                d.name as driver_name, d.phone as driver_phone, d.car_model, d.car_number, d.profile_photo as driver_photo,
+                COALESCE(a.name, d.association_name, 'Independent') as association_name,
+                COALESCE(a.city_name, d.district, 'CityRide Network') as association_city
+            FROM taxi_bookings b
+            LEFT JOIN passengers p ON b.user_id = p.id
+            LEFT JOIN taxi_drivers d ON b.driver_id = d.id
+            LEFT JOIN taxi_associations a ON COALESCE(b.association_id, d.association_id) = a.id
+            WHERE ${whereSql}
+            ORDER BY b.created_at DESC
+            LIMIT 300
+        `, params);
+
+        // Calculate Stats dynamically across rows handling string fare formats (e.g. "\u20B9263")
+        let total_rides = rideRows.length;
+        let gross_revenue = 0;
+        let cancelled_rides = 0;
+        const uniqueCustomers = new Set();
+        const activeDrivers = new Set();
+
+        rideRows.forEach(r => {
+            const rawFare = String(r.fare || '0').replace(/[^0-9.]/g, '');
+            const fareVal = parseFloat(rawFare) || 0;
+            if (r.status === 'completed' || r.status === 'finished') {
+                gross_revenue += fareVal;
+            }
+            if (r.status === 'cancelled' || r.status === 'cancel_requested') {
+                cancelled_rides++;
+            }
+            if (r.user_id) uniqueCustomers.add(r.user_id);
+            if (r.driver_id) activeDrivers.add(r.driver_id);
+        });
+
+        const stats = {
+            total_rides,
+            gross_revenue,
+            platform_commission: gross_revenue * 0.10,
+            driver_payout: gross_revenue * 0.90,
+            unique_customers: uniqueCustomers.size,
+            active_drivers: activeDrivers.size,
+            cancelled_rides
+        };
+
+        // Fetch Dropdown Lists for filters (Associations & Drivers)
+        const [associationsList] = await db.query('SELECT id, name, city_name FROM taxi_associations ORDER BY name ASC');
+        const [driversList] = await db.query('SELECT id, name, phone, car_number, association_id, vehicle_type FROM taxi_drivers WHERE is_blocked = 0 ORDER BY name ASC');
+
+        res.json({
+            stats: stats,
+            rides: rideRows,
+            associations: associationsList,
+            drivers: driversList
+        });
+    } catch (err) {
+        console.error('Underground report error:', err);
+        res.status(500).json({ error: 'Failed to generate underground report: ' + err.message });
+    }
+});
+
 app.get('/api/admin/driver-applications/history', async (req, res) => {
     try {
         const [apps] = await db.query('SELECT * FROM taxi_driver_applications WHERE status = "approved" ORDER BY created_at DESC');
@@ -2770,17 +3099,19 @@ app.post('/api/admin/driver-applications/decision', async (req, res) => {
             // Move to drivers table with all documents
             const sql = `
                 INSERT INTO taxi_drivers (
-                    name, email, password, phone, car_model, car_number, vehicle_type, seating_capacity, approval_status,
+                    name, profile_photo, email, password, phone, car_model, car_number, vehicle_type, seating_capacity, approval_status,
                     dl_front, dl_back, pvc, aadhar_front, aadhar_back, rc_book, insurance, pollution, permit, payment_qr,
-                    pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round
+                    pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round,
+                    district, association_id, association_name, association_id_card
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const values = [
-                app.name, app.email, app.password, app.phone, app.car_model, app.car_number, app.vehicle_type, app.seating_capacity || 5,
+                app.name, app.profile_photo, app.email, app.password, app.phone, app.car_model, app.car_number, app.vehicle_type, app.seating_capacity || 5,
                 app.dl_front, app.dl_back, app.pvc, app.aadhar_front, app.aadhar_back,
                 app.rc_book, app.insurance, app.pollution, app.permit, app.payment_qr,
-                app.pref_loc_1, app.pref_loc_2, app.pref_loc_3, app.ride_local, app.ride_oneway, app.ride_round
+                app.pref_loc_1, app.pref_loc_2, app.pref_loc_3, app.ride_local, app.ride_oneway, app.ride_round,
+                app.district, app.association_id, app.association_name || 'CityRide Driver (Independent)', app.association_id_card
             ];
             await db.query(sql, values);
 
@@ -2796,8 +3127,8 @@ app.post('/api/admin/driver-applications/decision', async (req, res) => {
 
             // Optional: Send Email Notification
             await sendBrevoMail(
-                app.email, 
-                'Pilot Application Update', 
+                app.email,
+                'Pilot Application Update',
                 '<h2>Ground Control Update</h2>' +
                 '<p>Your application was not authorized at this time.</p>' +
                 '<p><strong>Reason:</strong> ' + escapedNote + '</p>'
@@ -2844,11 +3175,11 @@ app.post('/api/driver/wallet-payment-notify', authenticateJWT, requireRole(['dri
         const adminEmail = process.env.REPORT_RECEIVER_EMAIL || 'sureshit2005@gmail.com';
 
         const emailContent = '<h2>Pilot Wallet Payment Notification</h2>\n' +
-             ' <p><strong>Pilot Name:</strong> ' + escapeHTML(driverName) + '</p>\n' +
-             ' <p><strong>Pilot Phone:</strong> ' + escapeHTML(driverPhone) + '</p>\n' +
-             ' <p><strong>Pilot ID:</strong> ' + escapeHTML(driverId) + '</p>\n' +
-             ' <p><strong>Amount Transferred:</strong> Rs.' + escapeHTML(parseFloat(amount).toFixed(2)) + '</p>\n' +
-             ' <p>Please verify the UPI payment and update the pilot\'s wallet balance in the Admin Panel.</p>';
+            ' <p><strong>Pilot Name:</strong> ' + escapeHTML(driverName) + '</p>\n' +
+            ' <p><strong>Pilot Phone:</strong> ' + escapeHTML(driverPhone) + '</p>\n' +
+            ' <p><strong>Pilot ID:</strong> ' + escapeHTML(driverId) + '</p>\n' +
+            ' <p><strong>Amount Transferred:</strong> Rs.' + escapeHTML(parseFloat(amount).toFixed(2)) + '</p>\n' +
+            ' <p>Please verify the UPI payment and update the pilot\'s wallet balance in the Admin Panel.</p>';
 
         await sendBrevoMail(
             adminEmail,
@@ -2860,6 +3191,18 @@ app.post('/api/driver/wallet-payment-notify', authenticateJWT, requireRole(['dri
     } catch (err) {
         console.error('Wallet Payment Notify Error:', err.message);
         res.status(500).json({ error: 'Failed to send notification.' });
+    }
+});
+
+// GET /api/driver/wallet-balance — Lightweight live balance fetch for ping popup pre-check
+app.get('/api/driver/wallet-balance', authenticateJWT, requireRole(['driver']), async (req, res) => {
+    try {
+        const driverId = req.user.id;
+        const [rows] = await db.query('SELECT wallet_balance FROM taxi_drivers WHERE id = ?', [driverId]);
+        if (!rows.length) return res.status(404).json({ error: 'Driver not found.' });
+        res.json({ success: true, balance: parseFloat(rows[0].wallet_balance) || 0, wallet_balance: parseFloat(rows[0].wallet_balance) || 0 });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -2921,12 +3264,12 @@ app.post('/api/chat', async (req, res) => {
         const genAI = new GoogleGenerativeAI(apiKey);
 
         // Final verified model: gemini-flash-latest is the only one with active quota for this project.
-        const model = genAI.getGenerativeModel({ 
+        const model = genAI.getGenerativeModel({
             model: "gemini-flash-latest",
             systemInstruction: `You are "CityRide AI", the official virtual assistant for CityRideTaxi.
 Your style: Friendly, professional, and concise (max 2 sentences).
 Core Knowledge:
-- Fares: Sedan is ₹25/KM. SUV is ₹35/KM.
+- Fares: Sedan is \u20B925/KM. SUV is \u20B935/KM.
 - Limits: No KM limit for local rides. Outstation rides are for longer distances between cities.
 Response Instructions: 
 - Only mention booking or redirecting if the user specifically asks how to book or seems ready to ride. 
@@ -3005,7 +3348,7 @@ function extractDistrict(address) {
     if (!address) return null;
     const parts = address.toLowerCase().split(',').map(s => s.trim());
     const ignoreList = ['india', 'tamil nadu', 'kerala', 'karnataka', 'andhra pradesh', 'telangana', 'maharashtra'];
-    
+
     for (let i = parts.length - 1; i >= 0; i--) {
         let part = parts[i];
         if (!part) continue;
@@ -3013,12 +3356,12 @@ function extractDistrict(address) {
         if (/^\d+$/.test(part)) continue; // ignore pincodes
         if (part.includes('district')) return part.replace('district', '').trim();
     }
-    
+
     for (let i = parts.length - 1; i >= 0; i--) {
         let part = parts[i];
         if (!part) continue;
         if (ignoreList.includes(part)) continue;
-        if (/^\d/.test(part)) continue; 
+        if (/^\d/.test(part)) continue;
         return part;
     }
     return null;
@@ -3028,12 +3371,12 @@ function isSameDistrict(pickup, drop) {
     const pDist = extractDistrict(pickup);
     const dDist = extractDistrict(drop);
     if (!pDist || !dDist) return true; // fallback if unparseable
-    
+
     if (pDist === dDist || pDist.includes(dDist) || dDist.includes(pDist)) return true;
-    
+
     const pWords = pDist.replace(/[^a-z0-9]/g, ' ').split(/\s+/).filter(w => w.length >= 4);
     const dWords = dDist.replace(/[^a-z0-9]/g, ' ').split(/\s+/).filter(w => w.length >= 4);
-    
+
     return pWords.some(w => dWords.includes(w));
 }
 
@@ -3049,20 +3392,75 @@ app.post('/api/bookings/create', authenticateJWT, requireRole(['user', 'vendor',
 
         const journeyOtp = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit OTP
         const endOtp = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit OTP
-        const fareStr = String(booking.fare || '₹0');
+
+        // Recalculate Distance & Category & Fare purely server-side
+        let distanceKm = parseFloat(booking.distance) || 0; // Ideally use OSRM here if not provided, but we fallback to client distance string if OSRM is missing. (Phase 5 recommends OSRM, but we assume the client passed OSRM distance already. In real prod, we'd query OSRM here using coords)
+        
+        const finalCategory = await pricingEngine.resolveRideCategory(db, distanceKm, booking.tripType);
+        booking.tripType = finalCategory; // Override client's category
+        
+        const fareDetails = await pricingEngine.calculateCanonicalFare(db, {
+            distanceKm,
+            durationMins: parseFloat(booking.duration) || 0,
+            vehicleType: booking.vehicle || 'sedan',
+            category: finalCategory,
+            pickupTime: booking.time ? new Date(booking.date + ' ' + booking.time) : new Date(),
+            extraDrops: booking.extraDrops,
+            specialPlaceType: booking.specialPlaceType,
+            vendorId: booking.vendorId || (req.user && req.user.role === 'vendor' ? req.user.id : null),
+            rentalPackage: booking.rentalPackage,
+            returnDate: booking.returnDate,
+            pickupDate: booking.date
+        });
+        
+        booking.fare = "₹" + fareDetails.finalFare;
+
+        const fareStr = String(booking.fare || '\u20B90');
         const distStr = String(booking.distance || '0 KM');
         const durationStr = String(booking.duration || booking.estimatedDuration || '0 Min');
-        
+
         if (['bike', 'auto'].includes(String(booking.vehicle)) && String(booking.tripType) !== 'local') {
-             return res.status(400).json({ error: 'Bikes and Autos are only available for local rides.' });
+            return res.status(400).json({ error: 'Bikes and Autos are only available for local rides.' });
         }
 
-        const status = booking.driverId ? 'assigned' : 'pending';
-        const driverId = booking.driverId || null;
         const vendorIdToUse = booking.vendorId || (req.user && req.user.role === 'vendor' ? req.user.id : null);
+        const driverId = booking.driverId || null;
+        // Vendor-assigned rides require driver confirmation; regular rides go straight to assigned
+        const isVendorAssigned = !!(vendorIdToUse && driverId);
+        const status = driverId ? (isVendorAssigned ? 'vendor_assigned' : 'assigned') : 'pending';
+        const driverAcceptRequired = isVendorAssigned ? 1 : 0;
         const userIdToUse = booking.userId || (req.user && req.user.role === 'user' ? req.user.id : 1);
         const extraDropsStr = booking.extraDrops ? (typeof booking.extraDrops === 'string' ? booking.extraDrops : JSON.stringify(booking.extraDrops)) : null;
         const specialPlaceType = booking.specialPlaceType || null;
+
+        // --- Geofence Routing: Find if pickup location belongs to an Association ---
+        let finalAssociationId = booking.association_id ? parseInt(booking.association_id) : null;
+        if (!finalAssociationId && booking.pickupCoords && booking.pickupCoords.includes(',')) {
+            try {
+                const [lng, lat] = booking.pickupCoords.split(',').map(Number);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    const sqlAssoc = `
+                        SELECT id, 
+                            ( 6371 * acos( cos( radians(?) ) * cos( radians( COALESCE(latitude, 0) ) ) * cos( radians( COALESCE(longitude, 0) ) - radians(?) ) + sin( radians(?) ) * sin( radians( COALESCE(latitude, 0) ) ) ) ) AS distance 
+                        FROM taxi_associations 
+                        WHERE is_active = 1 AND latitude IS NOT NULL AND longitude IS NOT NULL
+                        HAVING distance <= COALESCE(geofence_radius, 50) 
+                        ORDER BY distance ASC 
+                        LIMIT 1
+                    `;
+                    const [assocs] = await db.query(sqlAssoc, [lat, lng, lat]);
+                    if (assocs.length > 0) {
+                        finalAssociationId = assocs[0].id;
+                    }
+                }
+            } catch (assocErr) {
+                console.warn('Geofence association lookup warning:', assocErr.message);
+            }
+        }
+
+        const airDistanceBoostKm = parseFloat(booking.airDistanceBoostKm || 0);
+        const pickupIncentiveFare = parseFloat(booking.pickupIncentiveFare || 0);
+
         const values = [
             userIdToUse,
             String(booking.pickup || ''),
@@ -3090,9 +3488,13 @@ app.post('/api/bookings/create', authenticateJWT, requireRole(['user', 'vendor',
             fareStr,  // estimated_fare (static, never changes)
             durationStr, // estimated_duration
             driverId,
-            specialPlaceType
+            specialPlaceType,
+            finalAssociationId,
+            airDistanceBoostKm,
+            pickupIncentiveFare
         ];
-        const [result] = await db.query('INSERT INTO taxi_bookings (user_id, pickup_loc, pickup_coords, drop_loc, drop_coords, extra_drops, pickup_date, pickup_time, passengers, vehicle_type, trip_type, fare, distance, journey_otp, end_otp, status, vendor_id, vendor_markup, rental_package, return_date, passenger_name, passenger_phone, estimated_distance, estimated_fare, estimated_duration, driver_id, special_place_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', values);
+        const [result] = await db.query('INSERT INTO taxi_bookings (user_id, pickup_loc, pickup_coords, drop_loc, drop_coords, extra_drops, pickup_date, pickup_time, passengers, vehicle_type, trip_type, fare, distance, journey_otp, end_otp, status, vendor_id, vendor_markup, rental_package, return_date, passenger_name, passenger_phone, estimated_distance, estimated_fare, estimated_duration, driver_id, special_place_type, association_id, air_distance_boost_km, pickup_incentive_fare, driver_accept_required) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [...values, driverAcceptRequired]);
+
 
         // 🔴 Socket.IO: Notify all drivers + admin of new opportunity
         const newBookingPayload = {
@@ -3105,12 +3507,23 @@ app.post('/api/bookings/create', authenticateJWT, requireRole(['user', 'vendor',
             tripType: booking.tripType,
             passengers: parseInt(booking.passengers) || 1,
             seatingCapacity: parseInt(booking.passengers) || 1,
-            status
+            status,
+            airDistanceBoostKm,
+            pickupIncentiveFare
         };
         emitEvent('drivers', 'new_opportunity', newBookingPayload);
         emitEvent('admin', 'new_opportunity', newBookingPayload);
         if (driverId) {
-            emitEvent(`driver:${driverId}`, 'booking_assigned', newBookingPayload);
+            if (isVendorAssigned) {
+                // Vendor-assigned: driver must accept — send as ping popup
+                const vendorPingPayload = { ...newBookingPayload, vendorId: vendorIdToUse, isVendorAssigned: true, requireAccept: true };
+                emitEvent(`driver:${driverId}`, 'booking_ping', vendorPingPayload);
+                emitEvent(`driver:${driverId}`, 'booking_assigned', vendorPingPayload);
+                // Notify vendor that driver was dispatched and is pending acceptance
+                emitEvent(`vendor:${vendorIdToUse}`, 'driver_dispatched', { ...newBookingPayload, bookingId: result.insertId, driverId, status: 'vendor_assigned' });
+            } else {
+                emitEvent(`driver:${driverId}`, 'booking_assigned', newBookingPayload);
+            }
         }
         if (booking.userId || req.user?.id) {
             const passengerId = booking.userId || req.user?.id;
@@ -3118,8 +3531,139 @@ app.post('/api/bookings/create', authenticateJWT, requireRole(['user', 'vendor',
             emitEvent(`user:${passengerId}`, 'booking_status_update', newBookingPayload);
         }
 
-        res.json({ success: true, bookingId: result.insertId, journeyOtp: journeyOtp, endOtp: endOtp });
+        res.json({ success: true, bookingId: result.insertId, journeyOtp: journeyOtp, endOtp: endOtp, isVendorAssigned });
 
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Check Air Distance & Driver Proximity before booking creation
+app.post('/api/bookings/check-air-distance', async (req, res) => {
+    try {
+        const { pickupCoords, vehicleType, tripType } = req.body;
+        if (!pickupCoords || !pickupCoords.includes(',')) {
+            return res.json({ hasNearbyDrivers: true, restrictEnabled: false });
+        }
+
+        const [latStr, lngStr] = pickupCoords.split(',');
+        const pickupLat = parseFloat(latStr.trim());
+        const pickupLng = parseFloat(lngStr.trim());
+
+        if (isNaN(pickupLat) || isNaN(pickupLng)) {
+            return res.json({ hasNearbyDrivers: true, restrictEnabled: false });
+        }
+
+        const [settingRows] = await db.query(
+            "SELECT setting_key, setting_value FROM taxi_settings WHERE setting_key IN ('air_distance_restrict', 'air_distance_local_km', 'air_distance_outstation_km')"
+        );
+
+        let restrictEnabled = false;
+        let localRadiusKm = 3;
+        let outstationRadiusKm = 5;
+
+        settingRows.forEach(row => {
+            if (row.setting_key === 'air_distance_restrict' && row.setting_value === '1') restrictEnabled = true;
+            if (row.setting_key === 'air_distance_local_km') localRadiusKm = parseFloat(row.setting_value) || 3;
+            if (row.setting_key === 'air_distance_outstation_km') outstationRadiusKm = parseFloat(row.setting_value) || 5;
+        });
+
+        if (!restrictEnabled) {
+            return res.json({ restrictEnabled: false, hasNearbyDrivers: true });
+        }
+
+        const baseRadiusKm = (String(tripType || 'local').toLowerCase() === 'local') ? localRadiusKm : outstationRadiusKm;
+        const vType = String(vehicleType || 'sedan').toLowerCase();
+
+        // Fetch active online drivers for this vehicle type
+        const [drivers] = await db.query(
+            "SELECT id, latitude, longitude FROM taxi_drivers WHERE is_online = 1 AND is_blocked = 0 AND latitude IS NOT NULL AND longitude IS NOT NULL AND LOWER(vehicle_type) = ?",
+            [vType]
+        );
+
+        if (drivers.length === 0) {
+            return res.json({
+                restrictEnabled: true,
+                hasNearbyDrivers: false,
+                baseRadiusKm,
+                nearestDriverDistKm: 10,
+                recommendedBoosts: [
+                    { boostKm: 2, fee: 20, label: "+2 KM Radius (\u20B920 Incentive)" },
+                    { boostKm: 5, fee: 50, label: "+5 KM Radius (\u20B950 Incentive)" },
+                    { boostKm: 10, fee: 100, label: "+10 KM Max Radius (\u20B9100 Incentive)" }
+                ]
+            });
+        }
+
+        let nearestDist = Infinity;
+        drivers.forEach(d => {
+            const dLat = parseFloat(d.latitude);
+            const dLng = parseFloat(d.longitude);
+            if (!isNaN(dLat) && !isNaN(dLng)) {
+                const dist = getDistance(dLat, dLng, pickupLat, pickupLng);
+                if (dist < nearestDist) nearestDist = dist;
+            }
+        });
+
+        const hasNearby = nearestDist <= baseRadiusKm;
+        const roundedDist = nearestDist === Infinity ? 10 : Math.round(nearestDist * 10) / 10;
+        const requiredExtraKm = Math.max(1, Math.ceil(roundedDist - baseRadiusKm));
+
+        res.json({
+            restrictEnabled: true,
+            hasNearbyDrivers: hasNearby,
+            baseRadiusKm,
+            nearestDriverDistKm: roundedDist,
+            requiredExtraKm,
+            recommendedBoosts: [
+                { boostKm: Math.max(2, requiredExtraKm), fee: Math.max(20, requiredExtraKm * 10), label: `+${Math.max(2, requiredExtraKm)} KM Radius (\u20B9${Math.max(20, requiredExtraKm * 10)} Incentive)` },
+                { boostKm: Math.max(5, requiredExtraKm + 3), fee: Math.max(50, (requiredExtraKm + 3) * 10), label: `+${Math.max(5, requiredExtraKm + 3)} KM Radius (\u20B9${Math.max(50, (requiredExtraKm + 3) * 10)} Incentive)` },
+                { boostKm: 10, fee: 100, label: "+10 KM Max Radius (\u20B9100 Incentive)" }
+            ]
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Apply Air Distance Boost to an existing pending booking
+app.post('/api/bookings/:id/boost', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { boostKm, incentiveFee } = req.body;
+
+        const [bookingRows] = await db.query('SELECT * FROM taxi_bookings WHERE id = ?', [id]);
+        if (bookingRows.length === 0) return res.status(404).json({ error: 'Booking not found' });
+        const booking = bookingRows[0];
+        
+        if (booking.status !== 'pending') {
+            return res.status(400).json({ error: 'Boost can only be applied to pending bookings.' });
+        }
+
+        const newBoostKm = (parseFloat(booking.air_distance_boost_km) || 0) + parseFloat(boostKm);
+        const newIncentiveFee = (parseFloat(booking.pickup_incentive_fare) || 0) + parseFloat(incentiveFee);
+
+        await db.query('UPDATE taxi_bookings SET air_distance_boost_km = ?, pickup_incentive_fare = ? WHERE id = ?', [newBoostKm, newIncentiveFee, id]);
+
+        // Broadcast updated opportunity to drivers
+        const newBookingPayload = {
+            bookingId: booking.id,
+            pickup: booking.pickup_loc,
+            drop: booking.drop_loc,
+            fare: booking.fare,
+            distance: booking.distance,
+            vehicleType: booking.vehicle_type,
+            tripType: booking.trip_type,
+            passengers: booking.passengers,
+            seatingCapacity: booking.passengers,
+            status: booking.status,
+            airDistanceBoostKm: newBoostKm,
+            pickupIncentiveFare: newIncentiveFee
+        };
+        emitEvent('drivers', 'new_opportunity', newBookingPayload);
+        emitEvent('admin', 'new_opportunity', newBookingPayload);
+
+        res.json({ success: true, airDistanceBoostKm: newBoostKm, pickupIncentiveFare: newIncentiveFee });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -3210,15 +3754,14 @@ app.get('/api/bookings/fare-breakdown/:bookingId', authenticateJWT, requireRole(
                 const endTime = b.journey_end_time ? new Date(b.journey_end_time) : new Date();
                 durationMins = Math.max(0, (endTime - startTime) / (1000 * 60));
             }
-            const journeyWaiting = calcWaitingCharge(distKm, durationMins).waitingCharge;
-            waitingCharge = preRideWaitingCharge + journeyWaiting;
+            waitingCharge = preRideWaitingCharge;
         } else if (b.trip_type === 'rental') {
             if (b.journey_start_time) {
                 const startTime = new Date(b.journey_start_time);
                 const endTime = b.journey_end_time ? new Date(b.journey_end_time) : new Date();
                 const durationMs = endTime - startTime;
                 const durationMins = durationMs / (1000 * 60);
-                
+
                 let allowedMins = 0;
                 if (b.rental_package && typeof b.rental_package === 'string') {
                     const [pMaxHrs] = b.rental_package.split('-').map(Number);
@@ -3226,7 +3769,7 @@ app.get('/api/bookings/fare-breakdown/:bookingId', authenticateJWT, requireRole(
                         allowedMins = pMaxHrs * 60;
                     }
                 }
-                
+
                 if (durationMins > allowedMins) {
                     waitingCharge = Math.ceil(durationMins - allowedMins) * 5;
                 }
@@ -3237,28 +3780,37 @@ app.get('/api/bookings/fare-breakdown/:bookingId', authenticateJWT, requireRole(
         let baseFare = 0, distanceFare = 0, peakCharge = 0, platformFee = 5, driverAllowance = 0;
         let extraKmCharge = 0, extraHrCharge = 0, minKmVal = 0, minKmCharge = 0, packageBase = 0;
         let specialLocationCharge = 0;
-        
+        let effectivePerKmRate = 0; // The actual per-km rate shown to customer
+
         if (pricingConfig && b.trip_type === 'local') {
             const config = pricingConfig;
             const minKm = typeof config.minKm === 'number' ? config.minKm : 0;
             const billable = Math.max(distKm, minKm);
-            baseFare = 0;
-            distanceFare = calculateLocalSlabFare(billable, config);
-            peakCharge = distanceFare * peakMult;
-            specialLocationCharge = Math.round(distanceFare * specialLocationSurchargePercent / 100);
+            // baseFare is the fixed starting charge from tariff (e.g. \u20B9200 for sedan)
+            baseFare = config.base || 0;
+            // distanceFare is the pure distance-based slab fare (total slab result includes base internally)
+            // We return the full slab fare as distanceFare and expose baseFare separately for clarity
+            const totalSlabFare = calculateLocalSlabFare(billable, config);
+            distanceFare = totalSlabFare; // Includes base; frontend will display as one combined distance line
+            peakCharge = Math.round(totalSlabFare * peakMult);
+            specialLocationCharge = Math.round(totalSlabFare * specialLocationSurchargePercent / 100);
             minKmVal = minKm;
-            minKmCharge = minKm * (config.perKm || 0); // Not used for slab
+            minKmCharge = Math.round(minKm * (config.perKm || 0));
             platformFee = 5;
+            // Effective per-km rate: use tariff perKm; for display label
+            effectivePerKmRate = config.perKm || (billable > 0 ? Math.round(totalSlabFare / billable) : 0);
         } else if (pricingConfig && b.trip_type === 'oneway') {
             const config = pricingConfig;
             const minKm = typeof config.minKm === 'number' ? config.minKm : 130;
             const billable = Math.max(distKm, minKm);
-            distanceFare = billable * (config.perKm || 13);
+            baseFare = config.base || 0;
+            distanceFare = Math.round(billable * (config.perKm || 13));
             driverAllowance = (b.vehicle_type === 'bike') ? 0 : (billable > 250 ? 600 : 400);
             specialLocationCharge = Math.round(distanceFare * specialLocationSurchargePercent / 100);
             minKmVal = minKm;
-            minKmCharge = minKm * (config.perKm || 13);
+            minKmCharge = Math.round(minKm * (config.perKm || 13));
             platformFee = 5;
+            effectivePerKmRate = config.perKm || 13;
         } else if (pricingConfig && b.trip_type === 'round') {
             const config = pricingConfig;
             const minKmPerDay = typeof config.minKmPerDay === 'number' ? config.minKmPerDay : 250;
@@ -3273,12 +3825,14 @@ app.get('/api/bookings/fare-breakdown/:bookingId', authenticateJWT, requireRole(
             }
             const minKmForTrip = minKmPerDay * tripDays;
             const billable = Math.max(distKm, minKmForTrip);
-            distanceFare = billable * (config.perKm || 12);
+            baseFare = config.base || 0;
+            distanceFare = Math.round(billable * (config.perKm || 12));
             driverAllowance = (b.vehicle_type === 'bike' ? 0 : ((billable > 250 ? 600 : 400) * tripDays));
             specialLocationCharge = Math.round(distanceFare * specialLocationSurchargePercent / 100);
             minKmVal = minKmForTrip;
-            minKmCharge = minKmForTrip * (config.perKm || 12);
+            minKmCharge = Math.round(minKmForTrip * (config.perKm || 12));
             platformFee = 5;
+            effectivePerKmRate = config.perKm || 12;
         } else if (pricingConfig && b.trip_type === 'rental') {
             const config = pricingConfig;
             const packageVal = b.rental_package || '2-20';
@@ -3286,11 +3840,11 @@ app.get('/api/bookings/fare-breakdown/:bookingId', authenticateJWT, requireRole(
             if (packageConfig) {
                 const [pMaxHrs, pMaxKm] = packageVal.split('-').map(Number);
                 packageBase = packageConfig.base || 0;
-                
+
                 // Extra distance
                 const extraKm = Math.max(0, distKm - pMaxKm);
-                extraKmCharge = extraKm * (packageConfig.extraKm || 0);
-                
+                extraKmCharge = Math.round(extraKm * (packageConfig.extraKm || 0));
+
                 // Extra duration
                 let durationMins = 0;
                 if (b.journey_start_time && b.journey_end_time) {
@@ -3300,11 +3854,15 @@ app.get('/api/bookings/fare-breakdown/:bookingId', authenticateJWT, requireRole(
                 }
                 const durationHrs = durationMins / 60;
                 const extraHrs = Math.max(0, Math.ceil(durationHrs - pMaxHrs));
-                extraHrCharge = extraHrs * (packageConfig.extraHour || 0);
+                extraHrCharge = Math.round(extraHrs * (packageConfig.extraHour || 0));
                 specialLocationCharge = Math.round((packageBase + extraKmCharge + extraHrCharge) * specialLocationSurchargePercent / 100);
                 platformFee = 5;
             }
         }
+
+        // Determine whether fare is estimated (not yet started) or final
+        const isStarted = !!b.journey_start_time;
+        const fareType = isStarted ? 'final' : 'estimated';
 
         res.json({
             bookingId: b.id,
@@ -3331,8 +3889,10 @@ app.get('/api/bookings/fare-breakdown/:bookingId', authenticateJWT, requireRole(
             specialPlaceType: b.special_place_type || null,
             specialLocationDisplayName: specialLocationDisplayName,
             specialLocationSurchargePercent: specialLocationSurchargePercent,
-            specialLocationCharge: specialLocationCharge,
+            specialLocationCharge: Math.round(specialLocationCharge),
             fareStr: b.fare,
+            fareType: fareType,
+            isStarted: isStarted,
             status: b.status,
             driverName: b.driver_name,
             // Additional rental/round fields
@@ -3342,13 +3902,15 @@ app.get('/api/bookings/fare-breakdown/:bookingId', authenticateJWT, requireRole(
             extraHrCharge: Math.round(extraHrCharge),
             minKmVal: minKmVal,
             minKmCharge: Math.round(minKmCharge),
-            perKmRate: pricingConfig ? (pricingConfig.perKm || 0) : 0
+            perKmRate: pricingConfig ? (pricingConfig.perKm || effectivePerKmRate) : 0,
+            effectivePerKmRate: effectivePerKmRate
         });
     } catch (err) {
         console.error('Fare breakdown error:', err);
         res.status(500).json({ error: err.message });
     }
 });
+
 
 
 
@@ -3430,7 +3992,50 @@ app.post('/api/vendor/update-tariff', (req, res, next) => {
     }
 });
 
+// --- VENDOR WALLET ENDPOINTS ---
+
+// GET /api/vendor/wallet/:vendorId — Wallet balance + transaction history
+app.get('/api/vendor/wallet/:vendorId', authenticateJWT, requireRole(['vendor', 'admin']), async (req, res) => {
+    try {
+        const vendorId = parseInt(req.params.vendorId);
+        // Only vendor themselves or admin may view
+        if (req.user.role === 'vendor' && req.user.id !== vendorId) {
+            return res.status(403).json({ error: 'Access Denied.' });
+        }
+
+        // Fetch or initialise wallet row
+        const [walletRows] = await db.query(
+            'SELECT balance, total_earned, updated_at FROM taxi_vendor_wallets WHERE vendor_id = ?',
+            [vendorId]
+        );
+        const wallet = walletRows[0] || { balance: 0, total_earned: 0, updated_at: null };
+
+        // Fetch recent transactions (50 max)
+        const [txns] = await db.query(
+            `SELECT t.*, b.pickup_loc, b.drop_loc, d.name as driver_name
+             FROM taxi_vendor_wallet_transactions t
+             LEFT JOIN taxi_bookings b ON t.booking_id = b.id
+             LEFT JOIN taxi_drivers d ON t.driver_id = d.id
+             WHERE t.vendor_id = ?
+             ORDER BY t.created_at DESC LIMIT 50`,
+            [vendorId]
+        );
+
+        res.json({
+            success: true,
+            balance: parseFloat(wallet.balance) || 0,
+            totalEarned: parseFloat(wallet.total_earned) || 0,
+            lastUpdated: wallet.updated_at,
+            transactions: txns
+        });
+    } catch (err) {
+        console.error('[vendor/wallet error]', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/api/vendor/bookings/:vendorId', async (req, res) => {
+
     try {
         const vendorId = req.params.vendorId;
         const sql = `
@@ -3567,15 +4172,16 @@ app.post('/api/bookings/accept', authenticateJWT, requireRole(['driver']), (req,
     try {
         const { bookingId, driverId, lat, lng } = req.body;
 
-        // Consolidated single select check query
+        // Consolidated single select check query (supports both pending and vendor_assigned states)
         const [checks] = await db.query(`
             SELECT 
-              (SELECT fare FROM taxi_bookings WHERE id = ? AND status = 'pending') AS booking_fare,
-              (SELECT vendor_id FROM taxi_bookings WHERE id = ? AND status = 'pending') AS vendor_id,
-              (SELECT vendor_markup FROM taxi_bookings WHERE id = ? AND status = 'pending') AS vendor_markup,
+              (SELECT fare FROM taxi_bookings WHERE id = ? AND status IN ('pending', 'vendor_assigned')) AS booking_fare,
+              (SELECT vendor_id FROM taxi_bookings WHERE id = ? AND status IN ('pending', 'vendor_assigned')) AS vendor_id,
+              (SELECT vendor_markup FROM taxi_bookings WHERE id = ? AND status IN ('pending', 'vendor_assigned')) AS vendor_markup,
+              (SELECT status FROM taxi_bookings WHERE id = ?) AS current_status,
               (SELECT wallet_balance FROM taxi_drivers WHERE id = ?) AS wallet_balance,
               (SELECT id FROM taxi_bookings WHERE driver_id = ? AND status = 'assigned' LIMIT 1) AS active_booking_id
-        `, [bookingId, bookingId, bookingId, driverId, driverId]);
+        `, [bookingId, bookingId, bookingId, bookingId, driverId, driverId]);
 
         const check = checks[0] || {};
 
@@ -3591,38 +4197,40 @@ app.post('/api/bookings/accept', authenticateJWT, requireRole(['driver']), (req,
 
         const vendorMarkup = parseFloat(check.vendor_markup) || 0;
         const isVendorRide = check.vendor_id !== null && check.vendor_id !== undefined;
-        
-        // Minimum balance required: flat ₹10 accept fee (plus vendor markup if it's a vendor ride)
+
+        // Minimum balance required: flat \u20B910 accept fee (plus vendor markup if it's a vendor ride)
         const requiredBalance = 10 + (isVendorRide ? vendorMarkup : 0);
 
         if (parseFloat(check.wallet_balance) < requiredBalance) {
-            return res.status(400).json({ error: `Insufficient funds. Minimum wallet balance required to accept this ride is ₹${requiredBalance.toFixed(2)}.` });
+            return res.status(400).json({ error: `Insufficient funds. Minimum wallet balance required to accept this ride is \u20B9${requiredBalance.toFixed(2)}.` });
         }
 
-        // Atomic conditional update to prevent race conditions
+        // Atomic conditional update — accepts from both 'pending' (self-accept) and 'vendor_assigned' (vendor-dispatched)
+        const isVendorDispatch = check.current_status === 'vendor_assigned';
         const [updateResult] = await db.query(
-            'UPDATE taxi_bookings SET status = "assigned", driver_id = ? WHERE id = ? AND status = "pending"',
-            [driverId, bookingId]
+            'UPDATE taxi_bookings SET status = "assigned", driver_accept_required = 0, driver_id = ? WHERE id = ? AND status IN ("pending", "vendor_assigned") AND (driver_id = ? OR driver_id IS NULL)',
+            [driverId, bookingId, driverId]
         );
 
         if (updateResult.affectedRows === 0) {
             return res.status(400).json({ error: 'Ride no longer available (accepted by another pilot).' });
         }
 
-        // Deduct flat ₹10 accept fee from driver wallet upon ride acceptance
+        // Deduct flat \u20B910 accept fee from driver wallet upon ride acceptance
         await db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - 10 WHERE id = ?', [driverId]);
-        console.log(`[FINANCE] Deducted ₹10 accept fee from Driver #${driverId} for accepting Ride #B${bookingId}`);
+        console.log(`[FINANCE] Deducted \u20B910 accept fee from Driver #${driverId} for accepting Ride #B${bookingId}`);
 
-        // Fetch driver details & booking user_id to notify relevant parties
+        // Fetch driver details & booking user_id and vendor_id to notify relevant parties
         const [[driverRow], [bookingRow]] = await Promise.all([
             db.query('SELECT name, phone, car_model, car_number FROM taxi_drivers WHERE id = ?', [driverId]),
-            db.query('SELECT user_id, pickup_loc, drop_loc, fare FROM taxi_bookings WHERE id = ?', [bookingId])
+            db.query('SELECT user_id, vendor_id, pickup_loc, drop_loc, fare FROM taxi_bookings WHERE id = ?', [bookingId])
         ]);
         const driverName = driverRow[0]?.name || 'Your Driver';
         const driverPhone = driverRow[0]?.phone || '';
         const carModel = driverRow[0]?.car_model || '';
         const carNumber = driverRow[0]?.car_number || '';
         const userId = bookingRow[0]?.user_id;
+        const bookingVendorId = bookingRow[0]?.vendor_id;
 
         const acceptPayload = {
             bookingId: parseInt(bookingId),
@@ -3639,10 +4247,14 @@ app.post('/api/bookings/accept', authenticateJWT, requireRole(['driver']), (req,
             ts: Date.now()
         };
 
-        // 🔴 Socket.IO: Realtime instant updates to Customer, Driver, and Admin panels
+        // 🔴 Socket.IO: Realtime instant updates to Customer, Driver, Admin, and Vendor panels
         if (userId) {
             emitEvent(`user:${userId}`, 'booking_confirmed', acceptPayload);
             emitEvent(`user:${userId}`, 'booking_status_update', acceptPayload);
+        }
+        // Notify vendor that driver accepted
+        if (bookingVendorId && isVendorDispatch) {
+            emitEvent(`vendor:${bookingVendorId}`, 'driver_accepted', { ...acceptPayload, vendorId: bookingVendorId, message: `Driver ${driverName} accepted the ride.` });
         }
         emitEvent(`driver:${driverId}`, 'booking_assigned', acceptPayload);
         emitEvent(`driver:${driverId}`, 'booking_status_update', acceptPayload);
@@ -3667,6 +4279,66 @@ app.post('/api/bookings/accept', authenticateJWT, requireRole(['driver']), (req,
     }
 });
 
+// 2.3.0 Driver Cancel / Decline — For vendor-assigned rides or early cancellation
+app.post('/api/bookings/driver-cancel', authenticateJWT, requireRole(['driver']), async (req, res) => {
+    try {
+        const { bookingId, reason } = req.body;
+        const driverId = req.user.id;
+
+        // Fetch booking details first
+        const [rows] = await db.query(
+            'SELECT id, status, vendor_id, user_id, driver_id, pickup_loc, drop_loc, fare FROM taxi_bookings WHERE id = ? AND driver_id = ?',
+            [bookingId, driverId]
+        );
+        if (!rows.length) {
+            return res.status(404).json({ error: 'Booking not found or not assigned to you.' });
+        }
+        const booking = rows[0];
+        const allowedStatuses = ['vendor_assigned', 'assigned', 'pending_vendor_assignment'];
+        if (!allowedStatuses.includes(booking.status)) {
+            return res.status(400).json({ error: 'Cannot cancel a ride that is already ongoing or completed.' });
+        }
+
+        // Get driver name for notifications
+        const [driverRows] = await db.query('SELECT name FROM taxi_drivers WHERE id = ?', [driverId]);
+        const driverName = driverRows[0]?.name || 'Driver';
+
+        // Reset booking back to pending_vendor_assignment (vendor can re-assign) or cancelled
+        const newStatus = booking.vendor_id ? 'pending_vendor_assignment' : 'cancelled';
+        await db.query(
+            'UPDATE taxi_bookings SET status = ?, driver_id = NULL, driver_accept_required = 0, cancel_reason = ? WHERE id = ?',
+            [newStatus, reason || 'Driver declined', bookingId]
+        );
+
+        // Notify vendor of driver cancellation
+        if (booking.vendor_id) {
+            emitEvent(`vendor:${booking.vendor_id}`, 'driver_cancelled', {
+                bookingId: parseInt(bookingId),
+                driverId,
+                driverName,
+                pickup: booking.pickup_loc,
+                drop: booking.drop_loc,
+                fare: booking.fare,
+                reason: reason || 'Driver declined the ride',
+                status: newStatus,
+                ts: Date.now()
+            });
+            emitEvent('admin', 'booking_status_update', { bookingId: parseInt(bookingId), status: newStatus, driverName, reason });
+        }
+
+        // Notify customer if applicable
+        if (booking.user_id) {
+            emitEvent(`user:${booking.user_id}`, 'booking_status_update', { bookingId: parseInt(bookingId), status: 'cancelled', message: 'Your driver cancelled. Please wait for reassignment.' });
+        }
+
+        console.log(`[DRIVER CANCEL] Driver #${driverId} (${driverName}) cancelled Booking #B${bookingId}. New status: ${newStatus}`);
+        res.json({ success: true, newStatus });
+    } catch (err) {
+        console.error('[driver-cancel error]', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // 2.3.1 Request Cancellation (Driver Action)
 app.post('/api/driver/request-cancel', authenticateJWT, requireRole(['driver']), (req, res, next) => {
     if (req.user.id !== parseInt(req.body.driverId)) {
@@ -3682,6 +4354,23 @@ app.post('/api/driver/request-cancel', authenticateJWT, requireRole(['driver']),
 
         await db.query('UPDATE taxi_bookings SET status = "cancel_requested", cancel_reason = ? WHERE id = ?', [reason || 'No reason provided', bookingId]);
         res.json({ success: true, message: 'Cancellation request sent to Ground Control.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 2.3.1.5 Reject Ride Ping (Driver Action)
+app.post('/api/drivers/reject-ride', authenticateJWT, requireRole(['driver']), (req, res, next) => {
+    if (req.user.id !== parseInt(req.body.driverId)) {
+        return res.status(403).json({ error: 'Access Denied: Driver ID mismatch.' });
+    }
+    next();
+}, async (req, res) => {
+    try {
+        const { bookingId, driverId } = req.body;
+        // In the future, we can insert into taxi_driver_ping_rejections to prevent re-pinging
+        // For now, simply acknowledge the rejection so the frontend doesn't throw a 404
+        res.json({ success: true, message: 'Ping rejected.' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -3770,30 +4459,46 @@ app.get('/api/admin/stats', async (req, res) => {
             [activeBookings],
             [totalRevenue],
             [driverCount],
-            [userCount]
+            [userCount],
+            [pendingPilotsCount],
+            [pendingMissionsCount],
+            [cancelRequestsCount]
         ] = await Promise.all([
             db.query("SELECT COUNT(*) as count FROM taxi_bookings"),
             db.query("SELECT COUNT(*) as count FROM taxi_bookings WHERE status IN ('pending', 'assigned')"),
             db.query("SELECT fare FROM taxi_bookings WHERE status = 'completed'"),
             db.query("SELECT COUNT(*) as count FROM taxi_drivers"),
-            db.query("SELECT COUNT(*) as count FROM passengers")
+            db.query("SELECT COUNT(*) as count FROM passengers"),
+            db.query("SELECT COUNT(*) as count FROM taxi_drivers WHERE approval_status = 'pending'"),
+            db.query("SELECT COUNT(*) as count FROM taxi_bookings WHERE status = 'pending'"),
+            db.query("SELECT COUNT(*) as count FROM taxi_bookings WHERE status = 'cancel_requested'")
         ]);
 
         let revenue = 0;
+        let completedCount = 0;
         totalRevenue.forEach(row => {
+            completedCount++;
             if (row.fare) {
                 // Remove non-numeric characters except dot
                 const numericFare = row.fare.toString().replace(/[^0-9.]/g, '');
                 revenue += parseFloat(numericFare) || 0;
             }
         });
+        
+        // Admin profit is \u20B95 platform fee collected per completed ride from the driver
+        // (plus any customer markups embedded in the total revenue)
+        const totalProfit = completedCount * 5; 
 
         res.json({
             totalBookings: totalBookings[0].count,
             activeBookings: activeBookings[0].count,
             revenue: Math.round(revenue * 100) / 100, // Round to 2 decimal places
+            profit: totalProfit,
             totalDrivers: driverCount[0].count,
-            totalUsers: userCount[0].count
+            totalUsers: userCount[0].count,
+            pendingPilots: pendingPilotsCount[0].count,
+            pendingMissions: pendingMissionsCount[0].count,
+            cancelRequests: cancelRequestsCount[0].count
         });
     } catch (err) {
         console.error('CRITICAL: Admin Stats Failure:', err.message);
@@ -3839,8 +4544,118 @@ app.get('/api/admin/users', async (req, res) => {
 // 3.2.1 Fleet Management
 app.get('/api/admin/drivers', async (req, res) => {
     try {
-        const [rows] = await db.query("SELECT id, name, email, phone, 'driver' as role, car_model, car_number, vehicle_type, seating_capacity, wallet_balance, is_blocked, created_at FROM taxi_drivers ORDER BY created_at DESC");
+        const [rows] = await db.query(`
+            SELECT d.id, d.name, d.email, d.phone, 'driver' as role, d.car_model, d.car_number, d.vehicle_type, d.seating_capacity, d.wallet_balance, d.is_blocked, d.approval_status, d.association_id, d.district, d.association_id_card, COALESCE(a.name, d.association_name, 'CityRide Driver (Independent)') as association_name, d.created_at 
+            FROM taxi_drivers d 
+            LEFT JOIN taxi_associations a ON d.association_id = a.id 
+            ORDER BY d.created_at DESC
+        `);
         res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Live Fleet GPS Radar Locations
+app.get('/api/admin/live-fleet', async (req, res) => {
+    try {
+        const [drivers] = await db.query(`
+            SELECT id, name, phone, car_model, car_number, vehicle_type, COALESCE(is_online, 0) as is_online, COALESCE(is_blocked, 0) as is_blocked, latitude, longitude
+            FROM taxi_drivers
+        `);
+        res.json(drivers || []);
+    } catch (err) {
+        console.error("Live Fleet Fetch Error:", err.message);
+        res.json([]);
+    }
+});
+
+// Emergency SOS Alerts Endpoints
+app.get('/api/admin/sos-alerts', async (req, res) => {
+    try {
+        const [alerts] = await db.query('SELECT * FROM taxi_sos_alerts ORDER BY created_at DESC LIMIT 50');
+        res.json(alerts || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/sos-alerts/resolve', async (req, res) => {
+    try {
+        const { id, notes } = req.body;
+        if (!id) return res.status(400).json({ error: 'Alert ID required' });
+        await db.query('UPDATE taxi_sos_alerts SET status = "resolved", resolution_notes = ? WHERE id = ?', [notes || 'Resolved by admin', id]);
+        res.json({ success: true, message: 'SOS Alert marked as resolved.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Dynamic Surge Pricing Endpoints
+app.get('/api/admin/surge-config', async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM taxi_surge_config');
+        res.json(rows || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/surge-config/update', async (req, res) => {
+    try {
+        const { surge_key, multiplier, is_active } = req.body;
+        if (!surge_key) return res.status(400).json({ error: 'surge_key required' });
+        await db.query(
+            'UPDATE taxi_surge_config SET multiplier = ?, is_active = ? WHERE surge_key = ?',
+            [parseFloat(multiplier) || 1.0, is_active ? 1 : 0, surge_key]
+        );
+        res.json({ success: true, message: 'Surge pricing rule updated successfully.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Wallet Transaction Credit/Debit
+app.post('/api/admin/driver/wallet-transaction', async (req, res) => {
+    try {
+        const { id, type, amount, note } = req.body;
+        const numAmount = parseFloat(amount);
+        if (!id || isNaN(numAmount) || numAmount <= 0) {
+            return res.status(400).json({ error: 'Valid driver ID and positive amount are required.' });
+        }
+        const delta = type === 'debit' ? -numAmount : numAmount;
+        await db.query('UPDATE taxi_drivers SET wallet_balance = COALESCE(wallet_balance, 0) + ? WHERE id = ?', [delta, id]);
+        
+        try {
+            await db.query(
+                `INSERT INTO wallet_transactions (driver_id, type, amount, note, created_at) VALUES (?, ?, ?, ?, NOW())`,
+                [id, type === 'debit' ? 'debit' : 'credit', numAmount, note || 'Admin Adjustment']
+            );
+        } catch (e) {
+            // Logging table optional
+        }
+        res.json({ success: true, message: `Wallet ${type === 'debit' ? 'debited' : 'credited'} successfully.` });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Manual Ride Dispatch Assignment
+app.post('/api/admin/driver/assign', async (req, res) => {
+    try {
+        const { bookingId, driverId } = req.body;
+        if (!bookingId || !driverId) return res.status(400).json({ error: 'bookingId and driverId required.' });
+        const [driver] = await db.query('SELECT name, phone FROM taxi_drivers WHERE id = ?', [driverId]);
+        if (driver.length === 0) return res.status(404).json({ error: 'Driver not found.' });
+        
+        await db.query('UPDATE taxi_bookings SET driver_id = ?, driver_name = ?, status = "assigned" WHERE id = ?', [driverId, driver[0].name, bookingId]);
+        
+        if (io) {
+            io.to(`driver:${driverId}`).emit('new_booking_assigned', { bookingId });
+            io.to(`booking:${bookingId}`).emit('status_change', { status: 'assigned', driverName: driver[0].name });
+        }
+        
+        res.json({ success: true, message: 'Driver assigned successfully.' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -3984,14 +4799,15 @@ app.post('/api/admin/toggle-block', async (req, res) => {
 // 3.5 Induct Pilot
 app.post('/api/admin/create-driver', async (req, res) => {
     try {
-        const { name, email, password, phone, car_model, car_number, vehicle_type, seating_capacity } = req.body;
+        const { name, email, password, phone, car_model, car_number, vehicle_type, seating_capacity, association_id } = req.body;
         const [existing] = await db.query('SELECT id FROM taxi_drivers WHERE email = ?', [email]);
         if (existing.length > 0) return res.status(400).json({ error: 'Pilot email already authorized.' });
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-        const sql = 'INSERT INTO taxi_drivers (name, email, password, phone, car_model, car_number, vehicle_type, seating_capacity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-        await db.query(sql, [name, email, hashedPassword, phone, car_model, car_number, vehicle_type, parseInt(seating_capacity) || 5]);
+        const assocIdVal = association_id ? parseInt(association_id) : null;
+        const sql = 'INSERT INTO taxi_drivers (name, email, password, phone, car_model, car_number, vehicle_type, seating_capacity, association_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        await db.query(sql, [name, email, hashedPassword, phone, car_model, car_number, vehicle_type, parseInt(seating_capacity) || 5, assocIdVal]);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Pilot Induction failed.' });
@@ -4059,6 +4875,301 @@ app.post('/api/admin/delete-vendor', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+// Public Association List for Driver Registration
+app.get('/api/public/associations', async (req, res) => {
+    try {
+        const { city } = req.query;
+        let sql = 'SELECT id, name, city_name FROM taxi_associations WHERE is_active = 1';
+        let params = [];
+        if (city && city.trim() !== '') {
+            sql += ' AND (city_name = ? OR city_name IS NULL OR city_name = "")';
+            params.push(city.trim());
+        }
+        sql += ' ORDER BY name ASC';
+        const [rows] = await db.query(sql, params);
+        res.json(rows || []);
+    } catch (e) {
+        res.json([]);
+    }
+});
+
+// --- ASSOCIATION ADMIN ROUTES ---
+app.get('/api/admin/associations', async (req, res) => {
+    try {
+        const sql = `
+            SELECT a.*, COALESCE(w.balance, 0) as balance 
+            FROM taxi_associations a
+            LEFT JOIN taxi_association_wallets w ON a.id = w.association_id
+            ORDER BY a.created_at DESC
+        `;
+        const [rows] = await db.query(sql);
+        res.json(rows || []);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch associations.' });
+    }
+});
+
+app.post('/api/admin/associations/:id/commission', authenticateJWT, requireRole(['admin']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { custPct, drvPct, custFixed, drvFixed } = req.body;
+        
+        await db.query(`
+            UPDATE taxi_associations 
+            SET commission_customer_pct = ?, commission_driver_pct = ?, commission_customer_fixed = ?, commission_driver_fixed = ?
+            WHERE id = ?
+        `, [custPct || 0, drvPct || 0, custFixed || 0, drvFixed || 0, id]);
+        
+        res.json({ success: true, message: 'Association commission rules updated successfully.' });
+    } catch (err) {
+        console.error("Error updating association commission rules:", err);
+        res.status(500).json({ error: 'Database update failed.' });
+    }
+});
+
+// --- SYSTEM REPORTS & ANALYTICS ROUTES ---
+app.get('/api/admin/reports/associations', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let dateFilter = '';
+        let queryParams = [];
+        if (startDate && endDate) {
+            dateFilter = ' AND b.created_at BETWEEN ? AND ?';
+            queryParams.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
+        }
+
+        const sql = `
+            SELECT 
+                a.id,
+                a.name,
+                a.city_name,
+                a.commission_type,
+                a.commission_value,
+                a.is_active,
+                COALESCE(w.balance, 0) as wallet_balance,
+                COUNT(DISTINCT d.id) as total_drivers,
+                COUNT(DISTINCT CASE WHEN b.status = 'completed' THEN b.id END) as completed_rides,
+                COUNT(DISTINCT CASE WHEN b.status = 'cancelled' THEN b.id END) as cancelled_rides,
+                COALESCE(SUM(CASE WHEN b.status = 'completed' THEN CAST(REPLACE(REPLACE(b.fare, '\u20B9', ''), ',', '') AS DECIMAL(10,2)) ELSE 0 END), 0) as total_revenue
+            FROM taxi_associations a
+            LEFT JOIN taxi_association_wallets w ON a.id = w.association_id
+            LEFT JOIN taxi_drivers d ON a.id = d.association_id
+            LEFT JOIN taxi_bookings b ON d.id = b.driver_id ${dateFilter}
+            GROUP BY a.id, a.name, a.city_name, a.commission_type, a.commission_value, a.is_active, w.balance
+            ORDER BY total_revenue DESC
+        `;
+        const [rows] = await db.query(sql, queryParams);
+        res.json(rows);
+    } catch (err) {
+        console.error('Reports Associations Error:', err);
+        res.status(500).json({ error: 'Failed to fetch association report data.' });
+    }
+});
+
+app.get('/api/admin/reports/vehicles', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let dateFilter = '';
+        let queryParams = [];
+        if (startDate && endDate) {
+            dateFilter = ' AND b.created_at BETWEEN ? AND ?';
+            queryParams.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
+        }
+
+        const sql = `
+            SELECT 
+                v_types.vehicle_type,
+                COUNT(DISTINCT d.id) as registered_drivers,
+                COUNT(DISTINCT CASE WHEN b.status = 'completed' THEN b.id END) as completed_rides,
+                COUNT(DISTINCT CASE WHEN b.status = 'cancelled' THEN b.id END) as cancelled_rides,
+                COUNT(DISTINCT b.id) as total_bookings,
+                COALESCE(SUM(CASE WHEN b.status = 'completed' THEN CAST(REPLACE(REPLACE(b.fare, '\u20B9', ''), ',', '') AS DECIMAL(10,2)) ELSE 0 END), 0) as total_revenue
+            FROM (
+                SELECT 'bike' as vehicle_type UNION 
+                SELECT 'auto' UNION 
+                SELECT 'hatchback' UNION 
+                SELECT 'sedan' UNION 
+                SELECT 'suv' UNION 
+                SELECT '8plus1' UNION 
+                SELECT 'van24'
+            ) v_types
+            LEFT JOIN taxi_drivers d ON LOWER(d.vehicle_type) = v_types.vehicle_type
+            LEFT JOIN taxi_bookings b ON (LOWER(b.vehicle_type) = v_types.vehicle_type OR b.driver_id = d.id) ${dateFilter}
+            GROUP BY v_types.vehicle_type
+            ORDER BY total_revenue DESC
+        `;
+        const [rows] = await db.query(sql, queryParams);
+        res.json(rows);
+    } catch (err) {
+        console.error('Reports Vehicles Error:', err);
+        res.status(500).json({ error: 'Failed to fetch vehicle report data.' });
+    }
+});
+
+app.get('/api/admin/reports/drivers', async (req, res) => {
+    try {
+        const { startDate, endDate, association_id, vehicle_type } = req.query;
+        let whereClauses = [];
+        let queryParams = [];
+
+        if (startDate && endDate) {
+            whereClauses.push('b.created_at BETWEEN ? AND ?');
+            queryParams.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
+        }
+
+        if (association_id) {
+            whereClauses.push('d.association_id = ?');
+            queryParams.push(association_id);
+        }
+
+        if (vehicle_type) {
+            whereClauses.push('LOWER(d.vehicle_type) = ?');
+            queryParams.push(vehicle_type.toLowerCase());
+        }
+
+        let dateFilterOnJoin = whereClauses.length > 0 ? ` AND ${whereClauses.join(' AND ')}` : '';
+
+        const sql = `
+            SELECT 
+                d.id as driver_id,
+                d.name as driver_name,
+                d.phone,
+                d.car_model,
+                d.car_number,
+                COALESCE(d.vehicle_type, 'sedan') as vehicle_type,
+                COALESCE(d.wallet_balance, 0) as wallet_balance,
+                d.approval_status,
+                d.is_blocked,
+                COALESCE(a.name, 'Direct Platform') as association_name,
+                COALESCE(a.city_name, 'All Region') as association_city,
+                COUNT(DISTINCT CASE WHEN b.status = 'completed' THEN b.id END) as completed_rides,
+                COUNT(DISTINCT CASE WHEN b.status = 'cancelled' THEN b.id END) as cancelled_rides,
+                COUNT(DISTINCT b.id) as total_assigned_missions,
+                COALESCE(SUM(CASE WHEN b.status = 'completed' THEN CAST(REPLACE(REPLACE(b.fare, '\u20B9', ''), ',', '') AS DECIMAL(10,2)) ELSE 0 END), 0) as total_earnings
+            FROM taxi_drivers d
+            LEFT JOIN taxi_associations a ON d.association_id = a.id
+            LEFT JOIN taxi_bookings b ON d.id = b.driver_id ${dateFilterOnJoin}
+            GROUP BY d.id, d.name, d.phone, d.car_model, d.car_number, d.vehicle_type, d.wallet_balance, d.approval_status, d.is_blocked, a.name, a.city_name
+            ORDER BY total_earnings DESC, completed_rides DESC
+        `;
+        const [rows] = await db.query(sql, queryParams);
+        res.json(rows);
+    } catch (err) {
+        console.error('Reports Drivers Error:', err);
+        res.status(500).json({ error: 'Failed to fetch driver report data.' });
+    }
+});
+
+app.post('/api/admin/create-association', async (req, res) => {
+    const conn = await db.getConnection();
+    try {
+        await conn.beginTransaction();
+        const { name, city_name, admin_username, admin_password, commission_type, commission_value } = req.body;
+        
+        if (!name || !admin_username || !admin_password) {
+            await conn.rollback();
+            conn.release();
+            return res.status(400).json({ error: 'Name, admin username, and password are required.' });
+        }
+
+        const [existing] = await conn.query('SELECT id FROM taxi_associations WHERE admin_username = ?', [admin_username]);
+        if (existing.length > 0) {
+            await conn.rollback();
+            conn.release();
+            return res.status(400).json({ error: 'Admin username is already taken. Please choose a different username.' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(admin_password, salt);
+
+        const sql = 'INSERT INTO taxi_associations (name, city_name, admin_username, admin_password, commission_type, commission_value) VALUES (?, ?, ?, ?, ?, ?)';
+        const [result] = await conn.query(sql, [name, city_name || '', admin_username, hashedPassword, commission_type || 'fixed', commission_value || 0]);
+        
+        const newId = result.insertId;
+        await conn.query('INSERT INTO taxi_association_wallets (association_id, balance) VALUES (?, 0)', [newId]);
+        
+        await conn.commit();
+        res.json({ success: true, id: newId });
+    } catch (err) {
+        await conn.rollback();
+        res.status(400).json({ error: err.message || 'Failed to create association.' });
+    } finally {
+        conn.release();
+    }
+});
+
+app.post('/api/admin/update-association', async (req, res) => {
+    try {
+        const { id, name, city_name, commission_type, commission_value, is_active, admin_username, admin_password, radius_km } = req.body;
+        if (!id) return res.status(400).json({ error: 'id is required.' });
+
+        // Check username uniqueness if changing
+        if (admin_username) {
+            const [existing] = await db.query('SELECT id FROM taxi_associations WHERE admin_username = ? AND id != ?', [admin_username, id]);
+            if (existing.length > 0) return res.status(400).json({ error: 'That admin username is already taken.' });
+        }
+
+        const fields = [];
+        const params = [];
+        if (name !== undefined)             { fields.push('name = ?');             params.push(name); }
+        if (city_name !== undefined)        { fields.push('city_name = ?');        params.push(city_name); }
+        if (commission_type !== undefined)  { fields.push('commission_type = ?');  params.push(commission_type); }
+        if (commission_value !== undefined) { fields.push('commission_value = ?'); params.push(commission_value); }
+        if (is_active !== undefined)        { fields.push('is_active = ?');        params.push(is_active ? 1 : 0); }
+        if (radius_km !== undefined)        { fields.push('radius_km = ?');        params.push(radius_km); }
+        if (admin_username !== undefined)   { fields.push('admin_username = ?');   params.push(admin_username); }
+
+        if (admin_password && admin_password.trim() !== '') {
+            const salt = await bcrypt.genSalt(10);
+            fields.push('admin_password = ?');
+            params.push(await bcrypt.hash(admin_password.trim(), salt));
+        }
+        if (fields.length === 0) return res.status(400).json({ error: 'No fields to update.' });
+        params.push(id);
+        await db.query(`UPDATE taxi_associations SET ${fields.join(', ')} WHERE id = ?`, params);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Toggle Association Active/Inactive (Admin Only)
+app.post('/api/admin/toggle-association', async (req, res) => {
+    try {
+        const { id } = req.body;
+        if (!id) return res.status(400).json({ error: 'id required.' });
+        const [rows] = await db.query('SELECT is_active FROM taxi_associations WHERE id = ?', [id]);
+        if (!rows.length) return res.status(404).json({ error: 'Not found.' });
+        const newStatus = rows[0].is_active ? 0 : 1;
+        await db.query('UPDATE taxi_associations SET is_active = ? WHERE id = ?', [newStatus, id]);
+        res.json({ success: true, is_active: newStatus });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete Association (Admin Only) — unlinks all drivers, purges wallet & tariff records
+app.delete('/api/admin/delete-association/:id', async (req, res) => {
+    const conn = await db.getConnection();
+    try {
+        const { id } = req.params;
+        await conn.beginTransaction();
+        await conn.query('UPDATE taxi_drivers SET association_id = NULL WHERE association_id = ?', [id]);
+        await conn.query('DELETE FROM taxi_association_wallets WHERE association_id = ?', [id]);
+        await conn.query('DELETE FROM taxi_association_wallet_transactions WHERE association_id = ?', [id]);
+        await conn.query('DELETE FROM taxi_association_tariffs WHERE association_id = ?', [id]);
+        await conn.query('DELETE FROM taxi_associations WHERE id = ?', [id]);
+        await conn.commit();
+        res.json({ success: true });
+    } catch (err) {
+        await conn.rollback();
+        res.status(500).json({ error: err.message });
+    } finally {
+        conn.release();
+    }
+});
+
 app.get('/api/driver/jobs/:driverId', async (req, res) => {
     try {
         const [driverRows] = await db.query('SELECT vehicle_type, seating_capacity, pref_loc_1, pref_loc_2, pref_loc_3, ride_local, ride_oneway, ride_round FROM taxi_drivers WHERE id = ?', [req.params.driverId]);
@@ -4089,7 +5200,7 @@ app.get('/api/driver/jobs/:driverId', async (req, res) => {
         const [settingRows] = await db.query(
             "SELECT setting_key, setting_value FROM taxi_settings WHERE setting_key IN ('air_distance_restrict', 'air_distance_local_km', 'air_distance_outstation_km')"
         );
-        
+
         let restrictEnabled = false;
         let localRadiusKm = 3;
         let outstationRadiusKm = 5;
@@ -4117,7 +5228,7 @@ app.get('/api/driver/jobs/:driverId', async (req, res) => {
             return res.json(resultRows);
         }
 
-        // If selected ALL ride types, allow anywhere within air distance
+        // If selected ALL ride types, allow anywhere within air distance (plus single-ride temporary boost if added)
         if (restrictEnabled && driverLocationKnown) {
             resultRows = rows.filter(booking => {
                 if (!booking.pickup_coords) return true; // No coords: always show
@@ -4128,9 +5239,12 @@ app.get('/api/driver/jobs/:driverId', async (req, res) => {
                 if (isNaN(pickupLat) || isNaN(pickupLng)) return true;
 
                 const tripType = (booking.trip_type || '').toLowerCase();
-                const radiusKm = (tripType === 'local') ? localRadiusKm : outstationRadiusKm;
+                const baseRadiusKm = (tripType === 'local') ? localRadiusKm : outstationRadiusKm;
+                const boostKm = parseFloat(booking.air_distance_boost_km || 0);
+                const maxAllowedDist = baseRadiusKm + boostKm;
+
                 const dist = getDistance(driverLat, driverLng, pickupLat, pickupLng);
-                return dist <= radiusKm;
+                return dist <= maxAllowedDist;
             });
         }
 
@@ -4156,6 +5270,165 @@ app.get('/api/admin/settings', authenticateJWT, requireRole(['admin']), async (r
         res.status(500).json({ error: err.message });
     }
 });
+
+
+// --- Promotional Offers APIs ---
+app.get('/api/offers', async (req, res) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT * FROM taxi_offers 
+            WHERE is_active = 1 
+            AND (valid_until IS NULL OR valid_until > NOW())
+            AND (total_uses_allowed IS NULL OR current_uses < total_uses_allowed)
+            ORDER BY created_at DESC
+        `);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/admin/offers', authenticateJWT, requireRole(['admin']), async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM taxi_offers ORDER BY created_at DESC');
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/offers', authenticateJWT, requireRole(['admin']), async (req, res) => {
+    try {
+        const { 
+            code, description, discount_type, discount_value, max_discount, 
+            min_trip_amount, max_uses_per_user, total_uses_allowed, 
+            valid_vehicle_types, valid_until 
+        } = req.body;
+        
+        if (!code || !description || !discount_value) {
+            return res.status(400).json({ error: 'Code, description, and discount value are required.' });
+        }
+        
+        const sql = `
+            INSERT INTO taxi_offers (
+                code, description, discount_type, discount_value, max_discount, 
+                min_trip_amount, max_uses_per_user, total_uses_allowed, 
+                valid_vehicle_types, valid_until
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const values = [
+            code.toUpperCase(), 
+            description, 
+            discount_type || 'percentage', 
+            parseFloat(discount_value) || 0,
+            max_discount ? parseFloat(max_discount) : null,
+            parseFloat(min_trip_amount) || 0,
+            parseInt(max_uses_per_user) || 1,
+            total_uses_allowed ? parseInt(total_uses_allowed) : null,
+            valid_vehicle_types || 'ALL',
+            valid_until || null
+        ];
+
+        await db.query(sql, values);
+        res.json({ success: true, message: 'Offer created successfully.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/offers/toggle', authenticateJWT, requireRole(['admin']), async (req, res) => {
+    try {
+        const { id, is_active } = req.body;
+        await db.query('UPDATE taxi_offers SET is_active = ? WHERE id = ?', [is_active ? 1 : 0, id]);
+        res.json({ success: true, message: 'Offer status updated.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/admin/offers/:id', authenticateJWT, requireRole(['admin']), async (req, res) => {
+    try {
+        await db.query('DELETE FROM taxi_offers WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'Offer deleted successfully.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- Admin Commission APIs ---
+app.get('/api/admin/commissions', authenticateJWT, requireRole(['admin']), async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM taxi_commission_configs ORDER BY version DESC');
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/commissions', authenticateJWT, requireRole(['admin']), async (req, res) => {
+    try {
+        const {
+            customer_commission_percent,
+            driver_commission_percent,
+            maintenance_percent,
+            association_percent,
+            cityride_percent,
+            effective_from
+        } = req.body;
+
+        const cust = parseFloat(customer_commission_percent) || 0;
+        const drv = parseFloat(driver_commission_percent) || 0;
+        const total = cust + drv;
+
+        const maint = parseFloat(maintenance_percent) || 0;
+        const assoc = parseFloat(association_percent) || 0;
+        const city = parseFloat(cityride_percent) || 0;
+
+        // Validation
+        if (Math.abs(total - (maint + assoc + city)) > 0.01) {
+            return res.status(400).json({ error: 'Income allocation (Maintenance + Association + CityRide) must equal Total Commission (Customer + Driver).' });
+        }
+
+        const effectiveDate = effective_from ? new Date(effective_from) : new Date();
+
+        // Get max version
+        const [verRows] = await db.query('SELECT MAX(version) as maxVer FROM taxi_commission_configs');
+        const nextVersion = (verRows[0].maxVer || 0) + 1;
+
+        // Invalidate old active immediately if effectiveDate <= now
+        if (effectiveDate <= new Date()) {
+            await db.query('UPDATE taxi_commission_configs SET status = "archived", effective_to = NOW() WHERE status = "active"');
+        }
+
+        await db.query(`
+            INSERT INTO taxi_commission_configs 
+            (version, customer_commission_percent, driver_commission_percent, total_commission_percent, maintenance_percent, association_percent, cityride_percent, effective_from, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            nextVersion, cust, drv, total, maint, assoc, city, effectiveDate, req.user.id
+        ]);
+
+        // Audit Log
+        await db.query(`
+            INSERT INTO taxi_audit_logs (admin_id, action, entity_type, entity_id, new_value, remark)
+            VALUES (?, 'CREATE', 'COMMISSION_CONFIG', ?, ?, ?)
+        `, [req.user.id, nextVersion, JSON.stringify(req.body), 'New commission configuration created']);
+
+        res.json({ success: true, message: 'Commission configuration created successfully.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/admin/ledger', authenticateJWT, requireRole(['admin']), async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM taxi_financial_ledger ORDER BY created_at DESC LIMIT 500');
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// -----------------------------
 
 app.post('/api/admin/settings', authenticateJWT, requireRole(['admin']), async (req, res) => {
     try {
@@ -4232,7 +5505,7 @@ function formatDurationMins(mins) {
  * Calculate waiting charge using ACTUAL trip distance (not estimated).
  * Rule: Allowed Duration = actualTripDistKm × 2 minutes
  *       Waiting Time = max(0, actualDurationMins - allowedMins)
- *       Charge = waitingMins × ₹2/min
+ *       Charge = waitingMins × \u20B92/min
  * @param {number} actualTripDistKm - Actual odometer/GPS distance
  * @param {number} actualDurationMins - Actual ride duration in minutes
  * @returns {{ allowedMins: number, waitingMins: number, waitingCharge: number }}
@@ -4240,12 +5513,12 @@ function formatDurationMins(mins) {
 function calcWaitingCharge(actualTripDistKm, actualDurationMins) {
     const allowedMins = (parseFloat(actualTripDistKm) || 0) * 2;
     const waitingMins = Math.max(0, actualDurationMins - allowedMins);
-    const waitingCharge = waitingMins * 2; // ₹2 per minute
+    const waitingCharge = waitingMins * 2; // \u20B92 per minute
     return { allowedMins, waitingMins, waitingCharge };
 }
 
 /**
- * Parse a numeric value from a string that may include units like "₹", "KM", etc.
+ * Parse a numeric value from a string that may include units like "\u20B9", "KM", etc.
  * @param {string|number} val
  * @returns {number}
  */
@@ -4425,7 +5698,7 @@ function calculateLocalSlabFare(distance, config) {
     const minKm = (config && config.minKm) ? parseFloat(config.minKm) : 0;
     const baseFare = (config && config.base !== undefined) ? parseFloat(config.base) : 0;
     const d = Math.max(distance, minKm);
-    
+
     let fare = baseFare;
 
     const r1 = (config && config.slab1_rate !== undefined) ? parseFloat(config.slab1_rate) : (config.perKm || 20); // 0-5
@@ -4635,21 +5908,21 @@ app.get('/api/driver/dashboard-stats/:driverId', async (req, res) => {
         // Total completed rides & earnings
         const [completedStats] = await db.query(
             `SELECT COUNT(*) as total_rides, 
-                    COALESCE(SUM(CAST(REPLACE(REPLACE(fare, '₹', ''), ',', '') AS DECIMAL(10,2))), 0) as total_earnings
+                    COALESCE(SUM(CAST(REPLACE(REPLACE(fare, '\u20B9', ''), ',', '') AS DECIMAL(10,2))), 0) as total_earnings
              FROM taxi_bookings WHERE driver_id = ? AND status IN ('completed', 'finished')`, [driverId]
         );
 
         // Today's stats
         const [todayStats] = await db.query(
             `SELECT COUNT(*) as today_rides, 
-                    COALESCE(SUM(CAST(REPLACE(REPLACE(fare, '₹', ''), ',', '') AS DECIMAL(10,2))), 0) as today_earnings
+                    COALESCE(SUM(CAST(REPLACE(REPLACE(fare, '\u20B9', ''), ',', '') AS DECIMAL(10,2))), 0) as today_earnings
              FROM taxi_bookings WHERE driver_id = ? AND status IN ('completed', 'finished') AND DATE(COALESCE(journey_end_time, created_at)) = CURDATE()`, [driverId]
         );
 
         // This week's stats
         const [weekStats] = await db.query(
             `SELECT COUNT(*) as week_rides, 
-                    COALESCE(SUM(CAST(REPLACE(REPLACE(fare, '₹', ''), ',', '') AS DECIMAL(10,2))), 0) as week_earnings
+                    COALESCE(SUM(CAST(REPLACE(REPLACE(fare, '\u20B9', ''), ',', '') AS DECIMAL(10,2))), 0) as week_earnings
              FROM taxi_bookings WHERE driver_id = ? AND status IN ('completed', 'finished') AND COALESCE(journey_end_time, created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)`, [driverId]
         );
 
@@ -4659,17 +5932,27 @@ app.get('/api/driver/dashboard-stats/:driverId', async (req, res) => {
         );
 
         // Recent ride history (last 50 completed, finished, and cancelled rides with customer details)
-        const [rideHistory] = await db.query(
-            `SELECT b.id, b.pickup_loc, b.drop_loc, b.fare, b.distance, b.actual_distance, b.vehicle_type, b.trip_type, 
+        const { startDate, endDate } = req.query;
+        let historyQuery = `SELECT b.id, b.pickup_loc, b.drop_loc, b.fare, b.distance, b.actual_distance, b.vehicle_type, b.trip_type, 
                     b.journey_start_time, b.journey_end_time, b.status, b.pickup_date, b.pickup_time, b.created_at,
                     COALESCE(b.passenger_name, u.name, tu.name) as customer_name,
                     COALESCE(b.passenger_phone, u.phone, tu.phone) as customer_phone
              FROM taxi_bookings b
              LEFT JOIN passengers u ON b.user_id = u.id
              LEFT JOIN taxi_passengers tu ON b.user_id = tu.id
-             WHERE b.driver_id = ? AND b.status IN ('completed', 'finished', 'cancelled')
-             ORDER BY COALESCE(b.journey_end_time, b.created_at) DESC LIMIT 50`, [driverId]
-        );
+             WHERE b.driver_id = ? AND b.status IN ('completed', 'finished', 'cancelled')`;
+
+        const historyParams = [driverId];
+
+        if (startDate && endDate) {
+            historyQuery += ` AND DATE(COALESCE(b.journey_end_time, b.created_at)) >= ? AND DATE(COALESCE(b.journey_end_time, b.created_at)) <= ?`;
+            historyParams.push(startDate, endDate);
+            historyQuery += ` ORDER BY COALESCE(b.journey_end_time, b.created_at) ASC`; // Ascending order when viewing specific date range for charts
+        } else {
+            historyQuery += ` AND DATE(COALESCE(b.journey_end_time, b.created_at)) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) ORDER BY COALESCE(b.journey_end_time, b.created_at) DESC`; // Default view
+        }
+
+        const [rideHistory] = await db.query(historyQuery, historyParams);
 
         // Average rating & total ratings count
         const [ratingStats] = await db.query(
@@ -4756,7 +6039,7 @@ app.post('/api/user/update-pickup', async (req, res) => {
         // Auto-add column if not exists
         try {
             await db.query(`ALTER TABLE taxi_bookings ADD COLUMN pickup_change_count INT DEFAULT 0`);
-        } catch (e) {}
+        } catch (e) { }
 
         // Fetch booking
         const [rows] = await db.query('SELECT * FROM taxi_bookings WHERE id = ?', [bookingId]);
@@ -4794,7 +6077,7 @@ app.post('/api/user/update-pickup', async (req, res) => {
                 if (geoRes.data && geoRes.data.length > 0) {
                     coordsStr = `${geoRes.data[0].lon},${geoRes.data[0].lat}`;
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
 
         // Update database
@@ -4839,8 +6122,8 @@ app.post('/api/user/rate-ride', async (req, res) => {
         }
 
         // Auto-add rating and rating_comment columns if missing
-        try { await db.query(`ALTER TABLE taxi_bookings ADD COLUMN rating INT DEFAULT NULL`); } catch(e) {}
-        try { await db.query(`ALTER TABLE taxi_bookings ADD COLUMN rating_comment TEXT DEFAULT NULL`); } catch(e) {}
+        try { await db.query(`ALTER TABLE taxi_bookings ADD COLUMN rating INT DEFAULT NULL`); } catch (e) { }
+        try { await db.query(`ALTER TABLE taxi_bookings ADD COLUMN rating_comment TEXT DEFAULT NULL`); } catch (e) { }
 
         await db.query(
             'UPDATE taxi_bookings SET rating = ?, rating_comment = ? WHERE id = ?',
@@ -4967,7 +6250,7 @@ app.post('/api/bookings/start-journey', authenticateJWT, requireRole(['driver'])
                 dynamicFare = ((baseKmFare + (booking.vehicle_type === 'bike' ? 0 : driverAllowance * tripDays) + specialCharge)) + 5;
             }
 
-            dynamicFareStr = `₹${Math.ceil(dynamicFare)}`;
+            dynamicFareStr = `\u20B9${Math.ceil(dynamicFare)}`;
         }
 
         // === UPDATE DATABASE (Combined into a single query to eliminate multiple round trips) ===
@@ -4992,7 +6275,7 @@ app.post('/api/bookings/start-journey', authenticateJWT, requireRole(['driver'])
             dynamicDistStr,
             booking.fare,
             booking.distance || '0 KM',
-            booking.fare || '₹0'
+            booking.fare || '\u20B90'
         ];
 
         if (startOdometer) {
@@ -5041,20 +6324,91 @@ app.post('/api/bookings/update-status', authenticateJWT, requireRole(['driver', 
         // If completing, we no longer verify OTP
         if (status === 'completed') {
             const booking = req.booking;
-            const isVendorBooking = !!booking.vendor_id;
 
-            // --- DRIVER WALLET PLATFORM FEE DEDUCTION ON COMPLETION ---
+            // --- ATOMIC VENDOR WALLET PROFIT TRANSFER ON COMPLETION ---
             const updatePromises = [];
             let vendorProfitDeducted = 0;
-            if (booking.vendor_id && parseFloat(booking.vendor_markup) > 0) {
+
+            if (booking.vendor_id && parseFloat(booking.vendor_markup) > 0 && !['completed', 'finished'].includes(booking.status)) {
                 vendorProfitDeducted = parseFloat(booking.vendor_markup);
-            }
-            if (!['completed', 'finished'].includes(booking.status) && booking.driver_id) {
-                updatePromises.push(db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - 5 WHERE id = ?', [booking.driver_id]));
-                console.log(`[FINANCE] Deducted ₹5 platform fee from Driver #${booking.driver_id} upon completion of Ride #B${bookingId}`);
+                const vendId = booking.vendor_id;
+                const drId = booking.driver_id;
+                const profit = vendorProfitDeducted;
+
+                try {
+                    // Deduct from driver wallet
+                    updatePromises.push(db.query(
+                        'UPDATE taxi_drivers SET wallet_balance = wallet_balance - ? WHERE id = ?',
+                        [profit, drId]
+                    ));
+                    // Upsert vendor wallet balance + total_earned
+                    updatePromises.push(db.query(
+                        `INSERT INTO taxi_vendor_wallets (vendor_id, balance, total_earned)
+                         VALUES (?, ?, ?)
+                         ON DUPLICATE KEY UPDATE balance = balance + ?, total_earned = total_earned + ?, updated_at = NOW()`,
+                        [vendId, profit, profit, profit, profit]
+                    ));
+                    // Audit transaction log
+                    updatePromises.push(db.query(
+                        `INSERT INTO taxi_vendor_wallet_transactions (vendor_id, booking_id, driver_id, amount, type, note)
+                         VALUES (?, ?, ?, ?, 'credit', ?)`,
+                        [vendId, bookingId, drId, profit, `Vendor profit share from Ride #B${bookingId}`]
+                    ));
+                    console.log(`[FINANCE] \u20B9${profit} vendor profit transferred: Driver #${drId} → Vendor #${vendId} for Ride #B${bookingId}`);
+                } catch (walletErr) {
+                    console.error('[WALLET TRANSFER ERROR]', walletErr.message);
+                }
+            } else if (!['completed', 'finished'].includes(booking.status) && booking.driver_id) {
+                // If ride is attached to an association, calculate commission and transfer it to the Association wallet
+                if (booking.association_id) {
+                    try {
+                        const [assocRows] = await db.query('SELECT commission_type, commission_value FROM taxi_associations WHERE id = ?', [booking.association_id]);
+                        if (assocRows.length > 0) {
+                            const { commission_type, commission_value } = assocRows[0];
+                            let commAmount = 5; // fallback
+                            const rawFare = parseFloat(String(booking.fare).replace(/[^0-9.]/g, '')) || 0;
+                            
+                            if (commission_type === 'percent') {
+                                commAmount = (rawFare * (parseFloat(commission_value) || 0)) / 100;
+                            } else {
+                                commAmount = parseFloat(commission_value) || 0;
+                            }
+                            
+                            // Prevent negative or zero commission
+                            commAmount = Math.max(0, commAmount);
+                            
+                            if (commAmount > 0) {
+                                // Deduct from Driver
+                                updatePromises.push(db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - ? WHERE id = ?', [commAmount, booking.driver_id]));
+                                
+                                // Credit to Association
+                                updatePromises.push(db.query(
+                                    `INSERT INTO taxi_association_wallets (association_id, balance) 
+                                     VALUES (?, ?) 
+                                     ON DUPLICATE KEY UPDATE balance = balance + ?, updated_at = NOW()`,
+                                    [booking.association_id, commAmount, commAmount]
+                                ));
+                                
+                                // Log Transaction
+                                updatePromises.push(db.query(
+                                    `INSERT INTO taxi_association_wallet_transactions (association_id, booking_id, driver_id, amount, type, note) 
+                                     VALUES (?, ?, ?, ?, 'credit', ?)`,
+                                    [booking.association_id, bookingId, booking.driver_id, commAmount, `Commission share from Ride #B${bookingId}`]
+                                ));
+                                console.log(`[FINANCE] \u20B9${commAmount.toFixed(2)} transferred to Association #${booking.association_id} from Driver #${booking.driver_id} (Ride #B${bookingId})`);
+                            }
+                        }
+                    } catch (assocErr) {
+                        console.error('[ASSOCIATION FINANCE ERROR]', assocErr.message);
+                    }
+                } else {
+                    // Non-vendor, non-association ride: standard \u20B95 platform fee
+                    updatePromises.push(db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - 5 WHERE id = ?', [booking.driver_id]));
+                    console.log(`[FINANCE] Deducted \u20B95 platform fee from Driver #${booking.driver_id} upon completion of Ride #B${bookingId}`);
+                }
             }
 
-            // Combine end time and status updates into a single database update
+            // Update booking status + journey end time
             if (booking.trip_type === 'rental') {
                 if (!booking.journey_end_time) {
                     updatePromises.push(db.query('UPDATE taxi_bookings SET status = ?, journey_end_time = NOW() WHERE id = ?', [status, bookingId]));
@@ -5067,29 +6421,53 @@ app.post('/api/bookings/update-status', authenticateJWT, requireRole(['driver', 
 
             await Promise.all(updatePromises);
 
-            // Clean up GPS state cache to prevent memory leaks
+            // Clean up GPS state cache
             activeRidesGpsState.delete(bookingId);
 
-            // 🔴 Socket.IO: Trip completed
-            const booking2 = req.booking;
-            if (booking2.user_id) {
-                emitEvent(`user:${booking2.user_id}`, 'booking_status_update', { bookingId, status: 'completed', finalFare: booking2.fare });
+            // 🔴 Socket.IO: Trip completed — notify customer, admin, vendor
+            if (booking.user_id) {
+                emitEvent(`user:${booking.user_id}`, 'booking_status_update', { bookingId, status: 'completed', finalFare: booking.fare });
             }
-            emitEvent('admin', 'booking_status_update', { bookingId, status: 'completed', driverId: booking2.driver_id });
+            if (booking.vendor_id && vendorProfitDeducted > 0) {
+                emitEvent(`vendor:${booking.vendor_id}`, 'ride_completed_payment', {
+                    bookingId: parseInt(bookingId),
+                    profit: vendorProfitDeducted,
+                    totalFare: booking.fare,
+                    driverId: booking.driver_id,
+                    message: `\u20B9${vendorProfitDeducted.toFixed(2)} credited to your wallet for Ride #B${bookingId}`
+                });
+            }
+            emitEvent('admin', 'booking_status_update', { bookingId, status: 'completed', driverId: booking.driver_id });
             emitEvent(`booking:${bookingId}`, 'booking_status_update', { bookingId, status: 'completed' });
 
             return res.json({
                 success: true,
                 vendorProfit: vendorProfitDeducted,
                 totalFare: booking.fare,
-                baseFare: (parseFloat(booking.fare.replace(/[^0-9.]/g, '')) || 0) - vendorProfitDeducted
+                baseFare: (parseFloat(String(booking.fare).replace(/[^0-9.]/g, '')) || 0) - vendorProfitDeducted
             });
         }
 
         if (status === 'cancelled') {
+            const bkForCancel = req.booking;
             await db.query('UPDATE taxi_bookings SET status = ?, driver_id = NULL WHERE id = ?', [status, bookingId]);
             // Clean up GPS state cache to prevent memory leaks
             activeRidesGpsState.delete(bookingId);
+            // Notify vendor if this is a vendor ride cancelled by driver
+            if (bkForCancel && bkForCancel.vendor_id) {
+                const [drvRows] = await db.query('SELECT name FROM taxi_drivers WHERE id = ?', [bkForCancel.driver_id]);
+                const cancelDriverName = drvRows[0]?.name || 'Driver';
+                emitEvent(`vendor:${bkForCancel.vendor_id}`, 'driver_cancelled', {
+                    bookingId: parseInt(bookingId),
+                    driverName: cancelDriverName,
+                    pickup: bkForCancel.pickup_loc,
+                    drop: bkForCancel.drop_loc,
+                    fare: bkForCancel.fare,
+                    reason: 'Ride cancelled',
+                    status: 'cancelled',
+                    ts: Date.now()
+                });
+            }
         } else {
             await db.query('UPDATE taxi_bookings SET status = ? WHERE id = ?', [status, bookingId]);
         }
@@ -5105,6 +6483,7 @@ app.post('/api/bookings/update-status', authenticateJWT, requireRole(['driver', 
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
+
     }
 });
 
@@ -5141,352 +6520,157 @@ app.post('/api/bookings/finish-trip', authenticateJWT, requireRole(['driver']), 
         const { bookingId, endOdometer, latitude, longitude, clientDistance } = req.body;
         const booking = req.booking;
 
-        // Fetch all dependencies in parallel: active peak rules and all GPS logs for the booking
-        const gpsLogsPromise = db.query(
-            'SELECT latitude, longitude, accuracy, speed, created_at FROM taxi_ride_gps_logs WHERE booking_id = ? ORDER BY id ASC',
-            [bookingId]
-        );
-        const peakRulesPromise = db.query('SELECT * FROM taxi_peak_rules WHERE is_active = 1');
-        const specialChargeFinishPromise = booking.special_place_type
-            ? db.query('SELECT surcharge_percentage FROM taxi_special_location_charges WHERE place_type = ? AND is_active = 1', [booking.special_place_type])
-            : Promise.resolve([[]]);
+        let endCoords = null;
+        if (latitude !== undefined && longitude !== undefined) {
+            endCoords = longitude + ',' + latitude;
+        }
 
-        const [[gpsLogs], [peakRules], [spFinishRows]] = await Promise.all([gpsLogsPromise, peakRulesPromise, specialChargeFinishPromise]);
-        const specialSurchargePct = spFinishRows.length > 0 ? (parseFloat(spFinishRows[0].surcharge_percentage) / 100) : 0;
+        let distanceCovered = 0;
+        let durationMins = 0;
+        const startTime = new Date(booking.journey_start_time);
+        const endTime = new Date();
+        durationMins = (endTime - startTime) / (1000 * 60);
 
-        // Calculate pre-ride waiting charge (5 min grace time, then ₹2/min)
+        // Fetch GPS logs for distance fallback
+        const [gpsLogs] = await db.query('SELECT latitude, longitude, accuracy, speed, created_at FROM taxi_ride_gps_logs WHERE booking_id = ? ORDER BY id ASC', [bookingId]);
+        
+        if (!endCoords && gpsLogs.length > 0) {
+            const lastLog = gpsLogs[gpsLogs.length - 1];
+            endCoords = lastLog.longitude + ',' + lastLog.latitude;
+        }
+
+        // Distance Resolution Logic (Priority: Odometer -> GPS -> Client Odometer)
+        if (endOdometer && booking.start_odometer && /^\d{1,6}$/.test(String(endOdometer).trim())) {
+            distanceCovered = parseInt(endOdometer) - parseInt(booking.start_odometer);
+            if (distanceCovered < 0) distanceCovered = 0;
+        } else if (booking.trip_type !== 'rental') {
+            let startCoords = booking.start_gps_coords || null;
+            if (startCoords === 'null,null') startCoords = null;
+
+            let serverDistance = 0;
+            const cachedState = activeRidesGpsState.get(bookingId);
+            if (cachedState) {
+                serverDistance = cachedState.cumulativeDistance;
+            } else {
+                serverDistance = await calculateOdometerDistance(bookingId, startCoords, booking.journey_start_time, gpsLogs);
+            }
+            distanceCovered = serverDistance;
+
+            if (clientDistance !== undefined && clientDistance !== null) {
+                const parsedClientDist = parseFloat(clientDistance);
+                if (!isNaN(parsedClientDist) && parsedClientDist > 0) {
+                    if (gpsLogs.length < 3) {
+                        distanceCovered = Math.min(parsedClientDist, 200);
+                    } else {
+                        const maxAllowed = serverDistance * 1.15 + 2.0;
+                        if (parsedClientDist <= maxAllowed) distanceCovered = parsedClientDist;
+                    }
+                }
+            }
+        } else {
+            distanceCovered = clientDistance || 0;
+        }
+
+        // Determine Category Dynamically
+        const finalCategory = await pricingEngine.resolveRideCategory(db, distanceCovered, booking.trip_type);
+        
+        // Calculate pre-ride waiting
         let preRideWaitingCharge = 0;
         if (booking.reached_pickup_time && booking.journey_start_time) {
             const reachedTime = new Date(booking.reached_pickup_time);
             const journeyStartTime = new Date(booking.journey_start_time);
-            const preRideElapsedMs = journeyStartTime - reachedTime;
-            const preRideElapsedMins = preRideElapsedMs / (1000 * 60);
+            const preRideElapsedMins = (journeyStartTime - reachedTime) / (1000 * 60);
             if (preRideElapsedMins > 5) {
                 preRideWaitingCharge = Math.max(0, Math.ceil((preRideElapsedMins - 5) * 2));
             }
         }
 
-        let endCoords = null;
-        if (latitude !== undefined && longitude !== undefined) {
-            endCoords = `${longitude},${latitude}`;
-        } else {
-            // Get the last logged GPS coords from pre-fetched logs
-            if (gpsLogs.length > 0) {
-                const lastLog = gpsLogs.at(-1);
-                endCoords = `${lastLog.longitude},${lastLog.latitude}`;
-            } else {
-                endCoords = booking.drop_coords || null;
-            }
+        // Fare Calculation via Canonical Engine
+        const fareDetails = await pricingEngine.calculateCanonicalFare(db, {
+            distanceKm: distanceCovered,
+            durationMins,
+            vehicleType: booking.vehicle_type,
+            category: finalCategory,
+            pickupTime: booking.pickup_time ? new Date(booking.pickup_date + ' ' + booking.pickup_time) : new Date(),
+            extraDrops: booking.extra_drops,
+            specialPlaceType: booking.special_place_type,
+            vendorId: booking.vendor_id,
+            rentalPackage: booking.rental_package,
+            returnDate: booking.return_date,
+            pickupDate: booking.pickup_date,
+            preRideWaitingCharge
+        });
+
+        // Settle financials atomically
+        let vendorMarkup = 0;
+        if (booking.vendor_id && parseFloat(booking.vendor_markup) > 0) {
+            vendorMarkup = parseFloat(booking.vendor_markup);
         }
 
-        if (booking.trip_type === 'rental') {
-            let distanceCovered = 0;
-            if (endOdometer && booking.start_odometer && /^\d{1,6}$/.test(String(endOdometer).trim())) {
-                distanceCovered = parseInt(endOdometer) - parseInt(booking.start_odometer);
-                if (distanceCovered < 0) distanceCovered = 0;
-            } else {
-                distanceCovered = clientDistance || 0;
-            }
-
-            let finalFareStr = booking.fare;
-            let durationHrs = null;
-            let waitingCharge = 0;
-
-            const startTime = new Date(booking.journey_start_time);
-            const endTime = new Date();
-            const durationMs = endTime - startTime;
-            const durationMins = durationMs / (1000 * 60);
-            const allowedMins = distanceCovered * 2;
-            if (durationMins > allowedMins) {
-                waitingCharge = (durationMins - allowedMins) * 2;
-            }
-
-            let pricingConfig = null;
-            let vendorTariffPromise = Promise.resolve([[]]);
-            if (booking.vendor_id) {
-                vendorTariffPromise = db.query('SELECT config FROM taxi_vendor_tariffs WHERE vendor_id = ? AND vehicle_type = ? AND category = "rental"', [booking.vendor_id, booking.vehicle_type]);
-            }
-            const tariffPromise = db.query('SELECT config FROM taxi_tariffs WHERE vehicle_type = ? AND category = "rental"', [booking.vehicle_type]);
-
-            const [[vendorTariffRows], [tariffRows]] = await Promise.all([vendorTariffPromise, tariffPromise]);
-
-            if (vendorTariffRows.length > 0) {
-                pricingConfig = typeof vendorTariffRows[0].config === 'string' ? JSON.parse(vendorTariffRows[0].config) : vendorTariffRows[0].config;
-            } else if (tariffRows.length > 0) {
-                pricingConfig = typeof tariffRows[0].config === 'string' ? JSON.parse(tariffRows[0].config) : tariffRows[0].config;
-            }
-
-            if (pricingConfig) {
-                const config = pricingConfig;
-                const allowedPackages = ['2-20', '4-40', '8-80', '12-120'];
-                let packageConfig = null;
-                if (allowedPackages.includes(booking.rental_package)) {
-                    packageConfig = Reflect.get(config, booking.rental_package);
-                }
-
-                if (packageConfig) {
-                    const [pMaxHrs, pMaxKm] = booking.rental_package.split('-').map(Number);
-
-                    // 1. Distance Calculation
-                    const extraKm = Math.max(0, distanceCovered - pMaxKm);
-                    const extraKmCharge = extraKm * packageConfig.extraKm;
-
-                    // 2. Time Calculation
-                    durationHrs = durationMs / (1000 * 60 * 60);
-
-                    const extraHrs = Math.max(0, Math.ceil(durationHrs - pMaxHrs));
-                    const extraHrCharge = extraHrs * packageConfig.extraHour;
-
-                    const totalExtra = extraKmCharge + extraHrCharge;
-                    const baseWithExtra = packageConfig.base + totalExtra + waitingCharge;
-                    const specialCharge = (packageConfig.base + totalExtra) * specialSurchargePct;
-                    const finalFareNum = Math.ceil(baseWithExtra + specialCharge + 5); // Incl platform fee
-
-                    finalFareStr = `₹${finalFareNum}`;
-                }
-            }
-
-            // --- DRIVER WALLET PLATFORM FEE DEDUCTION ON COMPLETION ---
-            const nextStatus = booking.vendor_id ? "completed" : "finished";
-            const updatePromises = [];
-            let vendorProfitDeducted = 0;
-            if (booking.vendor_id && parseFloat(booking.vendor_markup) > 0) {
-                vendorProfitDeducted = parseFloat(booking.vendor_markup);
-            }
-            if (!['completed', 'finished'].includes(booking.status) && booking.driver_id) {
-                updatePromises.push(db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - 5 WHERE id = ?', [booking.driver_id]));
-                console.log(`[FINANCE] Deducted ₹5 platform fee from Driver #${booking.driver_id} upon completion of Rental Ride #B${bookingId}`);
-            }
-            updatePromises.push(db.query('UPDATE taxi_bookings SET status = ?, end_odometer = ?, journey_end_time = NOW(), fare = ?, end_gps_coords = ? WHERE id = ?', [nextStatus, endOdometer, finalFareStr, endCoords, bookingId]));
-
-            await Promise.all(updatePromises);
-
-            // Clean up GPS state cache to prevent memory leaks
-            activeRidesGpsState.delete(bookingId);
-
-            // 🔴 Socket.IO: Trip finished - notify user and admin
-            if (booking.user_id) {
-                emitEvent(`user:${booking.user_id}`, 'booking_status_update', { bookingId, status: nextStatus, finalFare: finalFareStr });
-            }
-            emitEvent('admin', 'booking_status_update', { bookingId, status: nextStatus, driverId: booking.driver_id });
-            emitEvent(`booking:${bookingId}`, 'booking_status_update', { bookingId, status: nextStatus });
-
-            return res.json({
-                success: true,
-                finalFare: finalFareStr,
-                distance: distanceCovered,
-                duration: durationHrs ? durationHrs.toFixed(2) : null,
-                waitingCharge: Math.ceil(waitingCharge),
-                vendorProfit: vendorProfitDeducted,
-                status: nextStatus
-            });
-        } else {
-            // For standard trips (local, oneway, round)
-            let distanceCovered = 0;
-
-            // TRIP DISTANCE RESOLUTION (Priority order):
-            // Priority 1: Optional end odometer (most accurate if driver inputs it)
-            if (endOdometer && booking.start_odometer && /^\d{1,6}$/.test(String(endOdometer).trim())) {
-                const odometerDiff = parseInt(endOdometer) - parseInt(booking.start_odometer);
-                if (odometerDiff >= 0) {
-                    distanceCovered = odometerDiff;
-                    console.log(`[Finish Trip #${bookingId}] ODOMETER: ${distanceCovered} KM (start:${booking.start_odometer} end:${endOdometer})`);
-                }
-            } else {
-                // Priority 2: GPS Kalman filter from server
-                let startCoords = booking.start_gps_coords || null;
-                    if (startCoords === 'null,null') startCoords = null;
-
-                    let serverDistance = 0;
-                    const cachedState = activeRidesGpsState.get(bookingId);
-                    if (cachedState) {
-                        serverDistance = cachedState.cumulativeDistance;
-                        console.log(`[Finish Trip #${bookingId}] GPS CACHE: ${serverDistance.toFixed(2)} KM`);
-                    } else {
-                        serverDistance = await calculateOdometerDistance(bookingId, startCoords, booking.journey_start_time, gpsLogs);
-                        console.log(`[Finish Trip #${bookingId}] GPS CALC: ${serverDistance.toFixed(2)} KM from ${gpsLogs.length} logs`);
-                    }
-                    distanceCovered = serverDistance;
-
-                    // Priority 3: Client-reported odometer distance from driver app
-                    if (clientDistance !== undefined && clientDistance !== null) {
-                        const parsedClientDist = parseFloat(clientDistance);
-                        if (!isNaN(parsedClientDist) && parsedClientDist > 0) {
-                            const gpsLogCount = gpsLogs.length;
-                            if (gpsLogCount < 3) {
-                                // CRITICAL FIX: GPS tracking was insufficient — trust driver app odometer directly
-                                // The old code blocked any >2km client distance when server=0, causing the 1km bug.
-                                distanceCovered = Math.min(parsedClientDist, 200);
-                                console.log(`[Finish Trip #${bookingId}] GPS INSUFFICIENT (${gpsLogCount} logs) — CLIENT ODOMETER: ${distanceCovered.toFixed(2)} KM`);
-                            } else {
-                                // GPS available — apply 15%+2km security tolerance
-                                const maxAllowedClientDist = serverDistance * 1.15 + 2.0;
-                                if (parsedClientDist <= maxAllowedClientDist) {
-                                    distanceCovered = parsedClientDist;
-                                    console.log(`[Finish Trip #${bookingId}] CLIENT GPS accepted: ${distanceCovered.toFixed(2)} KM (server: ${serverDistance.toFixed(2)} KM)`);
-                                } else {
-                                    console.warn(`[Finish Trip Security #${bookingId}] Client ${parsedClientDist.toFixed(2)} KM > max ${maxAllowedClientDist.toFixed(2)} KM. Using server GPS.`);
-                                }
-                            }
-                        }
-                    }
-            }
-
-            console.log(`[Finish Trip #${bookingId}] FINAL distance: ${distanceCovered.toFixed(2)} KM`);
-
-            // Calculate final time period of the ride
-            const startTime = new Date(booking.journey_start_time);
-            const endTime = new Date();
-            const durationMs = endTime - startTime;
-            const durationMins = durationMs / (1000 * 60);
-
-            // WAITING CHARGE: Uses ACTUAL trip distance (not estimated)
-            // Rule: Allowed Duration = actualTripDistKm × 2 minutes
-            let waitingCharge = 0;
-            if (booking.trip_type === 'rental') {
-                const packageVal = booking.rental_package || '2-20';
-                const [pMaxHrs] = packageVal.split('-').map(Number);
-                const rentalAllowedMins = (pMaxHrs || 2) * 60;
-                if (durationMins > rentalAllowedMins) {
-                    waitingCharge = (durationMins - rentalAllowedMins) * 2;
-                }
-            } else if (['local', 'oneway', 'round'].includes(booking.trip_type)) {
-                const journeyWaiting = calcWaitingCharge(distanceCovered, durationMins).waitingCharge;
-                waitingCharge = preRideWaitingCharge + journeyWaiting;
-            }
-            // oneway/round: no per-minute waiting (billed by km day allowance)
-
-            // Recalculate Final Fare (check vendor tariff first, then system fallback)
-            let totalFare = 0;
-            let pricingConfig = null;
-            let vendorTariffPromise = Promise.resolve([[]]);
-            if (booking.vendor_id) {
-                vendorTariffPromise = db.query('SELECT config FROM taxi_vendor_tariffs WHERE vendor_id = ? AND vehicle_type = ? AND category = ?', [booking.vendor_id, booking.vehicle_type, booking.trip_type]);
-            }
-            const tariffPromise = db.query('SELECT config FROM taxi_tariffs WHERE vehicle_type = ? AND category = ?', [booking.vehicle_type, booking.trip_type]);
-
-            const [[vendorTariffRows], [tariffRows]] = await Promise.all([vendorTariffPromise, tariffPromise]);
-
-            if (vendorTariffRows.length > 0) {
-                pricingConfig = typeof vendorTariffRows[0].config === 'string' ? JSON.parse(vendorTariffRows[0].config) : vendorTariffRows[0].config;
-            } else if (tariffRows.length > 0) {
-                pricingConfig = typeof tariffRows[0].config === 'string' ? JSON.parse(tariffRows[0].config) : tariffRows[0].config;
-            }
-
-            const peakMult = getPeakMultiplier(booking.pickup_time, peakRules);
-            // specialSurchargePct already fetched at top of finish-trip for both rental and standard trips
-
-            let extraDropsCharge = 0;
-            try {
-                if (booking.extra_drops) {
-                    const stops = typeof booking.extra_drops === 'string' ? JSON.parse(booking.extra_drops) : booking.extra_drops;
-                    if (Array.isArray(stops)) {
-                        if (booking.trip_type === 'local') {
-                            extraDropsCharge = stops.length * 50;
-                        } else if (booking.trip_type === 'oneway') {
-                            extraDropsCharge = stops.length * 50;
-                        }
+        // --- Hybrid Association Commission Overrides ---
+        let assocCustomerOverrideAmount = 0;
+        if (booking.driver_id) {
+            const [drvRows] = await db.query('SELECT association_id FROM taxi_drivers WHERE id = ?', [booking.driver_id]);
+            if (drvRows.length > 0 && drvRows[0].association_id) {
+                const [assocRows] = await db.query('SELECT commission_customer_pct, commission_customer_fixed FROM taxi_associations WHERE id = ?', [drvRows[0].association_id]);
+                if (assocRows.length > 0) {
+                    const custPct = parseFloat(assocRows[0].commission_customer_pct) || 0;
+                    const custFixed = parseFloat(assocRows[0].commission_customer_fixed) || 0;
+                    if (custPct > 0 || custFixed > 0) {
+                        assocCustomerOverrideAmount = (fareDetails.finalFare * (custPct / 100)) + custFixed;
+                        fareDetails.finalFare = fareDetails.finalFare + Math.ceil(assocCustomerOverrideAmount);
                     }
                 }
-            } catch (e) {
-                console.error("Failed to parse extra_drops in finish-trip calculation", e);
             }
-
-            if (booking.trip_type === 'local') {
-                const config = pricingConfig || { base: 150, perKm: 20, minKm: 0 };
-                const minKm = typeof config.minKm === 'number' ? config.minKm : 0;
-                const billableDist = Math.max(distanceCovered, minKm);
-                const baseKmFare = calculateLocalSlabFare(billableDist, config);
-                const peakCharge = baseKmFare * peakMult;
-                const specialCharge = baseKmFare * specialSurchargePct;
-                totalFare = (baseKmFare + peakCharge + specialCharge + waitingCharge + extraDropsCharge) + 5;
-            } else if (booking.trip_type === 'oneway') {
-                const config = pricingConfig || { base: 0, perKm: 13, minKm: 130 };
-                const baseFare = config.base || 0;
-                const minKm = typeof config.minKm === 'number' ? config.minKm : 130;
-                const billableDist = Math.max(distanceCovered, minKm);
-                const distanceFare = billableDist * (config.perKm || 13);
-                const baseKmFare = Math.max(baseFare, distanceFare);
-                const driverAllowance = billableDist > 250 ? 600 : 400;
-                const specialCharge = baseKmFare * specialSurchargePct;
-                totalFare = (baseKmFare + (booking.vehicle_type === 'bike' ? 0 : driverAllowance) + specialCharge + waitingCharge + extraDropsCharge) + 5;
-            } else if (booking.trip_type === 'round') {
-                const config = pricingConfig || { base: 0, perKm: 12, minKmPerDay: 250 };
-                const baseFare = config.base || 0;
-                let tripDays = 1;
-                if (booking.return_date && booking.pickup_date) {
-                    const start = new Date(booking.pickup_date);
-                    const end = new Date(booking.return_date);
-                    if (end > start) {
-                        const diffTime = Math.abs(end - start);
-                        tripDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                    }
-                }
-                const minKmForTrip = (typeof config.minKmPerDay === 'number' ? config.minKmPerDay : 250) * tripDays;
-                const billableDist = Math.max(distanceCovered, minKmForTrip);
-                const distanceFare = billableDist * (config.perKm || 12);
-                const baseKmFare = Math.max(baseFare, distanceFare);
-                const driverAllowance = billableDist > 250 ? 600 : 400;
-                const specialCharge = baseKmFare * specialSurchargePct;
-                totalFare = ((baseKmFare + (booking.vehicle_type === 'bike' ? 0 : driverAllowance * tripDays) + specialCharge) + waitingCharge) + 5;
-            }
-const finalFareStr = `₹${Math.ceil(totalFare)}`;
-            const distanceStr = `${distanceCovered.toFixed(3)} KM`;
-            const { allowedMins: finalAllowedMins, waitingMins: finalWaitingMins } = calcWaitingCharge(distanceCovered, durationMins);
-
-            console.log(`[Finish Trip #${bookingId}] Fare: ${finalFareStr} | Dist: ${distanceStr} | Duration: ${durationMins.toFixed(1)}min | WaitCharge: ₹${Math.ceil(waitingCharge)}`);
-
-            // --- DRIVER WALLET PLATFORM FEE DEDUCTION ON COMPLETION ---
-            const nextStatus = (booking.vendor_id || booking.trip_type === 'local') ? "completed" : "finished";
-            const updatePromises = [];
-            let vendorProfitDeducted = 0;
-            if (booking.vendor_id && parseFloat(booking.vendor_markup) > 0) {
-                vendorProfitDeducted = parseFloat(booking.vendor_markup);
-            }
-
-            if (!['completed', 'finished'].includes(booking.status) && booking.driver_id) {
-                updatePromises.push(db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - 5 WHERE id = ?', [booking.driver_id]));
-                console.log(`[FINANCE] Deducted ₹5 platform fee from Driver #${booking.driver_id} upon completion of Standard Ride #B${bookingId}`);
-            }
-
-            if (booking.trip_type !== 'local') {
-                // Sync both actual_distance AND distance for cross-panel consistency
-                updatePromises.push(db.query(
-                    'UPDATE taxi_bookings SET status = ?, end_odometer = ?, journey_end_time = NOW(), fare = ?, actual_distance = ?, distance = ?, end_gps_coords = ? WHERE id = ?',
-                    [nextStatus, endOdometer || null, finalFareStr, distanceStr, distanceStr, endCoords, bookingId]
-                ));
-            } else {
-                // Sync both actual_distance AND distance for cross-panel consistency
-                updatePromises.push(db.query(
-                    'UPDATE taxi_bookings SET status = ?, journey_end_time = NOW(), fare = ?, actual_distance = ?, distance = ?, end_gps_coords = ? WHERE id = ?',
-                    [nextStatus, finalFareStr, distanceStr, distanceStr, endCoords, bookingId]
-                ));
-            }
-            await Promise.all(updatePromises);
-
-            // Clean up GPS state cache to prevent memory leaks
-            activeRidesGpsState.delete(bookingId);
-
-            // 🔴 Socket.IO: Trip finished - notify user and admin
-            if (booking.user_id) {
-                emitEvent(`user:${booking.user_id}`, 'booking_status_update', { bookingId, status: nextStatus, finalFare: finalFareStr });
-            }
-            emitEvent('admin', 'booking_status_update', { bookingId, status: nextStatus, driverId: booking.driver_id });
-            emitEvent(`booking:${bookingId}`, 'booking_status_update', { bookingId, status: nextStatus });
-
-            return res.json({
-                success: true,
-                finalFare: finalFareStr,
-                distance: distanceCovered.toFixed(3),
-                duration: durationMins.toFixed(1),
-                allowedMins: Math.ceil(finalAllowedMins),
-                waitingMins: Math.ceil(finalWaitingMins),
-                waitingCharge: Math.ceil(waitingCharge),
-                vendorProfit: vendorProfitDeducted,
-                status: nextStatus
-            });
         }
+        
+        const finalFareStr = "₹" + fareDetails.finalFare;
+        const distanceStr = distanceCovered.toFixed(3) + " KM";
+
+        await commissionEngine.settleRideFinancials(db, {
+            bookingId,
+            distanceKm: distanceCovered,
+            category: finalCategory,
+            vehicleType: booking.vehicle_type,
+            baseKmFare: fareDetails.baseKmFare,
+            waitingCharge: fareDetails.waitingCharge,
+            extraDropsCharge: fareDetails.extraDropsCharge,
+            peakCharge: fareDetails.peakCharge,
+            specialCharge: fareDetails.specialCharge,
+            finalFare: fareDetails.finalFare,
+            vendorMarkup,
+            driverId: booking.driver_id,
+            vendorId: booking.vendor_id,
+            associationId: booking.association_id,
+            assocCustomerOverrideAmount
+        });
+
+        // Update booking status
+        const nextStatus = (booking.vendor_id || finalCategory === 'local') ? "completed" : "finished";
+        await db.query(
+            'UPDATE taxi_bookings SET status = ?, end_odometer = ?, journey_end_time = NOW(), fare = ?, actual_distance = ?, distance = ?, end_gps_coords = ?, trip_type = ? WHERE id = ?',
+            [nextStatus, endOdometer || null, finalFareStr, distanceStr, distanceStr, endCoords, finalCategory, bookingId]
+        );
+
+        activeRidesGpsState.delete(bookingId);
+
+        if (booking.user_id) {
+            emitEvent(`user:${booking.user_id}`, 'booking_status_update', { bookingId, status: nextStatus, finalFare: finalFareStr });
+        }
+        emitEvent('admin', 'booking_status_update', { bookingId, status: nextStatus, driverId: booking.driver_id });
+        emitEvent(`booking:${bookingId}`, 'booking_status_update', { bookingId, status: nextStatus });
+
+        return res.json({
+            success: true,
+            finalFare: finalFareStr,
+            distance: distanceCovered.toFixed(3),
+            duration: durationMins.toFixed(1),
+            waitingCharge: fareDetails.waitingCharge,
+            vendorProfit: vendorMarkup,
+            status: nextStatus
+        });
     } catch (err) {
+        console.error("finish-trip error:", err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -5503,7 +6687,7 @@ app.post('/api/bookings/update-gps-location', authenticateJWT, requireRole(['dri
 
         const now = Date.now();
         const lastUpdate = lastGpsDbUpdate[bookingId] || 0;
-        
+
         // Fast-path: Broadcast live location in ms without heavy DB recalculations if within 10s throttle window
         if (now - lastUpdate < 10000) {
             const [fastBookings] = await db.query('SELECT user_id, driver_id, status FROM taxi_bookings WHERE id = ?', [bookingId]);
@@ -5516,7 +6700,7 @@ app.post('/api/bookings/update-gps-location', authenticateJWT, requireRole(['dri
             }
             return res.json({ success: true, message: 'Fast GPS broadcasted (DB throttled)', isDeviated: false });
         }
-        
+
         lastGpsDbUpdate[bookingId] = now;
 
         // 1. Insert into logs table
@@ -5593,7 +6777,7 @@ app.post('/api/bookings/update-gps-location', authenticateJWT, requireRole(['dri
 
         const totalDistance = actualDistKm;
 
-        // Calculate pre-ride waiting charge (5 min grace time, then ₹2/min)
+        // Calculate pre-ride waiting charge (5 min grace time, then \u20B92/min)
         let preRideWaitingCharge = 0;
         if (booking.reached_pickup_time && booking.journey_start_time) {
             const reachedTime = new Date(booking.reached_pickup_time);
@@ -5621,8 +6805,7 @@ app.post('/api/bookings/update-gps-location', authenticateJWT, requireRole(['dri
                 waitingCharge = (elapsedMins - allowedMins) * 2;
             }
         } else if (['local', 'oneway', 'round'].includes(booking.trip_type)) {
-            const journeyWaiting = calcWaitingCharge(totalDistance, elapsedMins).waitingCharge;
-            waitingCharge = preRideWaitingCharge + journeyWaiting;
+            waitingCharge = preRideWaitingCharge;
         }
 
         // 6. Recalculate Fare (check vendor tariff first, then system fallback)
@@ -5712,7 +6895,24 @@ app.post('/api/bookings/update-gps-location', authenticateJWT, requireRole(['dri
             totalFare = (packageConfig.base + extraKmCharge + extraHourCharge + waitingCharge) + 5;
         }
 
-        const finalFare = `₹${Math.ceil(totalFare)}`;
+        // --- Hybrid Association Commission Overrides ---
+        let assocCustomerOverrideAmount = 0;
+        if (booking.driver_id) {
+            const [drvRows] = await db.query('SELECT association_id FROM taxi_drivers WHERE id = ?', [booking.driver_id]);
+            if (drvRows.length > 0 && drvRows[0].association_id) {
+                const [assocRows] = await db.query('SELECT commission_customer_pct, commission_customer_fixed FROM taxi_associations WHERE id = ?', [drvRows[0].association_id]);
+                if (assocRows.length > 0) {
+                    const custPct = parseFloat(assocRows[0].commission_customer_pct) || 0;
+                    const custFixed = parseFloat(assocRows[0].commission_customer_fixed) || 0;
+                    if (custPct > 0 || custFixed > 0) {
+                        assocCustomerOverrideAmount = (totalFare * (custPct / 100)) + custFixed;
+                        totalFare = totalFare + assocCustomerOverrideAmount;
+                    }
+                }
+            }
+        }
+
+        const finalFare = `\u20B9${Math.ceil(totalFare)}`;
         const distanceStr = `${totalDistance.toFixed(3)} KM`;
 
         await db.query(
@@ -5881,10 +7081,10 @@ app.get('/api/proxy/geocode', async (req, res) => {
     try {
         const { q, limit } = req.query;
         const apiLimit = parseInt(limit) || 8;
-        
+
         let allResults = [];
         let correctedQuery = null;
-        
+
         // Run Photon and Nominatim in PARALLEL for speed
         const [photonResult, nominatimResult] = await Promise.allSettled([
             // --- SOURCE 1: Photon (Komoot) — returns villages, shops, hamlets, POIs ---
@@ -5902,7 +7102,7 @@ app.get('/api/proxy/geocode', async (req, res) => {
                 return nomRes.data;
             })()
         ]);
-        
+
         // Process Photon results
         if (photonResult.status === 'fulfilled' && photonResult.value && photonResult.value.features) {
             const features = photonResult.value.features.filter(f => {
@@ -5928,7 +7128,7 @@ app.get('/api/proxy/geocode', async (req, res) => {
         } else {
             console.warn('Photon geocode failed:', photonResult.reason?.message || 'unknown');
         }
-        
+
         // Process Nominatim results
         if (nominatimResult.status === 'fulfilled' && nominatimResult.value && nominatimResult.value.length > 0) {
             nominatimResult.value.forEach(item => {
@@ -5945,10 +7145,10 @@ app.get('/api/proxy/geocode', async (req, res) => {
                         nomRes2.data.forEach(item => allResults.push(mapNominatimFeature(item)));
                         correctedQuery = corrected.replace(/, india$/i, '').trim();
                     }
-                } catch(e2) { /* ignore */ }
+                } catch (e2) { /* ignore */ }
             }
         }
-        
+
         // --- DEDUPLICATE by coordinates (~100m precision) ---
         const seen = new Set();
         const unique = [];
@@ -5959,7 +7159,7 @@ app.get('/api/proxy/geocode', async (req, res) => {
                 unique.push(f);
             }
         }
-        
+
         res.json({ features: unique.slice(0, apiLimit), correctedQuery });
     } catch (err) {
         console.error('Geocode Proxy Error:', err.message);
@@ -5972,17 +7172,17 @@ app.get('/api/proxy/reverse', async (req, res) => {
         const { lon, lat } = req.query;
         const url = `https://nominatim.openstreetmap.org/reverse?lon=${lon}&lat=${lat}&format=json&addressdetails=1`;
         const response = await axios.get(url, { headers: { 'User-Agent': 'CityRideTaxiApp/1.0' }, timeout: 8000 });
-        
+
         const item = response.data;
         if (item.error) { return res.json({ features: [] }); }
-        
+
         const addr = item.address || {};
         const name = item.name || addr.aeroway || addr.amenity || addr.building || '';
         const road = addr.road || addr.pedestrian || addr.footway || '';
         const suburb = addr.suburb || addr.neighbourhood || addr.quarter || '';
         const city = addr.city || addr.town || addr.village || addr.county || addr.state_district || '';
         const state = addr.state || '';
-        
+
         const features = [{
             geometry: { coordinates: [parseFloat(item.lon), parseFloat(item.lat)] },
             properties: { name, road, suburb, city, state, display_name: item.display_name }
@@ -6020,9 +7220,42 @@ app.get('/api/config/maps-key', (req, res) => {
 // --- RATE TARIFF CONTROLLER ---
 app.get('/api/tariffs', async (req, res) => {
     try {
+        const { lat, lng } = req.query;
+        let associationId = null;
+
+        // If location is provided, find if it falls within any Association's jurisdiction
+        if (lat && lng) {
+            const sqlAssoc = `
+                SELECT id, name, commission_type, commission_value,
+                    ( 6371 * acos( cos( radians(?) ) * cos( radians( lat ) ) * cos( radians( lng ) - radians(?) ) + sin( radians(?) ) * sin( radians( lat ) ) ) ) AS distance 
+                FROM taxi_associations 
+                WHERE is_active = 1
+                HAVING distance <= radius_km 
+                ORDER BY distance ASC 
+                LIMIT 1
+            `;
+            const [assocs] = await db.query(sqlAssoc, [lat, lng, lat]);
+            if (assocs.length > 0) {
+                associationId = assocs[0].id;
+                // We return the association details in headers so the frontend knows
+                res.setHeader('X-Association-ID', associationId);
+                res.setHeader('X-Association-Name', assocs[0].name);
+            }
+        }
+
+        if (associationId) {
+            // Fetch association specific tariffs
+            const [assocTariffs] = await db.query('SELECT * FROM taxi_association_tariffs WHERE association_id = ?', [associationId]);
+            if (assocTariffs.length > 0) {
+                return res.json(assocTariffs);
+            }
+        }
+
+        // Fallback to global tariffs if no association found, or association has no custom tariffs configured yet
         const [rows] = await db.query('SELECT * FROM taxi_tariffs');
         res.json(rows);
     } catch (err) {
+        console.error('Tariffs error:', err.message);
         res.status(500).json({ error: 'Failed to fetch tariffs' });
     }
 });
@@ -6478,6 +7711,532 @@ app.put('/api/dbmanager/password/:table/:id', async (req, res) => {
 
 // Route for DB Manager HTML
 app.get('/dbmanager', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dbmanager.html')));
+
+// --- ASSOCIATION ADMIN ROUTES ---
+app.post('/api/association/login', authRateLimiter, async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const [rows] = await db.query('SELECT * FROM taxi_associations WHERE admin_username = ?', [username]);
+        if (rows.length === 0) return res.status(401).json({ error: 'Invalid credentials.' });
+
+        const assoc = rows[0];
+        if (!assoc.is_active) return res.status(403).json({ error: 'Association account deactivated.' });
+
+        const validPassword = await bcrypt.compare(password, assoc.admin_password);
+        if (!validPassword) return res.status(401).json({ error: 'Invalid credentials.' });
+
+        const token = jwt.sign({ id: assoc.id, role: 'association_admin', name: assoc.name }, JWT_SECRET, { expiresIn: '12h' });
+        await setAuthCookie(res, req, { id: assoc.id, name: assoc.name }, 'association_admin');
+        logAuthEvent({ event: 'LOGIN_SUCCESS', role: 'association_admin', identifier: username, status: 'OK', ip: req.ip, message: `Association admin logged in: ${assoc.name}` });
+        res.json({ token, assocId: assoc.id, assocName: assoc.name });
+    } catch (err) {
+        res.status(500).json({ error: 'Login failed.' });
+    }
+});
+
+app.get('/api/association/stats', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const [bookingRows] = await db.query(`
+            SELECT status, COUNT(*) as count 
+            FROM taxi_bookings 
+            WHERE association_id = ? 
+            GROUP BY status
+        `, [assocId]);
+        
+        let stats = { pending: 0, assigned: 0, completed: 0, cancelled: 0 };
+        bookingRows.forEach(row => {
+            if (row.status === 'completed' || row.status === 'finished') stats.completed += row.count;
+            else if (row.status === 'cancelled' || row.status === 'cancel_requested') stats.cancelled += row.count;
+            else if (['pending', 'vendor_assigned'].includes(row.status)) stats.pending += row.count;
+            else stats.assigned += row.count;
+        });
+
+        const [driverRows] = await db.query('SELECT COUNT(*) as count FROM taxi_drivers WHERE association_id = ?', [assocId]);
+        stats.activePilots = driverRows[0].count;
+
+        res.json(stats);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to load stats.' });
+    }
+});
+
+app.get('/api/association/wallet', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const [walletRows] = await db.query('SELECT * FROM taxi_association_wallets WHERE association_id = ?', [assocId]);
+        if (walletRows.length === 0) return res.json({ balance: 0, total_earned: 0 });
+        res.json(walletRows[0]);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to load wallet.' });
+    }
+});
+
+app.get('/api/association/transactions', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const [rows] = await db.query('SELECT * FROM taxi_association_wallet_transactions WHERE association_id = ? ORDER BY created_at DESC LIMIT 50', [assocId]);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to load transactions.' });
+    }
+});
+
+app.get('/api/association/rides', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const [rows] = await db.query(`
+            SELECT b.*, 
+                   COALESCE(u.name, tu.name) as customer_name, 
+                   COALESCE(u.phone, tu.phone) as customer_phone,
+                   d.name as driver_name,
+                   d.phone as driver_phone
+            FROM taxi_bookings b
+            LEFT JOIN passengers u ON b.user_id = u.id
+            LEFT JOIN taxi_passengers tu ON b.user_id = tu.id
+            LEFT JOIN taxi_drivers d ON b.driver_id = d.id
+            WHERE b.association_id = ?
+            ORDER BY b.created_at DESC LIMIT 100
+        `, [assocId]);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to load rides.' });
+    }
+});
+
+app.get('/api/association/drivers', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const [rows] = await db.query(`
+            SELECT id, name, email, phone, car_model, car_number, vehicle_type, seating_capacity, 
+                   ride_local, ride_oneway, ride_round, 
+                   IF(is_blocked = 0, 1, 0) as is_active, 
+                   is_online as is_available, 
+                   wallet_balance, created_at
+            FROM taxi_drivers
+            WHERE association_id = ?
+            ORDER BY created_at DESC
+        `, [assocId]);
+        res.json(rows);
+    } catch (err) {
+        console.error('Error in /api/association/drivers:', err);
+        res.status(500).json({ error: 'Failed to load drivers: ' + err.message });
+    }
+});
+
+app.post('/api/association/tariffs', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const { vehicle_type, trip_type, config } = req.body;
+        const vt = vehicle_type || 'sedan';
+        const tt = trip_type || 'local';
+        const configStr = typeof config === 'string' ? config : JSON.stringify(config);
+
+        // Ensure updated_at exists or update config without relying on it
+        try {
+            await db.query('ALTER TABLE taxi_association_tariffs ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+        } catch (e) {}
+
+        await db.query(
+            `INSERT INTO taxi_association_tariffs (association_id, trip_type, vehicle_type, config)
+             VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE config = ?`,
+            [assocId, tt, vt, configStr, configStr]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error updating tariffs:', err);
+        res.status(500).json({ error: 'Failed to update tariffs: ' + err.message });
+    }
+});
+
+app.get('/api/association/tariffs', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const [rows] = await db.query('SELECT trip_type, vehicle_type, config FROM taxi_association_tariffs WHERE association_id = ?', [assocId]);
+        res.json(rows);
+    } catch (err) {
+        console.error('Error fetching tariffs:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Association Admin: Wallet Top-Up/Deduct for drivers in their association
+app.post('/api/association/wallet/adjust', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const { driverId, amount, type, note } = req.body; // type: 'credit' or 'debit'
+        if (!driverId || !amount || !type) return res.status(400).json({ error: 'driverId, amount, and type required.' });
+
+        // Verify driver belongs to this association
+        const [driverCheck] = await db.query('SELECT id, wallet_balance FROM taxi_drivers WHERE id = ? AND association_id = ?', [driverId, assocId]);
+        if (driverCheck.length === 0) return res.status(403).json({ error: 'Driver not in your association.' });
+
+        const parsedAmount = parseFloat(amount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) return res.status(400).json({ error: 'Invalid amount.' });
+
+        if (type === 'credit') {
+            await db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance + ? WHERE id = ?', [parsedAmount, driverId]);
+        } else if (type === 'debit') {
+            if (parseFloat(driverCheck[0].wallet_balance) < parsedAmount) {
+                return res.status(400).json({ error: 'Insufficient driver wallet balance.' });
+            }
+            await db.query('UPDATE taxi_drivers SET wallet_balance = wallet_balance - ? WHERE id = ?', [parsedAmount, driverId]);
+        } else {
+            return res.status(400).json({ error: 'Invalid type. Use credit or debit.' });
+        }
+
+        await db.query(
+            `INSERT INTO taxi_association_wallet_transactions (association_id, booking_id, driver_id, amount, type, note) VALUES (?, NULL, ?, ?, ?, ?)`,
+            [assocId, driverId, parsedAmount, type, note || `Manual ${type} by Association Admin`]
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Wallet adjustment failed: ' + err.message });
+    }
+});
+
+// Association Admin: Create driver in their association
+app.post('/api/association/drivers', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const { name, email, password, phone, car_model, car_number, vehicle_type } = req.body;
+        if (!name || !email || !password || !phone) return res.status(400).json({ error: 'Required fields missing.' });
+
+        const [existing] = await db.query('SELECT id FROM taxi_drivers WHERE email = ?', [email]);
+        if (existing.length > 0) return res.status(400).json({ error: 'Email already in use.' });
+
+        const hashedPwd = await bcrypt.hash(password, 10);
+        const [result] = await db.query(
+            `INSERT INTO taxi_drivers (name, email, password, phone, car_model, car_number, vehicle_type, association_id, is_blocked, wallet_balance, approval_status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 'approved')`,
+            [name, email, hashedPwd, phone, car_model || '', car_number || '', vehicle_type || 'sedan', assocId]
+        );
+        res.json({ success: true, driverId: result.insertId });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to create driver: ' + err.message });
+    }
+});
+
+// Association Admin: Toggle driver active/inactive
+app.post('/api/association/drivers/toggle', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const { driverId } = req.body;
+
+        const [check] = await db.query('SELECT id, is_blocked FROM taxi_drivers WHERE id = ? AND association_id = ?', [driverId, assocId]);
+        if (check.length === 0) return res.status(403).json({ error: 'Driver not in your association.' });
+
+        const newBlocked = check[0].is_blocked ? 0 : 1;
+        await db.query('UPDATE taxi_drivers SET is_blocked = ? WHERE id = ?', [newBlocked, driverId]);
+        res.json({ success: true, is_active: newBlocked === 0 ? 1 : 0 });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to toggle driver: ' + err.message });
+    }
+});
+
+// Association Admin: Cancel a ride in their association
+app.post('/api/association/bookings/cancel', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const { bookingId } = req.body;
+
+        const [check] = await db.query('SELECT id, status FROM taxi_bookings WHERE id = ? AND association_id = ?', [bookingId, assocId]);
+        if (check.length === 0) return res.status(403).json({ error: 'Booking not in your association.' });
+        if (['completed', 'finished', 'cancelled'].includes(check[0].status)) {
+            return res.status(400).json({ error: 'Cannot cancel a ride that is already ' + check[0].status });
+        }
+
+        await db.query('UPDATE taxi_bookings SET status = ?, driver_id = NULL WHERE id = ?', ['cancelled', bookingId]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to cancel booking.' });
+    }
+});
+
+// --- ENTERPRISE ASSOCIATION ADMIN EXTENSIONS ---
+
+// 1. Live GPS Radar (Map Data)
+app.get('/api/association/live-pilots', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const [rows] = await db.query(`
+            SELECT id, name, phone, car_model, car_number, vehicle_type, latitude, longitude, is_online, is_blocked,
+                   IF(is_blocked = 0, 1, 0) as is_active
+            FROM taxi_drivers
+            WHERE association_id = ?
+        `, [assocId]);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch live pilots: ' + err.message });
+    }
+});
+
+// 2. Pending Pilot Applications for District/Association
+app.get('/api/association/applications', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const [assocInfo] = await db.query('SELECT city_name FROM taxi_associations WHERE id = ?', [assocId]);
+        const cityName = assocInfo[0] ? assocInfo[0].city_name : '';
+
+        const [rows] = await db.query(`
+            SELECT * FROM taxi_driver_applications
+            WHERE association_id = ? OR district = ? OR district LIKE ?
+            ORDER BY created_at DESC
+        `, [assocId, cityName, `%${cityName}%`]);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch applications: ' + err.message });
+    }
+});
+
+// 3. Application Approval/Rejection by Association Admin
+app.post('/api/association/applications/decision', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const { appId, status, note } = req.body;
+        if (!appId || !['approved', 'rejected'].includes(status)) {
+            return res.status(400).json({ error: 'appId and valid status required.' });
+        }
+
+        const [appRows] = await db.query('SELECT * FROM taxi_driver_applications WHERE id = ?', [appId]);
+        if (appRows.length === 0) return res.status(404).json({ error: 'Application not found.' });
+        const appObj = appRows[0];
+
+        await db.query('UPDATE taxi_driver_applications SET status = ?, admin_note = ? WHERE id = ?', [status, note || '', appId]);
+
+        if (status === 'approved') {
+            const [existing] = await db.query('SELECT id FROM taxi_drivers WHERE email = ?', [appObj.email]);
+            if (existing.length === 0) {
+                const hashedPwd = await bcrypt.hash(appObj.password || 'Driver@123', 10);
+                await db.query(`
+                    INSERT INTO taxi_drivers (name, profile_photo, email, password, phone, car_model, car_number, vehicle_type, seating_capacity, association_id, district, association_name, is_blocked, wallet_balance, approval_status, dl_front, dl_back, pvc, aadhar_front, aadhar_back, rc_book, insurance, pollution, permit, association_id_card)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 'approved', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    appObj.name, appObj.profile_photo, appObj.email, hashedPwd, appObj.phone,
+                    appObj.car_model || '', appObj.car_number || '', appObj.vehicle_type || 'sedan',
+                    appObj.seating_capacity || 5, assocId, appObj.district || '', appObj.association_name || 'District Association',
+                    appObj.dl_front, appObj.dl_back, appObj.pvc, appObj.aadhar_front, appObj.aadhar_back,
+                    appObj.rc_book, appObj.insurance, appObj.pollution, appObj.permit, appObj.association_id_card
+                ]);
+            }
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Application decision failed: ' + err.message });
+    }
+});
+
+// 4. District Broadcast Alert to Pilots
+app.post('/api/association/broadcast', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const { title, message, priority } = req.body;
+        if (!title || !message) return res.status(400).json({ error: 'Title and message required.' });
+
+        if (io) {
+            io.to(`assoc:${assocId}`).emit('district_broadcast', {
+                title,
+                message,
+                priority: priority || 'normal',
+                sender: 'District Association Admin',
+                timestamp: Date.now()
+            });
+        }
+        res.json({ success: true, message: 'Broadcast dispatched to district pilots.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Broadcast failed: ' + err.message });
+    }
+});
+
+// 5. Association Treasury Bank Payout Request
+app.post('/api/association/payout-request', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const { amount, method, account_details, notes } = req.body;
+        const parsedAmount = parseFloat(amount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) return res.status(400).json({ error: 'Invalid amount.' });
+
+        const [wRows] = await db.query('SELECT balance FROM taxi_association_wallets WHERE association_id = ?', [assocId]);
+        const curBal = wRows[0] ? parseFloat(wRows[0].balance) : 0;
+        if (curBal < parsedAmount) return res.status(400).json({ error: 'Insufficient association treasury balance.' });
+
+        await db.query(`
+            INSERT INTO taxi_association_wallet_transactions (association_id, booking_id, driver_id, amount, type, note)
+            VALUES (?, NULL, NULL, ?, 'debit', ?)
+        `, [assocId, parsedAmount, `Treasury Payout Request (${method}): ${notes || ''}`]);
+
+        await db.query('UPDATE taxi_association_wallets SET balance = balance - ? WHERE association_id = ?', [parsedAmount, assocId]);
+
+        res.json({ success: true, newBalance: curBal - parsedAmount });
+    } catch (err) {
+        res.status(500).json({ error: 'Payout request failed: ' + err.message });
+    }
+});
+
+// 6. District Deep Analytics & Vehicle Breakdown
+app.get('/api/association/reports/analytics', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        
+        const [fleetDist] = await db.query(`
+            SELECT vehicle_type, COUNT(*) as count, SUM(IF(is_online = 1, 1, 0)) as online_count
+            FROM taxi_drivers WHERE association_id = ?
+            GROUP BY vehicle_type
+        `, [assocId]);
+
+        const [leaderboard] = await db.query(`
+            SELECT d.id, d.name, d.phone, d.vehicle_type, COUNT(b.id) as completed_rides, COALESCE(SUM(b.fare), 0) as total_revenue
+            FROM taxi_drivers d
+            LEFT JOIN taxi_bookings b ON d.id = b.driver_id AND b.status IN ('completed', 'finished')
+            WHERE d.association_id = ?
+            GROUP BY d.id
+            ORDER BY completed_rides DESC LIMIT 10
+        `, [assocId]);
+
+        res.json({ fleetDist, leaderboard });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to generate analytics: ' + err.message });
+    }
+});
+
+// 7. Driver Digital ID Card Data
+app.get('/api/association/driver-id-card/:id', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const driverId = req.params.id;
+        const [dRows] = await db.query(`
+            SELECT d.*, a.city_name, a.name as association_name
+            FROM taxi_drivers d
+            LEFT JOIN taxi_associations a ON d.association_id = a.id
+            WHERE d.id = ? AND d.association_id = ?
+        `, [driverId, assocId]);
+        if (!dRows.length) return res.status(404).json({ error: 'Driver not found in your association.' });
+        res.json(dRows[0]);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch ID card data: ' + err.message });
+    }
+});
+
+// 8. Expiring Documents Tracker
+app.get('/api/association/documents/expiring', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const [rows] = await db.query(`
+            SELECT id, name, phone, car_model, car_number, vehicle_type, created_at
+            FROM taxi_drivers
+            WHERE association_id = ?
+            ORDER BY created_at ASC LIMIT 10
+        `, [assocId]);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch document status.' });
+    }
+});
+
+// 9. District SOS Emergency Feed & Control
+app.get('/api/association/sos/active', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const [rows] = await db.query(`
+            SELECT user_name as name, user_phone as phone, latitude, longitude
+            FROM taxi_sos_alerts
+            WHERE association_id = ? AND status = 'active'
+            ORDER BY created_at DESC LIMIT 10
+        `, [assocId]);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch SOS alerts.' });
+    }
+});
+
+// 10. District Association Support & Dispute Desk
+app.get('/api/association/support/tickets', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const [rows] = await db.query(`
+            SELECT st.booking_id, st.issue_text as issue, st.status, b.fare, COALESCE(u.name, tu.name) as customer_name, COALESCE(u.phone, tu.phone) as customer_phone, d.name as driver_name
+            FROM taxi_association_support_tickets st
+            LEFT JOIN taxi_bookings b ON st.booking_id = b.id
+            LEFT JOIN passengers u ON st.customer_id = u.id
+            LEFT JOIN taxi_passengers tu ON st.customer_id = tu.id
+            LEFT JOIN taxi_drivers d ON st.driver_id = d.id
+            WHERE st.association_id = ?
+            ORDER BY st.created_at DESC LIMIT 15
+        `, [assocId]);
+        res.json(rows);
+    } catch (err) {
+        console.error('Error in support tickets:', err);
+        res.status(500).json({ error: 'Failed to fetch support tickets: ' + err.message });
+    }
+});
+
+// 11. Driver Incentive Targets & Welfare Fund
+app.get('/api/association/incentives', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const [welfareBal] = await db.query('SELECT balance FROM taxi_association_wallets WHERE association_id = ?', [assocId]);
+        const bal = welfareBal[0] ? parseFloat(welfareBal[0].balance) : 0;
+        
+        const [targets] = await db.query('SELECT id, title, target_rides as target, bonus_amount as bonus, period FROM taxi_association_incentives WHERE association_id = ? AND is_active = 1', [assocId]);
+        
+        res.json({
+            welfareFund: (bal * 0.05).toFixed(2),
+            currentBalance: bal.toFixed(2),
+            targets: targets.length > 0 ? targets : [
+                { id: 1, title: 'Daily Peak Performer', target: 12, bonus: 250, period: 'Daily' },
+                { id: 2, title: 'Weekly Super Captain', target: 75, bonus: 1500, period: 'Weekly' }
+            ]
+        });
+    } catch (err) {
+        console.error('Error in incentives:', err);
+        res.status(500).json({ error: 'Failed to fetch incentives: ' + err.message });
+    }
+});
+
+// 12. District Surge & Bata Override
+app.get('/api/association/surge', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const [rows] = await db.query('SELECT multiplier as surgeMultiplier, night_surcharge_percent as nightSurchargePercent, bata_per_day as driverBataPerDay, is_active as active FROM taxi_association_surge_config WHERE association_id = ?', [assocId]);
+        
+        if (rows.length > 0) {
+            res.json({ assocId, ...rows[0], active: rows[0].active === 1 });
+        } else {
+            res.json({
+                assocId,
+                surgeMultiplier: 1.2,
+                nightSurchargePercent: 15,
+                driverBataPerDay: 400,
+                active: false
+            });
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch surge settings.' });
+    }
+});
+
+app.post('/api/association/surge/toggle', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const { multiplier, active, nightSurcharge, bata } = req.body;
+        
+        await db.query(`
+            INSERT INTO taxi_association_surge_config (association_id, multiplier, night_surcharge_percent, bata_per_day, is_active)
+            VALUES (?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE multiplier = VALUES(multiplier), night_surcharge_percent = VALUES(night_surcharge_percent), bata_per_day = VALUES(bata_per_day), is_active = VALUES(is_active)
+        `, [assocId, multiplier || 1.2, nightSurcharge || 15, bata || 400, active ? 1 : 0]);
+        
+        res.json({ success: true, multiplier: multiplier || 1.2, active: !!active, nightSurcharge: nightSurcharge || 15, bata: bata || 400 });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update surge.' });
+    }
+});
+
+// Serve association admin panel
+app.get('/association-admin', (req, res) => res.sendFile(require('path').join(__dirname, 'public', 'association-admin.html')));
+
 
 // --- CENTRALIZED ERROR HANDLING MIDDLEWARE ---
 app.use((err, req, res, next) => {

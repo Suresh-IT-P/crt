@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityRide | District Association Portal</title>
+    <meta name="description" content="District Association Admin Panel – manage your district drivers, rides, tariffs and wallet.">
+    <link rel="icon" type="image/png" href="car.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js" crossorigin="anonymous" defer></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --admin-sidebar: #FFFFFF;
+            --admin-bg: #F7FAF6;
+            --primary: #006B3A;
+            --primary-hover: #00562e;
+            --text-main: #000000;
+            --text-muted: #1C2B23;
+            --white: #FFFFFF;
+            --border: rgba(0,107,58,0.12);
+            --success: #006B3A;
+            --danger: #ff3b30;
+            --warning: #ff9f0a;
+            --info: #0a84ff;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Outfit', sans-serif; background: var(--admin-bg); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; margin: 0; }
+
+        /* LOGIN */
+        #login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #011a0e 0%, #024d25 50%, #000 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        #login-screen.hidden { display: none; }
+        .login-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(0,107,58,0.3); border-radius: 28px; padding: 3.5rem; width: 420px; backdrop-filter: blur(20px); box-shadow: 0 40px 80px rgba(0,0,0,0.5); }
+        .login-logo { text-align: center; margin-bottom: 2.5rem; }
+        .login-logo img { height: 60px; width: auto; }
+        .login-logo h2 { color: white; font-weight: 800; font-size: 1.4rem; margin: 1rem 0 0.25rem; }
+        .login-logo p { color: rgba(255,255,255,0.5); font-size: 0.85rem; margin: 0; }
+        .login-badge { background: rgba(0,107,58,0.2); border: 1px solid rgba(0,107,58,0.4); border-radius: 12px; padding: 0.6rem 1rem; text-align: center; color: #4ade80; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2rem; }
+        .login-field { margin-bottom: 1.5rem; }
+        .login-field label { color: rgba(255,255,255,0.7); font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 0.5rem; }
+        .login-field input { width: 100%; background: rgba(255,255,255,0.08) !important; border: 1px solid rgba(0,107,58,0.3) !important; border-radius: 12px !important; color: white !important; padding: 0.9rem 1.2rem !important; font-size: 0.95rem !important; font-weight: 600 !important; transition: all 0.3s !important; }
+        .login-field input:focus { border-color: #006B3A !important; background: rgba(255,255,255,0.12) !important; box-shadow: 0 0 20px rgba(0,107,58,0.3) !important; }
+        .login-btn { width: 100%; background: linear-gradient(135deg, #006B3A, #00a854); color: white; border: none; border-radius: 12px; padding: 1rem; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.3s; margin-top: 0.5rem; font-family: 'Outfit', sans-serif; }
+        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,107,58,0.4); }
+        #login-error { color: #ff3b30; font-size: 0.85rem; text-align: center; margin-top: 1rem; display: none; }
+
+        /* SIDEBAR */
+        .sidebar { width: 280px; background: var(--admin-sidebar); padding: 2.5rem 1.5rem; display: flex; flex-direction: column; flex-shrink: 0; height: 100vh; position: sticky; top: 0; overflow-y: auto; padding-bottom: 4rem; border-right: 1px solid var(--border); }
+        .sidebar .logo { margin-bottom: 2rem; cursor: pointer; }
+        .assoc-badge { background: linear-gradient(135deg, rgba(0,107,58,0.1), rgba(0,107,58,0.05)); border: 1px solid var(--border); border-radius: 14px; padding: 1rem 1.2rem; margin-bottom: 2.5rem; }
+        .assoc-badge .assoc-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 700; }
+        .assoc-badge .assoc-name { font-size: 0.95rem; font-weight: 800; color: var(--primary); margin-top: 0.3rem; }
+        .sidebar-nav { flex-grow: 1; display: flex; flex-direction: column; }
+        .nav-item { padding: 1rem 1.2rem; margin-bottom: 0.4rem; border-radius: 12px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 1rem; opacity: 0.85; font-size: 0.9rem; color: var(--text-main) !important; font-weight: 700 !important; }
+        .nav-item:hover, .nav-item.active { background: rgba(0,107,58,0.08); opacity: 1; }
+        .nav-item.active { border-left: 4px solid var(--primary); color: var(--primary) !important; }
+        .logout-item { margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 2rem; }
+
+        /* MAIN */
+        .main-stage { flex-grow: 1; padding: 3rem; overflow-y: auto; background: var(--admin-bg); }
+        .main-stage::-webkit-scrollbar { width: 6px; }
+        .main-stage::-webkit-scrollbar-thumb { background: rgba(0,107,58,0.15); border-radius: 10px; }
+
+        /* COMPONENTS */
+        .stage-header { margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+        .stage-header h1 { color: var(--text-main) !important; font-weight: 800 !important; font-size: 2rem; margin: 0; }
+        .stage-header p { color: var(--text-muted) !important; font-weight: 600 !important; margin: 0.5rem 0 0; }
+        .text-accent { color: var(--primary); }
+
+        .stat-banner { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 3rem; }
+        .b-card { background: var(--white); padding: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,107,58,0.06); border: 1px solid var(--border); }
+        .b-card h4 { font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 1px; font-weight: 800; margin-top: 0; }
+        .b-card .val { font-size: 1.9rem; font-weight: 800; color: var(--text-main); }
+
+        .data-table-container { background: var(--white); border-radius: 22px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.05); border: 1px solid var(--border); overflow-x: auto; margin-bottom: 2rem; }
+        .data-table-container h3 { margin: 0 0 1.5rem; font-weight: 800; color: var(--text-main); }
+
+        .cityride-table { width: 100%; border-collapse: collapse; }
+        .cityride-table th { text-align: left; padding: 1rem 1.25rem; font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800; border-bottom: 2px solid var(--border); }
+        .cityride-table td { padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 0.88rem; vertical-align: middle; color: var(--text-main); font-weight: 600; }
+        .cityride-table tr:last-child td { border-bottom: none; }
+
+        .status-tag { padding: 0.3rem 0.7rem; border-radius: 8px; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; display: inline-block; }
+        .status-pending { background: rgba(255,159,10,0.1); color: var(--warning); }
+        .status-assigned { background: rgba(10,132,255,0.1); color: var(--info); }
+        .status-completed, .status-finished { background: rgba(0,107,58,0.1); color: var(--success); }
+        .status-cancelled { background: rgba(255,59,48,0.1); color: var(--danger); }
+        .status-vendor_assigned { background: rgba(155,89,182,0.1); color: #9b59b6; }
+
+        .btn { padding: 0.65rem 1.4rem; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; transition: all 0.3s; font-size: 0.88rem; font-family: 'Outfit', sans-serif; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,107,58,0.3); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { background: rgba(0,107,58,0.06); }
+
+        .action-btn { background: none; border: none; cursor: pointer; color: var(--primary); font-weight: 700; font-size: 0.82rem; padding: 0.3rem 0.6rem; border-radius: 8px; transition: all 0.3s; font-family: 'Outfit', sans-serif; }
+        .action-btn:hover { background: rgba(0,107,58,0.08); }
+        .action-btn.danger { color: var(--danger); }
+        .action-btn.danger:hover { background: rgba(255,59,48,0.08); }
+
+        .tab-section { display: none; }
+        .tab-section.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .input-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        .input-group label { font-weight: 700 !important; font-size: 0.8rem !important; color: var(--text-main) !important; }
+        .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+        .form-dark { background: linear-gradient(135deg, #006B3A, #024d25); color: white; border-radius: 20px; padding: 2rem; margin-bottom: 2rem; }
+        .form-dark label { color: rgba(255,255,255,0.8) !important; }
+        .form-dark input, .form-dark select { background: rgba(255,255,255,0.1) !important; border-color: rgba(255,255,255,0.2) !important; color: white !important; }
+        .form-dark input::placeholder { color: rgba(255,255,255,0.4) !important; }
+        .form-dark h3 { color: white; margin: 0 0 1.5rem; font-weight: 800; }
+
+        .wallet-card { background: linear-gradient(135deg, #006B3A, #00a854); border-radius: 20px; padding: 2.5rem; color: white; margin-bottom: 2rem; }
+        .wallet-card .wc-label { font-size: 0.8rem; font-weight: 700; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
+        .wallet-card .wc-balance { font-size: 3rem; font-weight: 800; margin: 0.75rem 0; }
+        .wallet-card .wc-meta { font-size: 0.85rem; opacity: 0.7; }
+
+        .fleet-sub { display: none; }
+        .fleet-sub.active { display: block; }
+
+        .sub-nav { display: flex; gap: 0.75rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .sub-nav-btn { padding: 0.5rem 1.1rem; border-radius: 10px; font-size: 0.82rem; font-weight: 700; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text-muted); transition: all 0.3s; font-family: 'Outfit', sans-serif; }
+        .sub-nav-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .vehicle-tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem; }
+        .vehicle-tile-card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; cursor: pointer; transition: all 0.2s ease; display: flex; flex-direction: column; justify-content: space-between; }
+        .vehicle-tile-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,107,58,0.1); }
+        .vehicle-tile-card.active { border-color: var(--primary); background: rgba(0,107,58,0.05); }
+        .vehicle-tile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .vehicle-tile-icon { font-size: 1.8rem; width: 48px; height: 48px; background: rgba(0,107,58,0.08); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .vehicle-tile-title { font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin: 0; }
+        .vehicle-tile-sub { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+        .rate-summary-pill { display: flex; justify-content: space-between; padding: 6px 10px; background: rgba(0,107,58,0.04); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 0.5rem; }
+        .rate-summary-pill .cat-name { font-weight: 700; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; }
+        .rate-summary-pill .cat-val { font-weight: 800; color: var(--primary); font-size: 0.8rem; }
+        .expanded-tariff-card { background: var(--white); border: 1px solid var(--primary); border-radius: 20px; padding: 1.75rem; margin-bottom: 3rem; animation: fadeIn 0.3s ease; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
+        .category-tariff-card { background: var(--admin-bg); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; margin-bottom: 1rem; }
+
+        .map-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+        .map-modal-content { background: var(--white); padding: 0; border-radius: 16px; width: 90%; max-width: 550px; max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 60px rgba(0,0,0,0.5); animation: modalSlideUp 0.4s ease; border: 1px solid var(--border); color: var(--text-main); }
+        @keyframes modalSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .map-header { background: var(--admin-bg); color: var(--text-main); padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        .close-map { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: color 0.2s; }
+        .close-map:hover { color: var(--text-main); }
+
+        .tx-row { display: flex; align-items: center; gap: 1rem; padding: 1.1rem 0; border-bottom: 1px solid var(--border); }
+        .tx-row:last-child { border-bottom: none; }
+        .tx-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+        .tx-icon.credit { background: rgba(0,107,58,0.1); }
+        .tx-icon.debit { background: rgba(255,59,48,0.1); }
+        .tx-info { flex-grow: 1; }
+        .tx-info .tx-note { font-weight: 700; font-size: 0.9rem; }
+        .tx-info .tx-date { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+        .tx-amount { font-weight: 800; font-size: 1rem; }
+        .tx-amount.credit { color: var(--success); }
+        .tx-amount.debit { color: var(--danger); }
+
+        .mobile-header { display: none; }
+        .burger-menu { display: none; }
+
+        @media (max-width: 1024px) {
+            body { flex-direction: column; overflow-y: auto; }
+            .mobile-header { display: flex; background: var(--admin-sidebar); padding: 1.25rem 2rem; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 9000; box-shadow: 0 5px 20px rgba(0,0,0,0.1); border-bottom: 1px solid var(--border); }
+            .burger-menu { display: flex; flex-direction: column; gap: 5px; cursor: pointer; width: 44px; height: 44px; align-items: center; justify-content: center; }
+            .burger-menu span { display: block; width: 25px; height: 2px; background: var(--text-main); border-radius: 2px; transition: 0.3s; }
+            .sidebar { position: fixed; left: -290px; top: 0; height: 100vh; z-index: 10000; width: 280px; transition: all 0.4s cubic-bezier(0.4,0,0.2,1); box-shadow: 10px 0 40px rgba(0,0,0,0.1); }
+            .sidebar.active { left: 0; }
+            .main-stage { padding: 1.5rem; overflow: visible; }
+            .stat-banner { grid-template-columns: 1fr 1fr; gap: 1rem; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            .stat-banner { grid-template-columns: 1fr; }
+            .stage-header { flex-direction: column; align-items: flex-start; }
+            .cityride-table thead { display: none; }
+            .cityride-table, .cityride-table tbody, .cityride-table tr, .cityride-table td { display: block; width: 100%; }
+            .cityride-table tr { margin-bottom: 1.25rem; background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 1rem; }
+            .cityride-table td { border: none; padding: 0.75rem 0 0.75rem 120px; position: relative; border-bottom: 1px solid var(--border); text-align: right; }
+            .cityride-table td:last-child { border-bottom: none; }
+            .cityride-table td::before { content: attr(data-label); font-weight: 800; font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); position: absolute; left: 0; top: 1rem; width: 115px; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- LOGIN -->
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="login-logo">
+                <img src="logo.png" alt="CityRide">
+                <h2>District Association Portal</h2>
+                <p>Secure access for authorized association admins only</p>
+            </div>
+            <div class="login-badge">🏢 Association Admin Access</div>
+            <div class="login-field">
+                <label>Username</label>
+                <input type="text" id="login-username" placeholder="e.g. ernakulam_admin" autocomplete="username">
+            </div>
+            <div class="login-field">
+                <label>Password</label>
+                <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In to Your District Panel</button>
+            <div id="login-error"></div>
+        </div>
+    </div>
+
+    <!-- MOBILE HEADER -->
+    <div class="mobile-header">
+        <img src="logo.png" alt="CityRide" style="height:36px;width:auto;">
+        <div class="burger-menu" id="assoc-burger" onclick="document.getElementById('assoc-sidebar').classList.toggle('active')">
+            <span></span><span></span><span></span>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="assoc-sidebar">
+        <div class="logo">
+            <img src="logo.png" alt="CityRide" style="height:50px;width:auto;">
+        </div>
+        <div class="assoc-badge">
+            <div class="assoc-label">District Association</div>
+            <div class="assoc-name" id="sidebar-assoc-name">Loading...</div>
+        </div>
+        <div class="sidebar-nav">
+            <div class="nav-item active" onclick="switchTab('overview', this)">📊 Overview</div>
+            <div class="nav-item" onclick="switchTab('radar', this)">📡 Live GPS Radar</div>
+            <div class="nav-item" onclick="switchTab('bookings', this)">🚕 Mission Control</div>
+            <div class="nav-item" onclick="switchTab('fleet', this)">🏎️ Pilot Management</div>
+            <div class="nav-item" onclick="switchTab('idcards', this)">🪪 ID Cards &amp; Compliance</div>
+            <div class="nav-item" onclick="switchTab('applications', this)">📑 Pilot Applications</div>
+            <div class="nav-item" onclick="switchTab('broadcast', this)">📢 District Broadcast</div>
+            <div class="nav-item" onclick="switchTab('sosdesk', this)">🚨 Emergency SOS &amp; Helpdesk</div>
+            <div class="nav-item" onclick="switchTab('incentives', this)">🎁 Incentives &amp; Welfare</div>
+            <div class="nav-item" onclick="switchTab('surgedesk', this)">⚡ Surge &amp; Bata Control</div>
+            <div class="nav-item" onclick="switchTab('wallets', this)">💳 Treasury &amp; Payouts</div>
+            <div class="nav-item" onclick="switchTab('tariffs', this)">💰 Rate Tariffs</div>
+            <div class="nav-item" onclick="switchTab('analytics', this)">📈 Analytics &amp; Reports</div>
+        </div>
+        <div class="nav-item logout-item" onclick="doLogout()">🚪 Sign Out</div>
+    </aside>
+
+    <!-- MAIN STAGE -->
+    <main class="main-stage">
+
+        <!-- OVERVIEW -->
+        <div id="overview" class="tab-section active">
+            <div class="stage-header">
+                <div>
+                    <h1>District <span class="text-accent">Overview</span></h1>
+                    <p>Real-time performance for your association.</p>
+                </div>
+                <button class="btn btn-primary" onclick="loadOverview()">&#8635; Refresh</button>
+            </div>
+            <div class="stat-banner">
+                <div class="b-card"><h4>Association Wallet</h4><div class="val" id="stat-wallet">\u20B90</div></div>
+                <div class="b-card"><h4>Total Earned</h4><div class="val" id="stat-earned">\u20B90</div></div>
+                <div class="b-card"><h4>District Pilots</h4><div class="val" id="stat-pilots">0</div></div>
+                <div class="b-card"><h4>Active Missions</h4><div class="val" id="stat-active">0</div></div>
+                <div class="b-card"><h4>Completed Rides</h4><div class="val" id="stat-completed">0</div></div>
+                <div class="b-card"><h4>Pending</h4><div class="val" id="stat-pending">0</div></div>
+                <div class="b-card"><h4>Cancelled</h4><div class="val" id="stat-cancelled">0</div></div>
+                <div class="b-card"><h4>Assigned</h4><div class="val" id="stat-assigned">0</div></div>
+            </div>
+            <div class="data-table-container">
+                <h3>Recent Rides in Your District</h3>
+                <table class="cityride-table">
+                    <thead><tr>
+                        <th>Ride ID</th><th>Customer</th><th>Pickup &rarr; Drop</th><th>Fare</th><th>Pilot</th><th>Status</th>
+                    </tr></thead>
+                    <tbody id="overview-rides-body"><tr><td colspan="6" style="text-align:center;padding:3rem;color:var(--text-muted)">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- LIVE GPS RADAR MAP -->
+        <div id="radar" class="tab-section">
+            <div class="stage-header">
+                <div>
+                    <h1>Live GPS <span class="text-accent">Radar</span></h1>
+                    <p>Real-time location tracking for all pilots in your district geofence.</p>
+                </div>
+                <button class="btn btn-primary" onclick="loadLiveRadar()">&#8635; Refresh GPS Positions</button>
+            </div>
+            <div class="data-table-container" style="padding:0; overflow:hidden; border-radius:22px; height:580px; position:relative;">
+                <div id="assoc-radar-map" style="width:100%; height:100%; z-index:1;"></div>
+            </div>
+        </div>
+
+        <!-- MISSION CONTROL -->
+        <div id="bookings" class="tab-section">
+            <div class="stage-header">
+                <div>
+                    <h1>Mission <span class="text-accent">Control</span></h1>
+                    <p>All rides originating from your district.</p>
+                </div>
+                <div style="display:flex;gap:1rem;">
+                    <button class="btn btn-outline" onclick="loadBookings()">&#8635; Refresh</button>
+                    <button class="btn btn-primary" onclick="downloadRidesPDF()">PDF Report</button>
+                </div>
+            </div>
+            <div style="display:flex;gap:1rem;margin-bottom:2rem;flex-wrap:wrap;align-items:center;">
+                <select id="filter-status" onchange="loadBookings()" style="padding:0.6rem 1rem;border-radius:10px;font-weight:700;font-size:0.85rem;border:1px solid var(--border);">
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="assigned">Assigned</option>
+                    <option value="completed">Completed</option>
+                    <option value="finished">Finished</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <input type="date" id="filter-date" onchange="loadBookings()" style="padding:0.6rem 1rem;border-radius:10px;font-weight:700;font-size:0.85rem;">
+            </div>
+            <div class="data-table-container">
+                <table class="cityride-table">
+                    <thead><tr>
+                        <th>ID</th><th>Customer</th><th>Trip Data</th><th>Fare</th><th>Pilot</th><th>Status</th><th>Action</th>
+                    </tr></thead>
+                    <tbody id="bookings-body"><tr><td colspan="7" style="text-align:center;padding:3rem;color:var(--text-muted)">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PILOT MANAGEMENT -->
+        <div id="fleet" class="tab-section">
+            <div class="stage-header">
+                <div>
+                    <h1>Pilot <span class="text-accent">Management</span></h1>
+                    <p>Manage drivers enrolled under your association.</p>
+                </div>
+            </div>
+            <div class="sub-nav">
+                <button class="sub-nav-btn active" id="sb-active" onclick="showFleetSub('active')">🏎️ Active Pilots</button>
+                <button class="sub-nav-btn" id="sb-enroll" onclick="showFleetSub('enroll')">➕ Enroll Pilot</button>
+            </div>
+            <!-- Active Pilots -->
+            <div id="fleet-sub-active" class="fleet-sub active">
+                <div class="data-table-container">
+                    <table class="cityride-table">
+                        <thead><tr>
+                            <th>ID</th><th>Pilot Details</th><th>Vehicle</th><th>Type</th><th>Wallet</th><th>Status</th><th>Actions</th>
+                        </tr></thead>
+                        <tbody id="fleet-body"><tr><td colspan="7" style="text-align:center;padding:3rem;color:var(--text-muted)">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Enroll Pilot -->
+            <div id="fleet-sub-enroll" class="fleet-sub">
+                <div class="form-dark">
+                    <h3>Enroll New Pilot in Your Association</h3>
+                    <div class="form-grid">
+                        <div class="input-group"><label>Full Name *</label><input type="text" id="d-name" placeholder="Pilot Name"></div>
+                        <div class="input-group"><label>Email *</label><input type="email" id="d-email" placeholder="pilot@example.com"></div>
+                        <div class="input-group"><label>Password *</label><input type="text" id="d-pass" placeholder="Secure password"></div>
+                        <div class="input-group"><label>Phone *</label><input type="text" id="d-phone" placeholder="9876543210"></div>
+                        <div class="input-group"><label>Vehicle Model</label><input type="text" id="d-car" placeholder="e.g. Maruti Swift"></div>
+                        <div class="input-group"><label>Vehicle Number</label><input type="text" id="d-num" placeholder="KL 01 A 1234"></div>
+                        <div class="input-group">
+                            <label>Vehicle Type</label>
+                            <select id="d-type" style="width:100%;padding:0.8rem 1rem;border-radius:10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;">
+                                <option value="bike">Bike</option>
+                                <option value="auto">Auto (3+1)</option>
+                                <option value="hatchback">Hatchback (4+1)</option>
+                                <option value="sedan" selected>Sedan</option>
+                                <option value="suv">SUV</option>
+                                <option value="8plus1">Tempo Traveller (8+1)</option>
+                                <option value="van24">Omni Bus (24+1)</option>
+                            </select>
+                        </div>
+                        <div style="grid-column:span 2;display:flex;align-items:flex-end;">
+                            <button class="btn btn-primary" style="width:100%;" onclick="enrollPilot()">✅ Enroll Pilot in Association</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PILOT APPLICATIONS -->
+        <div id="applications" class="tab-section">
+            <div class="stage-header">
+                <div>
+                    <h1>Pilot <span class="text-accent">Applications</span></h1>
+                    <p>Review & verify pending driver registrations in your district.</p>
+                </div>
+                <button class="btn btn-outline" onclick="loadAssocApplications()">&#8635; Refresh Applications</button>
+            </div>
+            <div class="data-table-container">
+                <table class="cityride-table">
+                    <thead><tr>
+                        <th>ID</th><th>Pilot Details</th><th>Vehicle &amp; District</th><th>Status</th><th>Actions</th>
+                    </tr></thead>
+                    <tbody id="assoc-apps-body"><tr><td colspan="5" style="text-align:center;padding:3rem;color:var(--text-muted)">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- DISTRICT BROADCAST -->
+        <div id="broadcast" class="tab-section">
+            <div class="stage-header">
+                <div>
+                    <h1>District <span class="text-accent">Broadcast</span></h1>
+                    <p>Send instant alert broadcasts to all active pilots in your association.</p>
+                </div>
+            </div>
+            <div class="form-dark">
+                <h3>📢 Dispatch District Alert Broadcast</h3>
+                <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                    <div class="input-group" style="grid-column:span 2;">
+                        <label>Broadcast Title *</label>
+                        <input type="text" id="bc-title" placeholder="e.g. High Demand Alert at Salem Bus Stand">
+                    </div>
+                    <div class="input-group" style="grid-column:span 2;">
+                        <label>Alert Message Content *</label>
+                        <textarea id="bc-message" rows="3" style="width:100%;border-radius:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:1rem;" placeholder="Enter message to display on driver app screens..."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Priority Level</label>
+                        <select id="bc-priority" style="width:100%;padding:0.8rem;border-radius:10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;">
+                            <option value="normal">🟢 Normal Announcement</option>
+                            <option value="high">🟡 High Demand Warning</option>
+                            <option value="urgent">🔴 Urgent Association Notice</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;align-items:flex-end;">
+                        <button class="btn btn-primary" style="width:100%;padding:0.9rem;" onclick="sendDistrictBroadcast()">🚀 Dispatch Live Broadcast Alert</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TREASURY & PAYOUTS -->
+        <div id="wallets" class="tab-section">
+            <div class="stage-header">
+                <div>
+                    <h1>Treasury &amp; <span class="text-accent">Payouts</span></h1>
+                    <p>Manage driver wallet balances and association treasury payouts.</p>
+                </div>
+                <div style="display:flex;gap:1rem;">
+                    <button class="btn btn-outline" onclick="loadWallet();loadDriverWallets();">&#8635; Refresh</button>
+                    <button class="btn btn-primary" onclick="showPayoutRequestModal()">💸 Request Treasury Payout</button>
+                </div>
+            </div>
+            <div class="wallet-card">
+                <div class="wc-label">Association Treasury Balance</div>
+                <div class="wc-balance" id="wallet-balance">\u20B90.00</div>
+                <div class="wc-meta">Total Commissions Earned: <strong id="wallet-earned">\u20B90.00</strong></div>
+            </div>
+            <div class="data-table-container">
+                <h3>Pilot Wallet Balances</h3>
+                <table class="cityride-table">
+                    <thead><tr>
+                        <th>Pilot ID</th><th>Pilot Details</th><th>Balance</th><th>Operations</th>
+                    </tr></thead>
+                    <tbody id="wallets-body"><tr><td colspan="4" style="text-align:center;padding:3rem;color:var(--text-muted)">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- RATE TARIFFS -->
+        <div id="tariffs" class="tab-section">
+            <div class="stage-header">
+                <div>
+                    <h1>Rate <span class="text-accent">Tariffs</span></h1>
+                    <p>Manage slab-wise pricing and distance rules for all vehicle categories in your district.</p>
+                </div>
+            </div>
+
+            <div id="assoc-vehicle-tiles-container" class="vehicle-tiles-grid">
+                <!-- Loaded dynamically via JS -->
+            </div>
+
+            <div id="assoc-expanded-vehicle-tariff-view" class="expanded-tariff-card" style="display: none;">
+                <!-- Loaded dynamically when vehicle tile is pressed -->
+            </div>
+        </div>
+
+        <!-- COMMISSION LEDGER -->
+        <div id="ledger" class="tab-section">
+            <div class="stage-header">
+                <div>
+                    <h1>Commission <span class="text-accent">Ledger</span></h1>
+                    <p>Full audit trail of all earnings and wallet adjustments.</p>
+                </div>
+                <button class="btn btn-outline" onclick="loadLedger()">&#8635; Refresh</button>
+            </div>
+            <div class="data-table-container">
+                <div id="ledger-list"><div style="text-align:center;padding:3rem;color:var(--text-muted)">Loading...</div></div>
+            </div>
+        </div>
+
+        <!-- ANALYTICS & REPORTS -->
+        <div id="analytics" class="tab-section">
+            <div class="stage-header">
+                <div>
+                    <h1>District <span class="text-accent">Analytics</span></h1>
+                    <p>Comprehensive vehicle category distribution and pilot leaderboards.</p>
+                </div>
+                <button class="btn btn-outline" onclick="loadAnalytics()">&#8635; Refresh Analytics</button>
+            </div>
+            <div class="form-grid" style="grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem;">
+                <div class="data-table-container">
+                    <h3>Fleet Category Distribution</h3>
+                    <div id="analytics-fleet-dist" style="padding:1rem 0;">Loading...</div>
+                </div>
+                <div class="data-table-container">
+                    <h3>District Pilot Leaderboard</h3>
+                    <div id="analytics-leaderboard" style="padding:1rem 0;">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ID CARDS & COMPLIANCE -->
+        <div id="idcards" class="tab-section">
+            <div class="stage-header">
+                <div>
+                    <h1>ID Cards &amp; <span class="text-accent">Compliance</span></h1>
+                    <p>Generate digital driver badges and track vehicle document expiries.</p>
+                </div>
+                <button class="btn btn-outline" onclick="loadIdCardsAndCompliance()">&#8635; Refresh Compliance</button>
+            </div>
+            <div class="form-grid" style="grid-template-columns:1fr 1fr; gap:1.5rem;">
+                <div class="data-table-container">
+                    <h3>🪪 Association Driver ID Badges</h3>
+                    <div id="idcard-pilots-list" style="padding:1rem 0;">Loading...</div>
+                </div>
+                <div class="data-table-container">
+                    <h3>⚠️ Vehicle &amp; License Document Expiries</h3>
+                    <div id="compliance-doc-list" style="padding:1rem 0;">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EMERGENCY SOS & HELPDESK -->
+        <div id="sosdesk" class="tab-section">
+            <div class="stage-header">
+                <div>
+                    <h1>Emergency SOS &amp; <span class="text-accent">Helpdesk</span></h1>
+                    <p>Real-time driver panic alert monitoring and association dispute support.</p>
+                </div>
+                <button class="btn btn-outline" onclick="loadSosAndSupport()">&#8635; Refresh Feed</button>
+            </div>
+            <div class="form-grid" style="grid-template-columns:1fr 1fr; gap:1.5rem;">
+                <div class="data-table-container" style="border-left:4px solid var(--danger);">
+                    <h3 style="color:var(--danger)">🚨 Live Driver SOS Emergency Alerts</h3>
+                    <div id="sos-alerts-feed" style="padding:1rem 0;">Loading...</div>
+                </div>
+                <div class="data-table-container">
+                    <h3>💬 Association Dispute &amp; Support Tickets</h3>
+                    <div id="support-tickets-list" style="padding:1rem 0;">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INCENTIVES & WELFARE -->
+        <div id="incentives" class="tab-section">
+            <div class="stage-header">
+                <div>
+                    <h1>Incentives &amp; <span class="text-accent">Welfare</span></h1>
+                    <p>Manage pilot trip targets, milestone bonuses, and driver welfare funds.</p>
+                </div>
+                <button class="btn btn-outline" onclick="loadIncentivesAndWelfare()">&#8635; Refresh</button>
+            </div>
+            <div class="stat-banner" style="grid-template-columns:1fr 1fr; margin-bottom:1.5rem;">
+                <div class="b-card"><h4>Association Welfare Fund Pool</h4><div class="val" id="welfare-fund-bal">\u20B90.00</div></div>
+                <div class="b-card"><h4>Active Target Schemes</h4><div class="val" id="active-schemes-count">2 Active</div></div>
+            </div>
+            <div class="data-table-container">
+                <h3>🏆 Active Pilot Milestone Bonus Schemes</h3>
+                <div id="incentives-schemes-grid" style="padding:1rem 0;">Loading...</div>
+            </div>
+        </div>
+
+        <!-- SURGE & BATA CONTROL -->
+        <div id="surgedesk" class="tab-section">
+            <div class="stage-header">
+                <div>
+                    <h1>Surge &amp; <span class="text-accent">Bata Control</span></h1>
+                    <p>Configure dynamic surge pricing multipliers and driver bata allowances for your district.</p>
+                </div>
+            </div>
+            <div class="form-dark">
+                <h3>⚡ District Surge &amp; Driver Allowance Rules</h3>
+                <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                    <div class="input-group">
+                        <label>District Surge Multiplier (e.g. 1.25x)</label>
+                        <input type="number" step="0.05" min="1.0" max="3.0" id="sg-multiplier" value="1.20">
+                    </div>
+                    <div class="input-group">
+                        <label>Night Surcharge Rate (%)</label>
+                        <input type="number" id="sg-night" value="15" min="0" max="100">
+                    </div>
+                    <div class="input-group">
+                        <label>Outstation Driver Daily Bata (\u20B9/day)</label>
+                        <input type="number" id="sg-bata" value="400" min="0">
+                    </div>
+                    <div style="display:flex; align-items:flex-end;">
+                        <button class="btn btn-primary" style="width:100%; padding:0.9rem;" onclick="saveSurgeSettings()">💾 Save &amp; Activate District Rules</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Association Slab Tariff Configuration Modal -->
+    <div id="assoc-tariff-modal" class="map-modal" style="display: none;">
+        <div class="map-modal-content" style="max-width: 650px; width: 95%;">
+            <div class="map-header">
+                <h3 style="margin:0; font-weight:800;">Configure Slab Rate Tariff</h3>
+                <button class="close-map" onclick="closeAssocTariffModal()">&times;</button>
+            </div>
+            <div style="padding: 2rem;">
+                <p id="assoc-tariff-info" style="margin-bottom: 1.5rem; font-weight: 800; color: var(--primary); font-size:0.95rem;"></p>
+                <form id="assoc-tariff-form" onsubmit="event.preventDefault(); saveAssocTariff();">
+                    <input type="hidden" id="assoc-edit-vtype">
+                    <div id="assoc-tariff-fields-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <!-- Dynamic fields based on slab config -->
+                    </div>
+                    <div style="margin-top: 2rem;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.9rem; font-weight: 800; font-size:1rem;">💾 Save Slab Tariff Configuration</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pilot Application Documents Modal -->
+    <div id="assoc-doc-modal" class="map-modal" style="display: none;">
+        <div class="map-modal-content" style="max-width: 950px; width: 95%; max-height: 90vh;">
+            <div class="map-header">
+                <div>
+                    <h3 id="assoc-doc-title" style="margin:0; font-weight:800; font-size:1.25rem;">Verify Pilot Documents</h3>
+                    <p id="assoc-doc-subtitle" style="margin:4px 0 0; font-size:0.82rem; color:var(--text-muted); font-weight:600;"></p>
+                </div>
+                <button class="close-map" onclick="closeAssocDocModal()">&times;</button>
+            </div>
+            <div style="padding: 2rem; overflow-y: auto; max-height: 65vh;">
+                <div id="assoc-doc-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem;">
+                    <!-- Document cards populated dynamically -->
+                </div>
+            </div>
+            <div id="assoc-doc-footer" style="padding: 1.25rem 2rem; background: var(--admin-bg); border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 1rem; align-items: center;">
+                <button class="btn btn-outline" onclick="closeAssocDocModal()">Close</button>
+                <span id="assoc-doc-action-btns"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Document Lightbox Modal -->
+    <div id="assoc-doc-lightbox" class="map-modal" style="display: none; z-index: 20000;">
+        <div class="map-modal-content" style="max-width: 1000px; width: 95%; height: auto; max-height: 92vh; background: #0b140a; color: white;">
+            <div class="map-header" style="background: #152613; border-bottom: 1px solid rgba(255,255,255,0.1); color: white;">
+                <div>
+                    <h3 id="lightbox-doc-title" style="margin:0; font-weight:800; font-size:1.1rem; color: white;">Document Preview</h3>
+                </div>
+                <button class="close-map" style="color: white;" onclick="closeAssocDocLightbox()">&times;</button>
+            </div>
+            <div style="padding: 1.5rem; display: flex; justify-content: center; align-items: center; background: #000; overflow: auto; min-height: 350px; max-height: 70vh;">
+                <img id="lightbox-doc-img" src="" style="max-width: 100%; max-height: 68vh; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+            </div>
+            <div style="padding: 1rem 1.5rem; background: #152613; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <button class="btn btn-outline" style="color: white; border-color: rgba(255,255,255,0.3);" onclick="openAssocDocInNewTab()">🔍 Open in New Tab</button>
+                <button class="btn btn-primary" onclick="closeAssocDocLightbox()">Close Preview</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const BASE = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : '';
+    const TOKEN_KEY = 'assoc_admin_token';
+    let currentVehicle = 'sedan';
+    let currentTripType = 'local';
+    let allTariffs = [];
+
+    function getToken() { return localStorage.getItem(TOKEN_KEY); }
+    function getPayload(t) { try { return JSON.parse(atob(t.split('.')[1])); } catch { return null; } }
+
+    async function authFetch(url, opts = {}) {
+        const token = getToken();
+        if (!token) { doLogout(); return null; }
+        opts.headers = { ...(opts.headers || {}), 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+        opts.credentials = 'include';
+        try {
+            const res = await fetch(BASE + url, opts);
+            if (res.status === 401 || res.status === 403) { doLogout(); return null; }
+            return res;
+        } catch(e) { console.error('Network error:', e); return null; }
+    }
+
+    async function doLogin() {
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value.trim();
+        const errEl = document.getElementById('login-error');
+        const btn = document.getElementById('login-btn');
+        errEl.style.display = 'none';
+        if (!username || !password) { errEl.textContent = 'Please enter credentials.'; errEl.style.display = 'block'; return; }
+        btn.textContent = 'Signing in...'; btn.disabled = true;
+        try {
+            const res = await fetch(BASE + '/api/association/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Login failed.');
+            localStorage.setItem(TOKEN_KEY, data.token);
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('sidebar-assoc-name').textContent = data.assocName || 'District Admin';
+            loadOverview();
+            loadWallet();
+        } catch (err) {
+            errEl.textContent = err.message;
+            errEl.style.display = 'block';
+        }
+        btn.textContent = 'Sign In to Your District Panel'; btn.disabled = false;
+    }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')) doLogin();
+    });
+
+    function doLogout() {
+        localStorage.removeItem(TOKEN_KEY);
+        document.getElementById('login-screen').classList.remove('hidden');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const token = getToken();
+        if (token) {
+            const payload = getPayload(token);
+            if (payload && payload.exp * 1000 > Date.now() && payload.role === 'association_admin') {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('sidebar-assoc-name').textContent = payload.name || 'District Admin';
+                loadOverview();
+                loadWallet();
+            } else {
+                doLogout();
+            }
+        }
+    });
+
+    function switchTab(tabId, el) {
+        document.querySelectorAll('.tab-section').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        if (el) el.classList.add('active');
+        document.getElementById('assoc-sidebar').classList.remove('active');
+        if (tabId === 'overview') loadOverview();
+        else if (tabId === 'radar') loadLiveRadar();
+        else if (tabId === 'bookings') loadBookings();
+        else if (tabId === 'fleet') loadFleet();
+        else if (tabId === 'idcards') loadIdCardsAndCompliance();
+        else if (tabId === 'applications') loadAssocApplications();
+        else if (tabId === 'broadcast') { /* ready */ }
+        else if (tabId === 'sosdesk') loadSosAndSupport();
+        else if (tabId === 'incentives') loadIncentivesAndWelfare();
+        else if (tabId === 'surgedesk') loadSurgeSettings();
+        else if (tabId === 'wallets') { loadWallet(); loadDriverWallets(); }
+        else if (tabId === 'tariffs') loadTariffs();
+        else if (tabId === 'analytics') loadAnalytics();
+    }
+
+    async function loadOverview() {
+        try {
+            const [statsRes, ridesRes, walletRes] = await Promise.all([
+                authFetch('/api/association/stats'),
+                authFetch('/api/association/rides'),
+                authFetch('/api/association/wallet')
+            ]);
+            if (!statsRes || !ridesRes || !walletRes) return;
+            const [stats, rides, wallet] = await Promise.all([statsRes.json(), ridesRes.json(), walletRes.json()]);
+            document.getElementById('stat-wallet').textContent = '\u20B9' + parseFloat(wallet.balance||0).toFixed(2);
+            document.getElementById('stat-earned').textContent = '\u20B9' + parseFloat(wallet.total_earned||0).toFixed(2);
+            document.getElementById('stat-pilots').textContent = stats.activePilots || 0;
+            document.getElementById('stat-active').textContent = stats.assigned || 0;
+            document.getElementById('stat-completed').textContent = stats.completed || 0;
+            document.getElementById('stat-pending').textContent = stats.pending || 0;
+            document.getElementById('stat-cancelled').textContent = stats.cancelled || 0;
+            document.getElementById('stat-assigned').textContent = stats.assigned || 0;
+            const tbody = document.getElementById('overview-rides-body');
+            if (!rides.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:3rem;color:var(--text-muted)">No rides yet in your district.</td></tr>'; return; }
+            tbody.innerHTML = rides.slice(0, 10).map(r => '<tr>' +
+                '<td data-label="Ride ID"><strong>#B' + r.id + '</strong></td>' +
+                '<td data-label="Customer">' + (r.passenger_name||r.customer_name||'—') + '<br><small style="color:var(--text-muted)">' + (r.passenger_phone||r.customer_phone||'') + '</small></td>' +
+                '<td data-label="Trip"><small>' + (r.pickup_loc||'').substring(0,30) + '</small><br><small style="color:var(--text-muted)">' + (r.drop_loc||'').substring(0,30) + '</small></td>' +
+                '<td data-label="Fare">' + (r.fare||'—') + '</td>' +
+                '<td data-label="Pilot">' + (r.driver_name||'<em style="color:var(--text-muted)">Unassigned</em>') + '</td>' +
+                '<td data-label="Status"><span class="status-tag status-' + r.status + '">' + r.status + '</span></td>' +
+                '</tr>').join('');
+        } catch(e) { console.error('Overview error:', e); }
+    }
+
+    async function loadBookings() {
+        const tbody = document.getElementById('bookings-body');
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Loading...</td></tr>';
+        const res = await authFetch('/api/association/rides');
+        if (!res) return;
+        let rides = await res.json();
+        const fs = document.getElementById('filter-status').value;
+        const fd = document.getElementById('filter-date').value;
+        if (fs) rides = rides.filter(r => r.status === fs);
+        if (fd) rides = rides.filter(r => r.pickup_date && r.pickup_date.startsWith(fd));
+        if (!rides.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:3rem;color:var(--text-muted)">No rides match your filters.</td></tr>'; return; }
+        tbody.innerHTML = rides.map(r => {
+            const canCancel = !['completed','finished','cancelled'].includes(r.status);
+            return '<tr>' +
+                '<td data-label="ID"><strong>#B' + r.id + '</strong><br><small style="color:var(--text-muted)">' + (r.trip_type||'') + '</small></td>' +
+                '<td data-label="Customer">' + (r.passenger_name||r.customer_name||'—') + '<br><small>' + (r.passenger_phone||r.customer_phone||'') + '</small></td>' +
+                '<td data-label="Trip"><small><strong>From:</strong> ' + (r.pickup_loc||'').substring(0,28) + '</small><br><small style="color:var(--text-muted)"><strong>To:</strong> ' + (r.drop_loc||'').substring(0,28) + '</small><br><small style="color:var(--text-muted)">' + (r.pickup_date||'') + ' ' + (r.pickup_time||'') + '</small></td>' +
+                '<td data-label="Fare"><strong>' + (r.fare||'—') + '</strong></td>' +
+                '<td data-label="Pilot">' + (r.driver_name||'<em style="color:var(--text-muted)">Unassigned</em>') + '</td>' +
+                '<td data-label="Status"><span class="status-tag status-' + r.status + '">' + r.status + '</span></td>' +
+                '<td data-label="Action">' + (canCancel ? '<button class="action-btn danger" onclick="cancelBooking(' + r.id + ')">Cancel</button>' : '—') + '</td>' +
+                '</tr>';
+        }).join('');
+    }
+
+    async function cancelBooking(bookingId) {
+        const confirm = await Swal.fire({ title: 'Cancel Ride?', text: 'Ride #B' + bookingId + ' will be cancelled.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, Cancel', confirmButtonColor: '#ff3b30', background: '#FFFFFF', color: '#000' });
+        if (!confirm.isConfirmed) return;
+        const res = await authFetch('/api/association/bookings/cancel', { method: 'POST', body: JSON.stringify({ bookingId }) });
+        if (!res) return;
+        const data = await res.json();
+        if (data.success) { Swal.fire({ icon: 'success', title: 'Cancelled', text: 'Ride #B' + bookingId + ' has been cancelled.', background: '#FFFFFF', color: '#000' }); loadBookings(); }
+        else Swal.fire({ icon: 'error', title: 'Error', text: data.error, background: '#FFFFFF', color: '#000' });
+    }
+
+    function downloadRidesPDF() {
+        try {
+            const rows = document.querySelectorAll('#bookings-body tr');
+            if (!rows.length || rows[0].cells.length === 1) return Swal.fire('No Data', 'Load rides first.', 'info');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(14); doc.text('District Rides Report', 14, 15);
+            const tableData = [];
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 1) tableData.push([...cells].slice(0,6).map(c => c.innerText.replace(/\n/g,' ').trim()));
+            });
+            doc.autoTable({ head: [['ID','Customer','Trip','Fare','Pilot','Status']], body: tableData, startY: 20 });
+            doc.save('association-rides.pdf');
+        } catch(e) { Swal.fire('Error', 'jsPDF not loaded yet. Try again in a moment.', 'error'); }
+    }
+
+    async function loadFleet() {
+        const tbody = document.getElementById('fleet-body');
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Loading...</td></tr>';
+        const res = await authFetch('/api/association/drivers');
+        if (!res) return;
+        const drivers = await res.json();
+        if (!drivers.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:3rem;color:var(--text-muted)">No pilots enrolled yet.</td></tr>'; return; }
+        tbody.innerHTML = drivers.map(d =>
+            '<tr>' +
+            '<td data-label="ID"><strong>#' + d.id + '</strong></td>' +
+            '<td data-label="Pilot"><strong>' + d.name + '</strong><br><small>' + (d.email||'') + '</small><br><small>📞 ' + (d.phone||'—') + '</small></td>' +
+            '<td data-label="Vehicle">' + (d.car_number||'—') + '<br><small style="color:var(--text-muted)">' + (d.car_model||'—') + '</small></td>' +
+            '<td data-label="Type"><span class="status-tag status-assigned">' + (d.vehicle_type||'—') + '</span></td>' +
+            '<td data-label="Wallet"><strong>\u20B9' + parseFloat(d.wallet_balance||0).toFixed(2) + '</strong></td>' +
+            '<td data-label="Status"><span class="status-tag ' + (d.is_active ? 'status-completed' : 'status-cancelled') + '">' + (d.is_active ? 'Active' : 'Inactive') + '</span></td>' +
+            '<td data-label="Actions"><button class="action-btn" onclick="showWalletAdjust(' + d.id + ',\'' + d.name.replace(/'/g,"\\'") + '\')">💳 Wallet</button> <button class="action-btn ' + (d.is_active ? 'danger' : '') + '" onclick="toggleDriver(' + d.id + ')">' + (d.is_active ? '🚫 Suspend' : '✅ Activate') + '</button></td>' +
+            '</tr>'
+        ).join('');
+    }
+
+    function showFleetSub(sub) {
+        document.querySelectorAll('.fleet-sub').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.sub-nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('fleet-sub-' + sub).classList.add('active');
+        document.getElementById('sb-' + sub).classList.add('active');
+        if (sub === 'active') loadFleet();
+    }
+
+    async function enrollPilot() {
+        const body = {
+            name: document.getElementById('d-name').value.trim(),
+            email: document.getElementById('d-email').value.trim(),
+            password: document.getElementById('d-pass').value.trim(),
+            phone: document.getElementById('d-phone').value.trim(),
+            car_model: document.getElementById('d-car').value.trim(),
+            car_number: document.getElementById('d-num').value.trim(),
+            vehicle_type: document.getElementById('d-type').value
+        };
+        if (!body.name || !body.email || !body.password || !body.phone) {
+            Swal.fire({ icon: 'warning', title: 'Missing Fields', text: 'Name, Email, Password, and Phone are required.', background: '#FFFFFF', color: '#000' }); return;
+        }
+        const res = await authFetch('/api/association/drivers', { method: 'POST', body: JSON.stringify(body) });
+        if (!res) return;
+        const data = await res.json();
+        if (data.success) {
+            Swal.fire({ icon: 'success', title: 'Pilot Enrolled!', text: body.name + ' added to your district fleet.', background: '#FFFFFF', color: '#000' });
+            ['d-name','d-email','d-pass','d-phone','d-car','d-num'].forEach(id => document.getElementById(id).value = '');
+            showFleetSub('active');
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.error, background: '#FFFFFF', color: '#000' });
+        }
+    }
+
+    async function toggleDriver(driverId) {
+        const res = await authFetch('/api/association/drivers/toggle', { method: 'POST', body: JSON.stringify({ driverId }) });
+        if (!res) return;
+        const data = await res.json();
+        if (data.success) loadFleet();
+        else Swal.fire({ icon: 'error', title: 'Error', text: data.error, background: '#FFFFFF', color: '#000' });
+    }
+
+    async function loadWallet() {
+        const res = await authFetch('/api/association/wallet');
+        if (!res) return;
+        const w = await res.json();
+        const bal = document.getElementById('wallet-balance');
+        const earned = document.getElementById('wallet-earned');
+        if (bal) bal.textContent = '\u20B9' + parseFloat(w.balance||0).toFixed(2);
+        if (earned) earned.textContent = '\u20B9' + parseFloat(w.total_earned||0).toFixed(2);
+    }
+
+    async function loadDriverWallets() {
+        const tbody = document.getElementById('wallets-body');
+        const res = await authFetch('/api/association/drivers');
+        if (!res) return;
+        const drivers = await res.json();
+        if (!drivers.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:3rem;color:var(--text-muted)">No pilots enrolled yet.</td></tr>'; return; }
+        tbody.innerHTML = drivers.map(d =>
+            '<tr>' +
+            '<td data-label="Pilot ID"><strong>#' + d.id + '</strong></td>' +
+            '<td data-label="Pilot">' + d.name + '<br><small style="color:var(--text-muted)">' + (d.phone||'') + '</small></td>' +
+            '<td data-label="Balance"><strong style="font-size:1.1rem;">\u20B9' + parseFloat(d.wallet_balance||0).toFixed(2) + '</strong></td>' +
+            '<td data-label="Operations"><button class="btn btn-primary" style="padding:0.4rem 0.9rem;font-size:0.8rem;" onclick="showWalletAdjust(' + d.id + ',\'' + d.name.replace(/'/g,"\\'") + '\')">Manage Wallet</button></td>' +
+            '</tr>'
+        ).join('');
+    }
+
+    async function showWalletAdjust(driverId, driverName) {
+        const { value: form } = await Swal.fire({
+            title: 'Wallet: ' + driverName,
+            html: '<div style="text-align:left"><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Operation</label><select id="sw-type" class="swal2-input" style="margin-bottom:1rem;width:100%"><option value="credit">➕ Credit (Add Funds)</option><option value="debit">➖ Debit (Remove Funds)</option></select><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Amount (\u20B9)</label><input id="sw-amount" class="swal2-input" type="number" min="1" placeholder="Enter amount" style="margin-bottom:1rem;width:100%"><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Note (Optional)</label><input id="sw-note" class="swal2-input" type="text" placeholder="Reason for adjustment" style="width:100%"></div>',
+            showCancelButton: true,
+            confirmButtonText: 'Apply',
+            confirmButtonColor: '#006B3A',
+            background: '#FFFFFF',
+            color: '#000',
+            preConfirm: () => ({ type: document.getElementById('sw-type').value, amount: document.getElementById('sw-amount').value, note: document.getElementById('sw-note').value })
+        });
+        if (!form) return;
+        const res = await authFetch('/api/association/wallet/adjust', { method: 'POST', body: JSON.stringify({ driverId, amount: form.amount, type: form.type, note: form.note }) });
+        if (!res) return;
+        const data = await res.json();
+        if (data.success) {
+            Swal.fire({ icon: 'success', title: 'Done!', text: 'Wallet ' + form.type + 'ed for ' + driverName, background: '#FFFFFF', color: '#000' });
+            loadDriverWallets(); loadWallet();
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.error, background: '#FFFFFF', color: '#000' });
+        }
+    }
+
+    const VEHICLE_TYPES = [
+        { key: 'bike', name: 'Bike Taxi', capacity: '1 Seater', icon: '🏍️' },
+        { key: 'auto', name: 'Auto Rickshaw', capacity: '3+1 Seater', icon: '🛺' },
+        { key: 'hatchback', name: 'Hatchback Economy', capacity: '4+1 Seater', icon: '🚗' },
+        { key: 'sedan', name: 'Sedan Premium', capacity: '4+1 Seater', icon: '🚘' },
+        { key: 'suv', name: 'SUV Classic', capacity: '6+1 Seater', icon: '🚙' },
+        { key: '8plus1', name: 'Tempo Traveler', capacity: '8+1 Seater', icon: '🚐' },
+        { key: 'van24', name: 'Omni Bus', capacity: '24+1 Seater', icon: '🚌' }
+    ];
+
+    let _activeAssocVehicleKey = null;
+
+    async function loadTariffs() {
+        const res = await authFetch('/api/association/tariffs');
+        if (!res) return;
+        allTariffs = await res.json();
+        renderAssocVehicleTariffTiles(allTariffs);
+    }
+
+    function renderAssocVehicleTariffTiles(tariffs) {
+        const container = document.getElementById('assoc-vehicle-tiles-container');
+        if (!container) return;
+
+        container.innerHTML = VEHICLE_TYPES.map(v => {
+            const found = tariffs.find(t => t.vehicle_type === v.key);
+            let rateVal = 'No rate configured';
+            if (found) {
+                const config = typeof found.config === 'string' ? JSON.parse(found.config) : (found.config || {});
+                const base = config.base !== undefined ? config.base : 0;
+                const perKm = config.slab1_rate !== undefined ? config.slab1_rate : (config.perKm || 0);
+                rateVal = base > 0 ? `Base \u20B9${base} | \u20B9${perKm}/km` : `\u20B9${perKm}/km`;
+            }
+
+            const isSelected = _activeAssocVehicleKey === v.key;
+
+            return `
+                <div class="vehicle-tile-card ${isSelected ? 'active' : ''}" onclick="expandAssocVehicleTariff('${v.key}')">
+                    <div>
+                        <div class="vehicle-tile-header">
+                            <div class="vehicle-tile-icon">${v.icon}</div>
+                            <span class="status-tag status-assigned" style="font-size:0.65rem;">${v.capacity}</span>
+                        </div>
+                        <h3 class="vehicle-tile-title">${v.name.toUpperCase()}</h3>
+                        <div class="vehicle-tile-sub">Vehicle Key: <code style="color:var(--primary); font-weight:700;">${v.key}</code></div>
+                        <div style="margin-top: 1rem;">
+                            <div class="rate-summary-pill">
+                                <span class="cat-name">SLAB RATE TARIFF</span>
+                                <span class="cat-val">${rateVal}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.25rem; padding-top:0.8rem; border-top:1px solid var(--border); font-size:0.8rem; font-weight:700; color:var(--primary);">
+                        <span>Configure Slab Rates</span>
+                        <span style="font-size:1.1rem;">→</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        if (_activeAssocVehicleKey) {
+            expandAssocVehicleTariff(_activeAssocVehicleKey);
+        } else {
+            const expView = document.getElementById('assoc-expanded-vehicle-tariff-view');
+            if (expView) expView.style.display = 'none';
+        }
+    }
+
+    function expandAssocVehicleTariff(vehicleKey) {
+        _activeAssocVehicleKey = vehicleKey;
+        
+        const container = document.getElementById('assoc-vehicle-tiles-container');
+        if (container) {
+            container.querySelectorAll('.vehicle-tile-card').forEach(card => card.classList.remove('active'));
+        }
+
+        const vehicleInfo = VEHICLE_TYPES.find(v => v.key === vehicleKey) || { name: vehicleKey.toUpperCase(), icon: '🚖', capacity: 'Standard' };
+        const found = allTariffs.find(t => t.vehicle_type === vehicleKey);
+
+        const expView = document.getElementById('assoc-expanded-vehicle-tariff-view');
+        if (!expView) return;
+
+        expView.style.display = 'block';
+
+        let rateDetailsHtml = '';
+        const config = found ? (typeof found.config === 'string' ? JSON.parse(found.config) : found.config) : {};
+        const baseFare = config.base !== undefined ? config.base : 0;
+        const minKm = config.minKm || 0;
+        const above100 = config.above100_rate !== undefined ? config.above100_rate : (config.slab11_rate || config.perKm || 13);
+        
+        rateDetailsHtml = `
+            <div style="display:flex; justify-content:space-between; font-size:0.88rem; padding-bottom:8px; margin-bottom:12px; border-bottom:1px dashed var(--border);">
+                <span><span style="color:var(--text-muted)">Base Fare:</span> <strong style="color:var(--primary); font-size:1rem;">\u20B9${baseFare}</strong></span>
+                <span><span style="color:var(--text-muted)">Min KM Distance:</span> <strong>${minKm} KM</strong></span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.85rem;">
+                <div><span style="color:var(--text-muted)">0-5 KM:</span> <strong>\u20B9${config.slab1_rate !== undefined ? config.slab1_rate : 30}/km</strong></div>
+                <div><span style="color:var(--text-muted)">6-10 KM:</span> <strong>\u20B9${config.slab2_rate !== undefined ? config.slab2_rate : 28}/km</strong></div>
+                <div><span style="color:var(--text-muted)">11-20 KM:</span> <strong>\u20B9${config.slab3_rate !== undefined ? config.slab3_rate : 26}/km</strong></div>
+                <div><span style="color:var(--text-muted)">21-30 KM:</span> <strong>\u20B9${config.slab4_rate !== undefined ? config.slab4_rate : 24}/km</strong></div>
+                <div><span style="color:var(--text-muted)">31-40 KM:</span> <strong>\u20B9${config.slab5_rate !== undefined ? config.slab5_rate : 22}/km</strong></div>
+                <div><span style="color:var(--text-muted)">41-50 KM:</span> <strong>\u20B9${config.slab6_rate !== undefined ? config.slab6_rate : 20}/km</strong></div>
+                <div><span style="color:var(--text-muted)">51-60 KM:</span> <strong>\u20B9${config.slab7_rate !== undefined ? config.slab7_rate : 18}/km</strong></div>
+                <div><span style="color:var(--text-muted)">61-70 KM:</span> <strong>\u20B9${config.slab8_rate !== undefined ? config.slab8_rate : 16}/km</strong></div>
+                <div><span style="color:var(--text-muted)">71-80 KM:</span> <strong>\u20B9${config.slab9_rate !== undefined ? config.slab9_rate : 15}/km</strong></div>
+                <div><span style="color:var(--text-muted)">81-90 KM:</span> <strong>\u20B9${config.slab10_rate !== undefined ? config.slab10_rate : 14}/km</strong></div>
+                <div><span style="color:var(--text-muted)">91-100 KM:</span> <strong>\u20B9${config.slab11_rate !== undefined ? config.slab11_rate : 13}/km</strong></div>
+                <div style="grid-column: span 2; background:rgba(0,107,58,0.08); border:1px solid var(--border); padding:8px 12px; border-radius:8px; margin-top:4px; text-align:center;">
+                    <span style="color:var(--text-muted)">Above 100 KM Standard Rate:</span> <strong style="color:var(--primary)">\u20B9${above100}/km</strong>
+                </div>
+            </div>
+        `;
+
+        expView.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; border-bottom:1px solid var(--border); padding-bottom:1.25rem; margin-bottom:1.5rem;">
+                <div style="display:flex; align-items:center; gap:14px; min-width:0;">
+                    <div style="font-size:2rem; width:52px; height:52px; flex-shrink:0; background:rgba(0,107,58,0.1); border:1px solid var(--border); border-radius:14px; display:flex; align-items:center; justify-content:center;">${vehicleInfo.icon}</div>
+                    <div style="min-width:0;">
+                        <h2 style="margin:0; font-size:1.3rem; font-weight:800; color:var(--text-main);">${vehicleInfo.name.toUpperCase()} SLAB RATE TARIFF</h2>
+                        <span style="font-size:0.78rem; color:var(--text-muted);">${vehicleInfo.capacity} • Vehicle Key: <code style="color:var(--primary); font-weight:700;">${vehicleKey}</code></span>
+                    </div>
+                </div>
+                <button class="btn btn-outline" onclick="collapseAssocVehicleTariffView()" style="padding:0.6rem 1.2rem; font-size:0.82rem; font-weight:700;">← Back to All Vehicles</button>
+            </div>
+            
+            <div class="category-tariff-card" style="background:var(--white); border:1px solid var(--border); border-radius:16px; padding:1.5rem; margin-bottom:1.5rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <span style="font-weight:800; font-size:1rem; color:var(--text-main); text-transform:uppercase;">STANDARD DISTANCE SLAB TARIFF</span>
+                    <span class="status-tag status-completed" style="font-size:0.65rem;">${found ? 'ACTIVE DISTRICT TARIFF' : 'DEFAULT SYSTEM RATES'}</span>
+                </div>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1.25rem;">Distance slab pricing up to 100 KM + standard rate above 100 KM for trips in your district.</p>
+                <div style="background:var(--admin-bg); border:1px solid var(--border); padding:16px; border-radius:14px; margin-bottom:1.5rem;">
+                    ${rateDetailsHtml}
+                </div>
+                <button class="btn btn-primary" style="width:100%; padding:0.8rem; font-size:0.9rem; font-weight:800;" onclick="openAssocTariffModal('${vehicleKey}')">⚙️ Edit Slab Rate Tariff Configuration</button>
+            </div>
+        `;
+
+        expView.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function collapseAssocVehicleTariffView() {
+        _activeAssocVehicleKey = null;
+        const expView = document.getElementById('assoc-expanded-vehicle-tariff-view');
+        if (expView) expView.style.display = 'none';
+        renderAssocVehicleTariffTiles(allTariffs);
+    }
+
+    function openAssocTariffModal(vehicleKey) {
+        const found = allTariffs.find(t => t.vehicle_type === vehicleKey);
+        const config = found ? (typeof found.config === 'string' ? JSON.parse(found.config) : found.config) : {};
+        const vehicleInfo = VEHICLE_TYPES.find(v => v.key === vehicleKey) || { name: vehicleKey.toUpperCase() };
+
+        document.getElementById('assoc-edit-vtype').value = vehicleKey;
+        document.getElementById('assoc-tariff-info').textContent = `${vehicleInfo.name.toUpperCase()} – DISTANCE SLAB RATE TARIFF CONFIGURATION`;
+        
+        const container = document.getElementById('assoc-tariff-fields-container');
+        container.innerHTML = `
+            <div class="input-group">
+                <label>Base Fare (\u20B9)</label>
+                <input type="number" step="0.01" id="aedit-t-base" value="${config.base !== undefined ? config.base : 0}" required>
+            </div>
+            <div class="input-group">
+                <label>Min KM Distance</label>
+                <input type="number" id="aedit-t-min" value="${config.minKm || 0}" required>
+            </div>
+            <div class="input-group">
+                <label>Rate 0-5 KM (\u20B9/km)</label>
+                <input type="number" step="0.01" id="aedit-t-slab1" value="${config.slab1_rate !== undefined ? config.slab1_rate : 30}" required>
+            </div>
+            <div class="input-group">
+                <label>Rate 6-10 KM (\u20B9/km)</label>
+                <input type="number" step="0.01" id="aedit-t-slab2" value="${config.slab2_rate !== undefined ? config.slab2_rate : 28}" required>
+            </div>
+            <div class="input-group">
+                <label>Rate 11-20 KM (\u20B9/km)</label>
+                <input type="number" step="0.01" id="aedit-t-slab3" value="${config.slab3_rate !== undefined ? config.slab3_rate : 26}" required>
+            </div>
+            <div class="input-group">
+                <label>Rate 21-30 KM (\u20B9/km)</label>
+                <input type="number" step="0.01" id="aedit-t-slab4" value="${config.slab4_rate !== undefined ? config.slab4_rate : 24}" required>
+            </div>
+            <div class="input-group">
+                <label>Rate 31-40 KM (\u20B9/km)</label>
+                <input type="number" step="0.01" id="aedit-t-slab5" value="${config.slab5_rate !== undefined ? config.slab5_rate : 22}" required>
+            </div>
+            <div class="input-group">
+                <label>Rate 41-50 KM (\u20B9/km)</label>
+                <input type="number" step="0.01" id="aedit-t-slab6" value="${config.slab6_rate !== undefined ? config.slab6_rate : 20}" required>
+            </div>
+            <div class="input-group">
+                <label>Rate 51-60 KM (\u20B9/km)</label>
+                <input type="number" step="0.01" id="aedit-t-slab7" value="${config.slab7_rate !== undefined ? config.slab7_rate : 18}" required>
+            </div>
+            <div class="input-group">
+                <label>Rate 61-70 KM (\u20B9/km)</label>
+                <input type="number" step="0.01" id="aedit-t-slab8" value="${config.slab8_rate !== undefined ? config.slab8_rate : 16}" required>
+            </div>
+            <div class="input-group">
+                <label>Rate 71-80 KM (\u20B9/km)</label>
+                <input type="number" step="0.01" id="aedit-t-slab9" value="${config.slab9_rate !== undefined ? config.slab9_rate : 15}" required>
+            </div>
+            <div class="input-group">
+                <label>Rate 81-90 KM (\u20B9/km)</label>
+                <input type="number" step="0.01" id="aedit-t-slab10" value="${config.slab10_rate !== undefined ? config.slab10_rate : 14}" required>
+            </div>
+            <div class="input-group">
+                <label>Rate 91-100 KM (\u20B9/km)</label>
+                <input type="number" step="0.01" id="aedit-t-slab11" value="${config.slab11_rate !== undefined ? config.slab11_rate : 13}" required>
+            </div>
+            <div class="input-group" style="grid-column: span 2;">
+                <label style="color:var(--primary) !important; font-weight:800 !important;">Above 100 KM Standard Rate (\u20B9/km)</label>
+                <input type="number" step="0.01" id="aedit-t-above100" value="${config.above100_rate !== undefined ? config.above100_rate : (config.slab11_rate || config.perKm || 13)}" required>
+            </div>
+        `;
+        document.getElementById('assoc-tariff-modal').style.display = 'flex';
+    }
+
+    function closeAssocTariffModal() {
+        document.getElementById('assoc-tariff-modal').style.display = 'none';
+    }
+
+    async function saveAssocTariff() {
+        const vehicle_type = document.getElementById('assoc-edit-vtype').value;
+        const config = {
+            base: parseFloat(document.getElementById('aedit-t-base').value) || 0,
+            minKm: parseInt(document.getElementById('aedit-t-min').value) || 0,
+            slab1_rate: parseFloat(document.getElementById('aedit-t-slab1').value) || 0,
+            slab2_rate: parseFloat(document.getElementById('aedit-t-slab2').value) || 0,
+            slab3_rate: parseFloat(document.getElementById('aedit-t-slab3').value) || 0,
+            slab4_rate: parseFloat(document.getElementById('aedit-t-slab4').value) || 0,
+            slab5_rate: parseFloat(document.getElementById('aedit-t-slab5').value) || 0,
+            slab6_rate: parseFloat(document.getElementById('aedit-t-slab6').value) || 0,
+            slab7_rate: parseFloat(document.getElementById('aedit-t-slab7').value) || 0,
+            slab8_rate: parseFloat(document.getElementById('aedit-t-slab8').value) || 0,
+            slab9_rate: parseFloat(document.getElementById('aedit-t-slab9').value) || 0,
+            slab10_rate: parseFloat(document.getElementById('aedit-t-slab10').value) || 0,
+            slab11_rate: parseFloat(document.getElementById('aedit-t-slab11').value) || 0,
+            above100_rate: parseFloat(document.getElementById('aedit-t-above100').value) || 0,
+            perKm: parseFloat(document.getElementById('aedit-t-slab1').value) || 0
+        };
+
+        const res = await authFetch('/api/association/tariffs', {
+            method: 'POST',
+            body: JSON.stringify({ vehicle_type, trip_type: 'local', config })
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (data.success) {
+            closeAssocTariffModal();
+            Swal.fire({ icon: 'success', title: 'Slab Tariff Saved!', text: vehicle_type.toUpperCase() + ' slab rate tariff updated for your district.', background: '#FFFFFF', color: '#000', timer: 1800, showConfirmButton: false });
+            loadTariffs();
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.error, background: '#FFFFFF', color: '#000' });
+        }
+    }
+
+    async function loadLedger() {
+        const container = document.getElementById('ledger-list');
+        container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted)">Loading...</div>';
+        const res = await authFetch('/api/association/transactions');
+        if (!res) return;
+        const txs = await res.json();
+        if (!txs.length) { container.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-muted)">No transactions recorded yet.</div>'; return; }
+        container.innerHTML = txs.map(t =>
+            '<div class="tx-row">' +
+            '<div class="tx-icon ' + t.type + '">' + (t.type === 'credit' ? '⬆️' : '⬇️') + '</div>' +
+            '<div class="tx-info">' +
+            '<div class="tx-note">' + (t.note || (t.type === 'credit' ? 'Commission Credit' : 'Debit')) + '</div>' +
+            '<div class="tx-date">' + (t.booking_id ? 'Ride #B' + t.booking_id + ' · ' : '') + 'Driver #' + (t.driver_id||'—') + ' · ' + new Date(t.created_at).toLocaleString('en-IN') + '</div>' +
+            '</div>' +
+            '<div class="tx-amount ' + t.type + '">' + (t.type === 'credit' ? '+' : '-') + '\u20B9' + parseFloat(t.amount||0).toFixed(2) + '</div>' +
+            '</div>'
+        ).join('');
+    }
+
+    // --- ENTERPRISE JS FUNCTIONS ---
+
+    let assocRadarMap = null;
+    let assocRadarMarkers = [];
+
+    async function loadLiveRadar() {
+        const mapContainer = document.getElementById('assoc-radar-map');
+        if (!mapContainer) return;
+        
+        if (!assocRadarMap && typeof L !== 'undefined') {
+            assocRadarMap = L.map('assoc-radar-map').setView([11.6643, 78.1460], 11);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© CityRide District GPS'
+            }).addTo(assocRadarMap);
+        }
+
+        if (assocRadarMap) {
+            setTimeout(() => assocRadarMap.invalidateSize(), 300);
+        }
+
+        const res = await authFetch('/api/association/live-pilots');
+        if (!res) return;
+        const pilots = await res.json();
+
+        assocRadarMarkers.forEach(m => assocRadarMap.removeLayer(m));
+        assocRadarMarkers = [];
+
+        pilots.forEach(p => {
+            const lat = parseFloat(p.latitude) || (11.6643 + (Math.random() - 0.5) * 0.08);
+            const lng = parseFloat(p.longitude) || (78.1460 + (Math.random() - 0.5) * 0.08);
+            const isOnline = p.is_online === 1;
+
+            const iconHtml = `<div style="background:${isOnline ? '#006B3A' : '#64748b'}; color:white; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.1rem; border:2px solid white; box-shadow:0 4px 10px rgba(0,0,0,0.3);">${p.vehicle_type === 'bike' ? '🏍️' : p.vehicle_type === 'auto' ? '🛺' : '🚗'}</div>`;
+            const customIcon = L.divIcon({ html: iconHtml, className: 'assoc-map-marker', iconSize: [34, 34], iconAnchor: [17, 17] });
+
+            const marker = L.marker([lat, lng], { icon: customIcon }).addTo(assocRadarMap);
+            marker.bindPopup(`
+                <div style="font-family:'Outfit',sans-serif; padding:4px;">
+                    <h4 style="margin:0 0 4px; font-weight:800; color:#006B3A;">${p.name}</h4>
+                    <div style="font-size:0.8rem; color:#475569;">${p.car_model || 'Vehicle'} • <strong>${p.car_number || 'TN--'}</strong></div>
+                    <div style="font-size:0.75rem; font-weight:700; margin-top:6px; color:${isOnline ? '#006B3A' : '#dc2626'};">${isOnline ? '🟢 Online & Ready for Dispatch' : '⚪ Offline'}</div>
+                    <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">📞 ${p.phone || 'N/A'}</div>
+                </div>
+            `);
+            assocRadarMarkers.push(marker);
+        });
+    }
+
+    let _assocAppsList = [];
+
+    async function loadAssocApplications() {
+        const tbody = document.getElementById('assoc-apps-body');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">Loading applications...</td></tr>';
+        
+        const res = await authFetch('/api/association/applications');
+        if (!res) return;
+        const apps = await res.json();
+        _assocAppsList = apps || [];
+        
+        if (!apps.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:var(--text-muted)">No pending driver applications found for your district.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = apps.map(a => `
+            <tr>
+                <td data-label="ID"><strong>#APP-${a.id}</strong></td>
+                <td data-label="Pilot Details"><strong>${a.name}</strong><br><small>${a.email || ''}</small><br><small>📞 ${a.phone || ''}</small></td>
+                <td data-label="Vehicle & District"><strong>${a.car_model || 'Vehicle'} (${a.car_number || 'N/A'})</strong><br><small style="color:var(--text-muted)">Type: ${a.vehicle_type || 'sedan'} • District: ${a.district || 'Salem'}</small></td>
+                <td data-label="Status"><span class="status-tag ${a.status === 'approved' ? 'status-completed' : a.status === 'rejected' ? 'status-cancelled' : 'status-pending'}">${a.status || 'pending'}</span></td>
+                <td data-label="Actions" style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
+                    <button class="action-btn" style="background:rgba(0,107,58,0.1); border:1px solid var(--border);" onclick="viewAssocAppDocs(${a.id})">📄 View Docs</button>
+                    ${a.status === 'pending' || !a.status ? `
+                        <button class="action-btn" onclick="decideAssocApp(${a.id}, 'approved')">✅ Approve</button>
+                        <button class="action-btn danger" onclick="decideAssocApp(${a.id}, 'rejected')">❌ Reject</button>
+                    ` : ''}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    let _currentLightboxSrc = null;
+    let _currentLightboxTitle = 'Document';
+
+    function openAssocDocLightbox(src, title) {
+        _currentLightboxSrc = src;
+        _currentLightboxTitle = title || 'Document';
+        document.getElementById('lightbox-doc-title').textContent = _currentLightboxTitle;
+        const img = document.getElementById('lightbox-doc-img');
+        img.src = src;
+        document.getElementById('assoc-doc-lightbox').style.display = 'flex';
+    }
+
+    function closeAssocDocLightbox() {
+        document.getElementById('assoc-doc-lightbox').style.display = 'none';
+        _currentLightboxSrc = null;
+    }
+
+    function openAssocDocInNewTab() {
+        if (!_currentLightboxSrc) return;
+        if (_currentLightboxSrc.startsWith('data:')) {
+            try {
+                const parts = _currentLightboxSrc.split(';base64,');
+                const contentType = parts[0].split(':')[1] || 'image/jpeg';
+                const raw = window.atob(parts[1]);
+                const rawLength = raw.length;
+                const uInt8Array = new Uint8Array(rawLength);
+                for (let i = 0; i < rawLength; ++i) {
+                    uInt8Array[i] = raw.charCodeAt(i);
+                }
+                const blob = new Blob([uInt8Array], { type: contentType });
+                const blobUrl = URL.createObjectURL(blob);
+                window.open(blobUrl, '_blank');
+                return;
+            } catch (e) {
+                console.error('Failed to convert base64 to blob', e);
+            }
+        }
+        window.open(_currentLightboxSrc, '_blank');
+    }
+
+    function viewAssocAppDocs(appId) {
+        const app = _assocAppsList.find(x => x.id === appId);
+        if (!app) return;
+
+        document.getElementById('assoc-doc-title').textContent = `📄 Pilot Verification: ${app.name} (#APP-${app.id})`;
+        document.getElementById('assoc-doc-subtitle').textContent = `📞 ${app.phone || 'N/A'} • ${app.email || 'N/A'} • District: ${app.district || 'N/A'} • Vehicle: ${app.car_model || ''} (${app.car_number || ''})`;
+
+        const docs = [
+            { label: '📸 Profile Photo', path: app.profile_photo },
+            { label: '🪪 Driving License (Front)', path: app.dl_front },
+            { label: '🪪 Driving License (Back)', path: app.dl_back },
+            { label: '📜 Police Clearance (PVC)', path: app.pvc },
+            { label: '🆔 Aadhar Card (Front)', path: app.aadhar_front },
+            { label: '🆔 Aadhar Card (Back)', path: app.aadhar_back },
+            { label: '📒 Vehicle RC Book', path: app.rc_book },
+            { label: '🛡️ Insurance Policy', path: app.insurance },
+            { label: '🌿 Pollution Certificate', path: app.pollution },
+            { label: '📄 Transport Permit', path: app.permit },
+            { label: '🏷️ Association Member ID Card', path: app.association_id_card }
+        ];
+
+        const grid = document.getElementById('assoc-doc-grid');
+        grid.innerHTML = docs.map(doc => {
+            if (doc.path) {
+                const safeLabel = doc.label.replace(/'/g, "\\'");
+                const safePath = doc.path.replace(/'/g, "\\'");
+                return `
+                    <div style="background:var(--white); border:1px solid var(--border); border-radius:14px; padding:1rem; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.03);">
+                        <p style="font-size:0.75rem; font-weight:800; color:var(--text-main); margin:0 0 0.75rem;">${doc.label}</p>
+                        <img src="${doc.path}"
+                             onerror="this.src='https://placehold.co/400x300?text=File+Not+Found+On+Server'; this.style.cursor='default';"
+                             style="width:100%; height:160px; object-fit:cover; border-radius:10px; cursor:pointer; border:1px solid var(--border);"
+                             onclick="openAssocDocLightbox('${safePath}', '${safeLabel}')">
+                        <button class="action-btn" style="margin-top:8px; font-size:0.72rem; font-weight:700; color:var(--primary); cursor:pointer;" onclick="openAssocDocLightbox('${safePath}', '${safeLabel}')">🔍 View Fullscreen</button>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div style="background:var(--admin-bg); border:1px dashed var(--border); border-radius:14px; padding:1rem; text-align:center; opacity:0.6;">
+                        <p style="font-size:0.75rem; font-weight:800; color:var(--text-muted); margin:0 0 0.75rem;">${doc.label}</p>
+                        <div style="padding:2.5rem 0; color:var(--text-muted); font-size:0.8rem; font-weight:600;">No Document Uploaded</div>
+                    </div>
+                `;
+            }
+        }).join('');
+
+        const actionSpan = document.getElementById('assoc-doc-action-btns');
+        if (app.status === 'pending' || !app.status) {
+            actionSpan.innerHTML = `
+                <button class="btn btn-primary" onclick="closeAssocDocModal(); decideAssocApp(${app.id}, 'approved');">✅ Approve Application</button>
+                <button class="btn btn-danger" onclick="closeAssocDocModal(); decideAssocApp(${app.id}, 'rejected');">❌ Reject Application</button>
+            `;
+        } else {
+            actionSpan.innerHTML = `<span class="status-tag ${app.status === 'approved' ? 'status-completed' : 'status-cancelled'}" style="padding:0.6rem 1rem;">Status: ${app.status.toUpperCase()}</span>`;
+        }
+
+        document.getElementById('assoc-doc-modal').style.display = 'flex';
+    }
+
+    function closeAssocDocModal() {
+        document.getElementById('assoc-doc-modal').style.display = 'none';
+    }
+
+    async function decideAssocApp(appId, status) {
+        const confirm = await Swal.fire({
+            title: status === 'approved' ? 'Approve Driver?' : 'Reject Driver?',
+            text: `Confirm ${status} decision for Application #APP-${appId}?`,
+            icon: status === 'approved' ? 'question' : 'warning',
+            showCancelButton: true,
+            confirmButtonText: `Yes, ${status.toUpperCase()}`,
+            confirmButtonColor: status === 'approved' ? '#006B3A' : '#ff3b30',
+            background: '#FFFFFF',
+            color: '#000'
+        });
+        if (!confirm.isConfirmed) return;
+
+        const res = await authFetch('/api/association/applications/decision', {
+            method: 'POST',
+            body: JSON.stringify({ appId, status })
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (data.success) {
+            Swal.fire({ icon: 'success', title: 'Updated!', text: `Application ${status} successfully.`, background: '#FFFFFF', color: '#000' });
+            loadAssocApplications();
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.error, background: '#FFFFFF', color: '#000' });
+        }
+    }
+
+    async function sendDistrictBroadcast() {
+        const title = document.getElementById('bc-title').value.trim();
+        const message = document.getElementById('bc-message').value.trim();
+        const priority = document.getElementById('bc-priority').value;
+
+        if (!title || !message) {
+            Swal.fire({ icon: 'warning', title: 'Required Fields', text: 'Please enter broadcast title and message.', background: '#FFFFFF', color: '#000' });
+            return;
+        }
+
+        const res = await authFetch('/api/association/broadcast', {
+            method: 'POST',
+            body: JSON.stringify({ title, message, priority })
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (data.success) {
+            Swal.fire({ icon: 'success', title: 'Broadcast Dispatched!', text: 'Alert sent live to all active pilots in your district.', background: '#FFFFFF', color: '#000' });
+            document.getElementById('bc-title').value = '';
+            document.getElementById('bc-message').value = '';
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.error, background: '#FFFFFF', color: '#000' });
+        }
+    }
+
+    async function showPayoutRequestModal() {
+        const { value: form } = await Swal.fire({
+            title: 'Request Treasury Payout',
+            html: `
+                <div style="text-align:left;">
+                    <label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Payout Amount (\u20B9)</label>
+                    <input id="po-amount" class="swal2-input" type="number" min="100" placeholder="Enter amount to withdraw" style="margin-bottom:1rem;width:100%">
+                    <label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Withdrawal Method</label>
+                    <select id="po-method" class="swal2-input" style="margin-bottom:1rem;width:100%">
+                        <option value="bank">Direct Bank Transfer (NEFT/IMPS)</option>
+                        <option value="upi">UPI Instant Payout</option>
+                    </select>
+                    <label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Account / UPI Details</label>
+                    <input id="po-details" class="swal2-input" type="text" placeholder="Account No & IFSC or UPI ID" style="margin-bottom:1rem;width:100%">
+                    <label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Notes / Reference</label>
+                    <input id="po-notes" class="swal2-input" type="text" placeholder="Optional payout reference" style="width:100%">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Submit Payout Request',
+            confirmButtonColor: '#006B3A',
+            background: '#FFFFFF',
+            color: '#000',
+            preConfirm: () => ({
+                amount: document.getElementById('po-amount').value,
+                method: document.getElementById('po-method').value,
+                account_details: document.getElementById('po-details').value,
+                notes: document.getElementById('po-notes').value
+            })
+        });
+        if (!form || !form.amount) return;
+
+        const res = await authFetch('/api/association/payout-request', {
+            method: 'POST',
+            body: JSON.stringify(form)
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (data.success) {
+            Swal.fire({ icon: 'success', title: 'Payout Requested!', text: 'Treasury payout request submitted for processing.', background: '#FFFFFF', color: '#000' });
+            loadWallet();
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.error, background: '#FFFFFF', color: '#000' });
+        }
+    }
+
+    async function loadAnalytics() {
+        const fleetEl = document.getElementById('analytics-fleet-dist');
+        const leaderEl = document.getElementById('analytics-leaderboard');
+        if (fleetEl) fleetEl.innerHTML = 'Loading...';
+        if (leaderEl) leaderEl.innerHTML = 'Loading...';
+
+        const res = await authFetch('/api/association/reports/analytics');
+        if (!res) return;
+        const data = await res.json();
+
+        if (fleetEl) {
+            if (!data.fleetDist || !data.fleetDist.length) {
+                fleetEl.innerHTML = '<div style="color:var(--text-muted)">No fleet data available.</div>';
+            } else {
+                fleetEl.innerHTML = `<table class="cityride-table"><thead><tr><th>Vehicle Category</th><th>Enrolled Pilots</th><th>Online Now</th></tr></thead><tbody>` +
+                    data.fleetDist.map(f => `<tr><td><strong>${f.vehicle_type.toUpperCase()}</strong></td><td>${f.count}</td><td><span class="status-tag status-completed">${f.online_count || 0} Online</span></td></tr>`).join('') +
+                    `</tbody></table>`;
+            }
+        }
+
+        if (leaderEl) {
+            if (!data.leaderboard || !data.leaderboard.length) {
+                leaderEl.innerHTML = '<div style="color:var(--text-muted)">No completed trip data available.</div>';
+            } else {
+                leaderEl.innerHTML = `<table class="cityride-table"><thead><tr><th>Pilot</th><th>Vehicle</th><th>Completed Trips</th><th>Total Revenue</th></tr></thead><tbody>` +
+                    data.leaderboard.map(l => `<tr><td><strong>${l.name}</strong><br><small>📞 ${l.phone || ''}</small></td><td><span class="status-tag status-assigned">${l.vehicle_type || 'sedan'}</span></td><td><strong>${l.completed_rides}</strong></td><td><strong style="color:var(--primary);">\u20B9${parseFloat(l.total_revenue || 0).toFixed(2)}</strong></td></tr>`).join('') +
+                    `</tbody></table>`;
+            }
+        }
+    }
+
+    // --- SUITE 1-4 JS HANDLERS ---
+
+    async function loadIdCardsAndCompliance() {
+        const idList = document.getElementById('idcard-pilots-list');
+        const docList = document.getElementById('compliance-doc-list');
+        if (idList) idList.innerHTML = 'Loading...';
+        if (docList) docList.innerHTML = 'Loading...';
+
+        const [driversRes, docRes] = await Promise.all([
+            authFetch('/api/association/drivers'),
+            authFetch('/api/association/documents/expiring')
+        ]);
+
+        if (driversRes) {
+            const drivers = await driversRes.json();
+            if (!drivers.length) {
+                idList.innerHTML = '<div style="color:var(--text-muted)">No enrolled drivers found.</div>';
+            } else {
+                idList.innerHTML = `<table class="cityride-table"><thead><tr><th>Pilot Name</th><th>Vehicle Number</th><th>ID Card Badge</th></tr></thead><tbody>` +
+                    drivers.map(d => `<tr><td><strong>${d.name}</strong><br><small>📞 ${d.phone}</small></td><td><code>${d.car_number || 'TN--'}</code></td><td><button class="action-btn" onclick="showDriverIdCard(${d.id})">🪪 Generate Badge</button></td></tr>`).join('') +
+                    `</tbody></table>`;
+            }
+        }
+
+        if (docRes) {
+            const docs = await docRes.json();
+            if (!docs.length) {
+                docList.innerHTML = '<div style="color:var(--text-muted)">All vehicle documents up to date!</div>';
+            } else {
+                docList.innerHTML = `<table class="cityride-table"><thead><tr><th>Pilot</th><th>Vehicle</th><th>Compliance Status</th></tr></thead><tbody>` +
+                    docs.map(d => `<tr><td><strong>${d.name}</strong></td><td>${d.car_model} (${d.car_number})</td><td><span class="status-tag status-completed">✅ Valid DL &amp; RC</span></td></tr>`).join('') +
+                    `</tbody></table>`;
+            }
+        }
+    }
+
+    async function showDriverIdCard(driverId) {
+        const res = await authFetch('/api/association/driver-id-card/' + driverId);
+        if (!res) return;
+        const d = await res.json();
+
+        if (d.error || !d.name) {
+            Swal.fire({ icon: 'error', title: 'Error', text: d.error || 'Driver ID card data unavailable.', background: '#FFFFFF', color: '#000' });
+            return;
+        }
+
+        const driverName = (d.name || 'Pilot').toUpperCase();
+        const assocName = (d.association_name || 'DISTRICT TAXI ASSOCIATION').toUpperCase();
+
+        Swal.fire({
+            title: 'District Association Official ID Badge',
+            html: `
+                <div style="text-align:center; padding:1rem; border:2px solid #006B3A; border-radius:16px; background:#F7FAF6; font-family:'Outfit',sans-serif;">
+                    <div style="background:#006B3A; color:white; padding:8px; border-radius:10px 10px 0 0; font-weight:800; font-size:0.9rem; text-transform:uppercase;">
+                        ${assocName}
+                    </div>
+                    <div style="margin:1rem 0;">
+                        ${d.profile_photo ? `<img src="${d.profile_photo}" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid #006B3A; margin:0 auto; display:block; box-shadow:0 4px 12px rgba(0,0,0,0.15);">` : `<div style="width:70px; height:70px; border-radius:50%; background:#e2e8f0; margin:0 auto; display:flex; align-items:center; justify-content:center; font-size:2rem; border:3px solid #006B3A;">👨‍✈️</div>`}
+                    </div>
+                    <h3 style="margin:0; font-weight:800; color:#000;">${driverName}</h3>
+                    <div style="color:#006B3A; font-weight:700; font-size:0.85rem; margin-top:2px;">OFFICIAL DISTRICT PILOT</div>
+                    <div style="margin-top:1rem; text-align:left; font-size:0.82rem; border-top:1px dashed #cbd5e1; padding-top:8px;">
+                        <div><strong>Driver ID:</strong> #DRV-${d.id}</div>
+                        <div><strong>Phone:</strong> ${d.phone || 'N/A'}</div>
+                        <div><strong>Vehicle:</strong> ${d.car_model || 'Standard'} (${d.car_number || 'N/A'})</div>
+                        <div><strong>District:</strong> ${d.city_name || 'Salem'}</div>
+                    </div>
+                    <div style="margin-top:1rem; background:#006B3A; color:white; padding:6px; border-radius:8px; font-size:0.75rem; font-weight:700;">
+                        VERIFIED BY CITYRIDE ENGINE
+                    </div>
+                </div>
+            `,
+            showConfirmButton: true,
+            confirmButtonText: '🖨️ Print Digital ID Badge',
+            confirmButtonColor: '#006B3A',
+            background: '#FFFFFF',
+            color: '#000'
+        });
+    }
+
+    async function loadSosAndSupport() {
+        const sosEl = document.getElementById('sos-alerts-feed');
+        const supEl = document.getElementById('support-tickets-list');
+        if (sosEl) sosEl.innerHTML = 'Loading...';
+        if (supEl) supEl.innerHTML = 'Loading...';
+
+        const [sosRes, supRes] = await Promise.all([
+            authFetch('/api/association/sos/active'),
+            authFetch('/api/association/support/tickets')
+        ]);
+
+        if (sosEl) {
+            const sosData = await sosRes.json();
+            if (!sosData.length) {
+                sosEl.innerHTML = '<div style="color:var(--success); font-weight:700;">🟢 No active emergency SOS alerts. District is safe!</div>';
+            } else {
+                sosEl.innerHTML = sosData.map(s => `
+                    <div style="background:rgba(255,59,48,0.08); border:1px solid var(--danger); padding:10px; border-radius:10px; margin-bottom:8px;">
+                        <strong style="color:var(--danger)">🚨 ${s.name} (📞 ${s.phone})</strong><br>
+                        <small>Vehicle: ${s.car_model} (${s.car_number})</small>
+                    </div>
+                `).join('');
+            }
+        }
+
+        if (supEl) {
+            const supData = await supRes.json();
+            if (!supData.length) {
+                supEl.innerHTML = '<div style="color:var(--text-muted)">No support tickets reported.</div>';
+            } else {
+                supEl.innerHTML = `<table class="cityride-table"><thead><tr><th>Ride ID</th><th>Customer</th><th>Fare</th><th>Pilot</th></tr></thead><tbody>` +
+                    supData.map(t => `<tr><td>#B${t.booking_id}</td><td>${t.customer_name || 'Customer'}<br><small>📞 ${t.customer_phone || ''}</small></td><td>\u20B9${t.fare || 0}</td><td>${t.driver_name || 'Assigned'}</td></tr>`).join('') +
+                    `</tbody></table>`;
+            }
+        }
+    }
+
+    async function loadIncentivesAndWelfare() {
+        const res = await authFetch('/api/association/incentives');
+        if (!res) return;
+        const data = await res.json();
+
+        document.getElementById('welfare-fund-bal').textContent = '\u20B9' + data.welfareFund;
+
+        const grid = document.getElementById('incentives-schemes-grid');
+        if (grid) {
+            grid.innerHTML = data.targets.map(t => `
+                <div style="background:var(--white); border:1px solid var(--border); padding:1rem; border-radius:14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong style="font-size:1rem; color:var(--text-main);">${t.title} (${t.period})</strong><br>
+                        <small style="color:var(--text-muted)">Target: Complete ${t.target} rides in a day</small>
+                    </div>
+                    <div style="text-align:right;">
+                        <span class="status-tag status-completed" style="font-size:0.9rem;">+\u20B9${t.bonus} Bonus</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    async function loadSurgeSettings() {
+        const res = await authFetch('/api/association/surge');
+        if (!res) return;
+        const data = await res.json();
+        document.getElementById('sg-multiplier').value = data.surgeMultiplier || 1.20;
+        document.getElementById('sg-night').value = data.nightSurchargePercent || 15;
+        document.getElementById('sg-bata').value = data.driverBataPerDay || 400;
+    }
+
+    async function saveSurgeSettings() {
+        const multiplier = parseFloat(document.getElementById('sg-multiplier').value) || 1.2;
+        const nightSurcharge = parseInt(document.getElementById('sg-night').value) || 15;
+        const bata = parseFloat(document.getElementById('sg-bata').value) || 400;
+
+        const res = await authFetch('/api/association/surge/toggle', {
+            method: 'POST',
+            body: JSON.stringify({ multiplier, nightSurcharge, bata, active: true })
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (data.success) {
+            Swal.fire({ icon: 'success', title: 'District Rules Active!', text: `Surge Multiplier set to ${multiplier}x with ${nightSurcharge}% Night Surcharge & \u20B9${bata} Bata.`, background: '#FFFFFF', color: '#000' });
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.error, background: '#FFFFFF', color: '#000' });
+        }
+    }
+    </script>
+</body>
+</html>
