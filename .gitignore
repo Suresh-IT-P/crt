@@ -11,3 +11,6 @@ capacitor-apps/*/node_modules/
 mobile-app/node_modules/
 mobile-app/.expo/
 .env
+fresh-apks/
+load-testing/
+mobile-app/
