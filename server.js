@@ -1143,7 +1143,7 @@ async function initDB() {
         }
 
         // Fallback to individual variables if MYSQL_URL parsing failed or didn't exist
-        host = host || process.env.MYSQL_HOST || process.env.MYSQLHOST || 'mysql.railway.internal';
+        host = host || process.env.MYSQL_HOST || process.env.MYSQLHOST || process.env.DB_HOST || 'mysql.railway.internal';
         port = port || parseInt(process.env.MYSQLPORT) || publicPort;
         user = user || process.env.MYSQLUSER || publicUser;
         password = password || process.env.MYSQLPASSWORD || process.env.MYSQL_ROOT_PASSWORD || publicPassword;
