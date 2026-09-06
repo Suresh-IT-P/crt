@@ -1526,9 +1526,11 @@ async function showInvoiceModal(trip) {
         const coveredDist = parseFloat(distStr) || 0;
 
         let elapsedMins = 0;
-        if (trip.journey_start_time) {
-            const startTime = new Date(trip.journey_start_time);
-            const endTime = trip.journey_end_time ? new Date(trip.journey_end_time) : new Date();
+        const jStartTime = trip.journey_start_time || breakdown.journey_start_time;
+        const jEndTime = trip.journey_end_time || breakdown.journey_end_time;
+        if (jStartTime) {
+            const startTime = new Date(jStartTime);
+            const endTime = jEndTime ? new Date(jEndTime) : new Date();
             elapsedMins = Math.max(0, Math.floor((endTime - startTime) / 60000));
         }
 
@@ -1538,11 +1540,11 @@ async function showInvoiceModal(trip) {
             if (isNaN(d.getTime())) return 'N/A';
             const datePart = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
             const timePart = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-            return `${datePart} • ${timePart}`;
+            return `${datePart} - ${timePart}`;
         };
 
-        const startTimeStr = trip.journey_start_time ? formatDateTime(trip.journey_start_time) : 'Awaiting Start';
-        const endTimeStr = trip.journey_end_time ? formatDateTime(trip.journey_end_time) : (trip.status === 'ongoing' ? 'In Progress' : (trip.status === 'cancelled' ? 'Cancelled' : 'Not Ended'));
+        const startTimeStr = jStartTime ? formatDateTime(jStartTime) : 'Awaiting Start';
+        const endTimeStr = jEndTime ? formatDateTime(jEndTime) : (trip.status === 'ongoing' ? 'In Progress' : (trip.status === 'cancelled' ? 'Cancelled' : 'Not Ended'));
         const durationText = isRental ? (elapsedMins / 60).toFixed(2) : elapsedMins.toFixed(1);
 
         let fareBreakdownHtml = '';

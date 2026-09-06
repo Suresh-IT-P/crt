@@ -831,6 +831,8 @@ let isMapInitialized = false;
 let trackerMap = null;
 let driverMarker = null;
 let driverLocationInterval = null;
+let nearbyDriverMarkers = {};
+let nearbyDriversInterval = null;
 let lastSeenStatuses = new Map();
 let initialLoadDone = false;
 let currentActiveIndex = 0;
@@ -1163,6 +1165,53 @@ console.error('Error fetching driver location:', e);
 };
 fetchLoc();
 driverLocationInterval = setInterval(fetchLoc, 15000);
+}
+
+function trackNearbyDrivers(bookingId) {
+    if (nearbyDriversInterval) clearInterval(nearbyDriversInterval);
+    const fetchNearby = async () => {
+        try {
+            const token = localStorage.getItem('cityride_user_token');
+            const headers = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            const res = await fetch(`${API_BASE_URL}/api/bookings/nearby-drivers/${bookingId}`, { headers });
+            if (!res.ok) return;
+            const drivers = await res.json();
+            if (Array.isArray(drivers) && trackerMap) {
+                const activeIds = new Set(drivers.map(d => d.id));
+                drivers.forEach(d => {
+                    const lat = parseFloat(d.latitude);
+                    const lng = parseFloat(d.longitude);
+                    if (nearbyDriverMarkers[d.id]) {
+                        nearbyDriverMarkers[d.id].setLatLng([lat, lng]);
+                    } else {
+                        const nearbyIcon = L.divIcon({
+                            className: 'nearby-driver-wrap',
+                            html: `<div style="background: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); border: 2px solid var(--cr-text-muted);">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="var(--cr-text-muted)">
+                                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                                </svg>
+                            </div>`,
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 16]
+                        });
+                        nearbyDriverMarkers[d.id] = L.marker([lat, lng], { icon: nearbyIcon }).addTo(trackerMap);
+                    }
+                });
+
+                Object.keys(nearbyDriverMarkers).forEach(id => {
+                    if (!activeIds.has(Number(id))) {
+                        nearbyDriverMarkers[id].remove();
+                        delete nearbyDriverMarkers[id];
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('Error fetching nearby drivers:', e);
+        }
+    };
+    fetchNearby();
+    nearbyDriversInterval = setInterval(fetchNearby, 15000);
 }
 window._selectedActiveRideId = null;
 
@@ -1841,11 +1890,22 @@ async function loadDashboardData(user) {
                 }
             }
             if (activeMission.status === 'ongoing' || activeMission.status === 'assigned') {
+                if (nearbyDriversInterval) { clearInterval(nearbyDriversInterval); nearbyDriversInterval = null; }
+                Object.values(nearbyDriverMarkers).forEach(m => m.remove());
+                nearbyDriverMarkers = {};
                 trackDriverLocation(activeMission.id);
+            } else if (activeMission.status === 'pending') {
+                if (driverLocationInterval) { clearInterval(driverLocationInterval); driverLocationInterval = null; }
+                if (driverMarker) { driverMarker.remove(); driverMarker = null; }
+                currentDriverCoords = null;
+                trackNearbyDrivers(activeMission.id);
             } else {
                 if (driverLocationInterval) { clearInterval(driverLocationInterval); driverLocationInterval = null; }
                 if (driverMarker) { driverMarker.remove(); driverMarker = null; }
                 currentDriverCoords = null;
+                if (nearbyDriversInterval) { clearInterval(nearbyDriversInterval); nearbyDriversInterval = null; }
+                Object.values(nearbyDriverMarkers).forEach(m => m.remove());
+                nearbyDriverMarkers = {};
             }
         } else {
             const container = document.getElementById('active-mission-container');
@@ -1856,6 +1916,9 @@ async function loadDashboardData(user) {
             if (driverLocationInterval) { clearInterval(driverLocationInterval); driverLocationInterval = null; }
             if (driverMarker) { driverMarker.remove(); driverMarker = null; }
             currentDriverCoords = null;
+            if (nearbyDriversInterval) { clearInterval(nearbyDriversInterval); nearbyDriversInterval = null; }
+            Object.values(nearbyDriverMarkers).forEach(m => m.remove());
+            nearbyDriverMarkers = {};
             window.location.href = 'dashboard.html';
         }
     } catch (err) {
@@ -2496,9 +2559,11 @@ async function showInvoiceModal(trip) {
     const dropText = trip.drop_loc || breakdown.drop_loc || 'Dropoff Location';
 
     let elapsedMins = 0;
-    if (trip.journey_start_time) {
-        const startTime = new Date(trip.journey_start_time);
-        const endTime = trip.journey_end_time ? new Date(trip.journey_end_time) : new Date();
+    const jStartTime = trip.journey_start_time || breakdown.journey_start_time;
+    const jEndTime = trip.journey_end_time || breakdown.journey_end_time;
+    if (jStartTime) {
+        const startTime = new Date(jStartTime);
+        const endTime = jEndTime ? new Date(jEndTime) : new Date();
         elapsedMins = Math.max(0, Math.floor((endTime - startTime) / 60000));
     }
 
@@ -2508,11 +2573,11 @@ async function showInvoiceModal(trip) {
         if (isNaN(d.getTime())) return 'N/A';
         const datePart = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
         const timePart = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-        return `${datePart} • ${timePart}`;
+        return `${datePart} - ${timePart}`;
     };
 
-    const startTimeStr = trip.journey_start_time ? formatDateTime(trip.journey_start_time) : 'Awaiting Start';
-    const endTimeStr = trip.journey_end_time ? formatDateTime(trip.journey_end_time) : (trip.status === 'ongoing' ? 'In Progress' : (trip.status === 'cancelled' ? 'Cancelled' : 'Not Ended'));
+    const startTimeStr = jStartTime ? formatDateTime(jStartTime) : 'Awaiting Start';
+    const endTimeStr = jEndTime ? formatDateTime(jEndTime) : (trip.status === 'ongoing' ? 'In Progress' : (trip.status === 'cancelled' ? 'Cancelled' : 'Not Ended'));
     const durationText = isRental ? (elapsedMins / 60).toFixed(2) : elapsedMins.toFixed(1);
 
         let fareBreakdownHtml = '';

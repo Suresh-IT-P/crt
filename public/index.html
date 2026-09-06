@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Premium CSS -->
-    <link rel="stylesheet" href="customer.css?v=2">
+    <link rel="stylesheet" href="customer.css?v=3">
     
     <!-- CSP & JS Config -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.tile.openstreetmap.org https://unpkg.com https://ui-avatars.com https://*.basemaps.cartocdn.com https://img.icons8.com; script-src 'self' 'unsafe-inline' https://unpkg.com; connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* capacitor://* https://*.railway.app https://photon.komoot.io https://nominatim.openstreetmap.org https://router.project-osrm.org https://unpkg.com;">
@@ -79,10 +79,9 @@
     <!-- BOOKING SHEET -->
     <main class="luxe-booking-sheet">
         <!-- Tabs -->
-        <div id="trip-tabs" style="display:none; gap:10px; margin-bottom:16px; border-bottom:1px solid var(--cr-border-light); padding-bottom:8px;">
+        <div id="trip-tabs" style="display:flex; background: rgba(0,0,0,0.04); border-radius: 12px; padding: 4px; gap:4px; margin-bottom:20px; border: 1px solid var(--cr-border-light);">
             <span class="bk-tab active" data-category="local">Local</span>
             <span class="bk-tab" data-category="outstation">Outstation</span>
-            <span class="bk-tab" data-category="rental">Rental</span>
         </div>
 
         <form id="booking-form" autocomplete="off">
@@ -568,7 +567,7 @@
     <!-- Scripts -->
     <script src="alert.js"></script>
     <script src="notifications.js?v=2"></script>
-    <script src="app.js?v=21"></script>
+    <script src="app.js?v=22"></script>
     
     <!-- Initialize landing map with OpenStreetMap tiles -->
     <script>

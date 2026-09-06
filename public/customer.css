@@ -863,3 +863,23 @@ body {
 }
 
 
+
+.bk-tab { 
+    flex: 1; 
+    text-align: center; 
+    padding: 10px 16px; 
+    font-size: 0.9rem; 
+    font-weight: 600; 
+    color: var(--cr-text-muted, #666); 
+    cursor: pointer; 
+    border-radius: 8px; 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+} 
+.bk-tab:hover { 
+    background: rgba(0,0,0,0.04); 
+} 
+.bk-tab.active { 
+    background: var(--cr-surface-light, #fff); 
+    color: var(--cr-primary, #93C572); 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+}

@@ -435,18 +435,21 @@ document.addEventListener('DOMContentLoaded', () => {
     let pricing = null;
     let peakRules = [];
     let specialLocationCharges = []; // [{id, place_type, display_name, surcharge_percentage, is_active}]
+    let activeCommissionConfig = null;
 
     async function fetchTariffs() {
         try {
-            // Fetch Standard Tariffs, Peak Rules, and Special Location Charges in parallel
-            const [res, peakRes, spRes] = await Promise.all([
+            // Fetch Standard Tariffs, Peak Rules, Special Location Charges, and Commission Config in parallel
+            const [res, peakRes, spRes, commRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/api/tariffs`),
                 fetch(`${API_BASE_URL}/api/peak-rules`),
-                fetch(`${API_BASE_URL}/api/special-location-charges`)
+                fetch(`${API_BASE_URL}/api/special-location-charges`),
+                fetch(`${API_BASE_URL}/api/commissions/active`)
             ]);
             const data = await res.json();
             peakRules = await peakRes.json();
             const spData = await spRes.json();
+            activeCommissionConfig = await commRes.json();
             specialLocationCharges = Array.isArray(spData) ? spData.filter(c => c.is_active) : [];
             console.log('⚡ Dynamic Peak Rules Active:', peakRules);
             console.log('🏗️ Special Location Charges Loaded:', specialLocationCharges.length, 'active');
@@ -1112,6 +1115,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     return input && input.value && input.dataset.coords;
                 }).length;
 
+                let customerFee = 0;
+                const getPlatformFee = (baseAmt) => {
+                    if (!activeCommissionConfig) return 0;
+                    if (activeCommissionConfig.customer_commission_type === 'fixed') {
+                        return parseFloat(activeCommissionConfig.customer_commission_fixed) || 0;
+                    }
+                    return (baseAmt * (parseFloat(activeCommissionConfig.customer_commission_percent) || 0)) / 100;
+                };
+
                 if (tType.id === 'local') {
                     const config = info.local;
                     const minKm = typeof config.minKm === 'number' ? config.minKm : 0;
@@ -1121,10 +1133,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const specialCharge = Math.round(baseKmFare * specialSurchargePct / 100);
 
                     const extraDropsCharge = extraDropsCount * 50;
-                    totalFare = (baseKmFare + peakCharge + specialCharge + extraDropsCharge) + 5;
+                    const baseTotal = baseKmFare + peakCharge + specialCharge + extraDropsCharge;
+                    customerFee = getPlatformFee(baseTotal);
+                    totalFare = baseTotal + customerFee;
 
                     displayDistance = `${distance} KM`;
-                    detailLabel = `Incl. Platform Fee.`;
+                    detailLabel = customerFee > 0 ? `Incl. ₹${customerFee.toFixed(2)} Platform Fee.` : `Fare Details`;
                     if (extraDropsCount > 0) {
                         detailLabel += ` (+\u20B9${extraDropsCharge} for ${extraDropsCount} stop(s))`;
                     }
@@ -1142,9 +1156,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const specialCharge = Math.round(baseKmFare * specialSurchargePct / 100);
 
                     const extraDropsCharge = extraDropsCount * 50;
-                    totalFare = (baseKmFare + (vType === 'bike' ? 0 : driverAllowance) + specialCharge + extraDropsCharge) + 5; // Incl Platform Fee
+                    const baseTotal = baseKmFare + (vType === 'bike' ? 0 : driverAllowance) + specialCharge + extraDropsCharge;
+                    customerFee = getPlatformFee(baseTotal);
+                    totalFare = baseTotal + customerFee;
                     displayDistance = `${distance} KM`;
-                    detailLabel = `Incl. Allowance & Platform Fee.`;
+                    detailLabel = `Incl. Allowance${customerFee > 0 ? ` & ₹${customerFee.toFixed(2)} Platform Fee` : ''}.`;
                     if (extraDropsCount > 0) {
                         detailLabel += ` (+\u20B9${extraDropsCharge} for ${extraDropsCount} stop(s))`;
                     }
@@ -1160,9 +1176,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const baseKmFare = Math.max(baseFareLimit, distanceFare);
                     const driverAllowance = billableDist > 250 ? 600 : 400;
                     const specialCharge = Math.round(baseKmFare * specialSurchargePct / 100);
-                    totalFare = (baseKmFare + (vType === 'bike' ? 0 : driverAllowance * tripDays) + specialCharge) + 5; // Incl Platform Fee
+                    const baseTotal = baseKmFare + (vType === 'bike' ? 0 : driverAllowance * tripDays) + specialCharge;
+                    customerFee = getPlatformFee(baseTotal);
+                    totalFare = baseTotal + customerFee;
                     displayDistance = `${distance} x 2 (${billableDist} KM Billable)`;
-                    detailLabel = `${tripDays} Day(s) • Incl. Allowance & Platform Fee.`;
+                    detailLabel = `${tripDays} Day(s) • Incl. Allowance${customerFee > 0 ? ` & ₹${customerFee.toFixed(2)} Platform Fee` : ''}.`;
                     if (specialSurchargePct > 0) detailLabel += ` [🏗️ ${specialDisplayName} +${specialSurchargePct.toFixed(0)}%]`;
                     if (actualTwoWayDist < minKmForTrip * tripDays) detailLabel += ` [${minKmForTrip * tripDays}KM Min Applied]`;
                 } else if (tType.id === 'rental') {
@@ -1174,9 +1192,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const extraKm = Math.max(0, distance - pMaxKm);
                     const baseFare = config.base + (extraKm * config.extraKm);
                     const specialCharge = Math.round(baseFare * specialSurchargePct / 100);
-                    totalFare = baseFare + specialCharge + 5; // Rental incl special charge + Platform Fee
+                    const baseTotal = baseFare + specialCharge;
+                    customerFee = getPlatformFee(baseTotal);
+                    totalFare = baseTotal + customerFee;
                     displayDistance = distance > 0 ? `${distance} KM` : 'Fixed Base';
-                    detailLabel = `${pMaxHrs}Hr/${pMaxKm}KM • Extra \u20B9${config.extraHour}/hr, \u20B9${config.extraKm}/km • Incl. Platform Fee.`;
+                    detailLabel = `${pMaxHrs}Hr/${pMaxKm}KM • Extra \u20B9${config.extraHour}/hr, \u20B9${config.extraKm}/km${customerFee > 0 ? ` • Incl. \u20B9${customerFee.toFixed(2)} Platform Fee.` : '.'}`;
                     if (specialSurchargePct > 0) detailLabel += ` [🏗️ ${specialDisplayName} +${specialSurchargePct.toFixed(0)}%]`;
                 }
 
@@ -1239,7 +1259,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (vmBtn) { vmBtn.disabled = false; vmBtn.textContent = `Select ${info.name} • \u20B9${totalFare}`; }
 
                         // Build breakdown for fare popup
-                        const gst = 5;
+                        const gst = customerFee;
                         const driverAllowanceAmt = (tType.id === 'oneway' || tType.id === 'round') && vType !== 'bike' ? (distance > 250 ? 600 : 400) : 0;
                         const extraDropsCharge = tType.id === 'local' ? (extraDropsCount * 50) : (tType.id === 'oneway' ? (extraDropsCount * 50) : 0);
 

@@ -94,7 +94,8 @@ async function calculateCanonicalFare(db, {
             const totalExtra = extraKmCharge + extraHrCharge;
             baseKmFare = packageConfig.base + totalExtra;
             const specialCharge = baseKmFare * specialSurchargePct;
-            totalFare = (baseKmFare + specialCharge + waitingCharge) + 5; // +5 platform fee
+            const baseTotal = baseKmFare + specialCharge + waitingCharge;
+            totalFare = baseTotal + getPlatformFee(baseTotal);
         } else {
             // Fallback for rental if no config
             totalFare = 500;
@@ -108,7 +109,8 @@ async function calculateCanonicalFare(db, {
         baseKmFare = calculateLocalSlabFare(billableDist, config);
         const peakCharge = baseKmFare * peakMult;
         const specialCharge = baseKmFare * specialSurchargePct;
-        totalFare = (baseKmFare + peakCharge + specialCharge + waitingCharge + extraDropsCharge) + 5;
+        const baseTotal = baseKmFare + peakCharge + specialCharge + waitingCharge + extraDropsCharge;
+        totalFare = baseTotal + getPlatformFee(baseTotal);
     } else if (category === 'oneway') {
         waitingCharge = preRideWaitingCharge;
         const config = pricingConfig || { base: 0, perKm: 13, minKm: 130 };
@@ -120,7 +122,8 @@ async function calculateCanonicalFare(db, {
         
         const driverAllowance = billableDist > 250 ? 600 : 400;
         const specialCharge = baseKmFare * specialSurchargePct;
-        totalFare = (baseKmFare + (vehicleType === 'bike' ? 0 : driverAllowance) + specialCharge + waitingCharge + extraDropsCharge) + 5;
+        const baseTotal = baseKmFare + (vehicleType === 'bike' ? 0 : driverAllowance) + specialCharge + waitingCharge + extraDropsCharge;
+        totalFare = baseTotal + getPlatformFee(baseTotal);
     } else if (category === 'round') {
         waitingCharge = preRideWaitingCharge;
         const config = pricingConfig || { base: 0, perKm: 12, minKmPerDay: 250 };
@@ -143,7 +146,8 @@ async function calculateCanonicalFare(db, {
         
         const driverAllowance = billableDist > 250 ? 600 : 400;
         const specialCharge = baseKmFare * specialSurchargePct;
-        totalFare = ((baseKmFare + (vehicleType === 'bike' ? 0 : driverAllowance * tripDays) + specialCharge) + waitingCharge) + 5;
+        const baseTotal = baseKmFare + (vehicleType === 'bike' ? 0 : driverAllowance * tripDays) + specialCharge + waitingCharge;
+        totalFare = baseTotal + getPlatformFee(baseTotal);
     }
 
     return {
@@ -161,7 +165,7 @@ function calculateLocalSlabFare(distance, config) {
     const baseFare = (config && config.base !== undefined) ? parseFloat(config.base) : 0;
     const d = Math.max(distance, minKm);
 
-    let fare = baseFare;
+    let distanceFare = 0;
 
     const r1 = (config && config.slab1_rate !== undefined) ? parseFloat(config.slab1_rate) : (config.perKm || 20); 
     const r2 = (config && config.slab2_rate !== undefined) ? parseFloat(config.slab2_rate) : r1; 
@@ -177,20 +181,20 @@ function calculateLocalSlabFare(distance, config) {
     const rAbove100 = (config && config.above100_rate !== undefined) ? parseFloat(config.above100_rate) : (config.perKm || r11);
 
     let rem = d;
-    if (rem > 100) { fare += (rem - 100) * rAbove100; rem = 100; }
-    if (rem > 90) { fare += (rem - 90) * r11; rem = 90; }
-    if (rem > 80) { fare += (rem - 80) * r10; rem = 80; }
-    if (rem > 70) { fare += (rem - 70) * r9; rem = 70; }
-    if (rem > 60) { fare += (rem - 60) * r8; rem = 60; }
-    if (rem > 50) { fare += (rem - 50) * r7; rem = 50; }
-    if (rem > 40) { fare += (rem - 40) * r6; rem = 40; }
-    if (rem > 30) { fare += (rem - 30) * r5; rem = 30; }
-    if (rem > 20) { fare += (rem - 20) * r4; rem = 20; }
-    if (rem > 10) { fare += (rem - 10) * r3; rem = 10; }
-    if (rem > 5) { fare += (rem - 5) * r2; rem = 5; }
-    if (rem > 0) { fare += rem * r1; }
+    if (rem > 100) { distanceFare += (rem - 100) * rAbove100; rem = 100; }
+    if (rem > 90) { distanceFare += (rem - 90) * r11; rem = 90; }
+    if (rem > 80) { distanceFare += (rem - 80) * r10; rem = 80; }
+    if (rem > 70) { distanceFare += (rem - 70) * r9; rem = 70; }
+    if (rem > 60) { distanceFare += (rem - 60) * r8; rem = 60; }
+    if (rem > 50) { distanceFare += (rem - 50) * r7; rem = 50; }
+    if (rem > 40) { distanceFare += (rem - 40) * r6; rem = 40; }
+    if (rem > 30) { distanceFare += (rem - 30) * r5; rem = 30; }
+    if (rem > 20) { distanceFare += (rem - 20) * r4; rem = 20; }
+    if (rem > 10) { distanceFare += (rem - 10) * r3; rem = 10; }
+    if (rem > 5) { distanceFare += (rem - 5) * r2; rem = 5; }
+    if (rem > 0) { distanceFare += rem * r1; }
 
-    return fare;
+    return Math.max(baseFare, distanceFare);
 }
 
 function getPeakMultiplier(timeStr, rules) {
@@ -239,12 +243,17 @@ async function resolveRideCategory(db, distanceKm, requestedCategory) {
     }
 
     let finalCategory = 'local';
+    const reqCat = (requestedCategory || '').toLowerCase();
     
     if (mode === 'MANUAL' && requestedCategory) {
-        finalCategory = requestedCategory.toLowerCase();
+        finalCategory = reqCat;
     } else {
-        if (distanceKm >= threshold) {
-            finalCategory = 'outstation'; // Use outstation for distance >= threshold (oneway or round depending on other fields, but we resolve 'outstation' to 'oneway' for base logic)
+        if (reqCat === 'oneway' || reqCat === 'round' || reqCat === 'outstation') {
+            finalCategory = reqCat === 'outstation' ? 'oneway' : reqCat;
+        } else if (reqCat === 'rental') {
+            finalCategory = 'rental';
+        } else if (distanceKm >= threshold) {
+            finalCategory = 'outstation'; // Use outstation for distance >= threshold
         } else {
             finalCategory = 'local';
         }
@@ -253,7 +262,7 @@ async function resolveRideCategory(db, distanceKm, requestedCategory) {
     // Apply specific category mappings if requested category is oneway or round
     if (finalCategory === 'outstation') {
         finalCategory = 'oneway'; 
-        if (requestedCategory === 'round') finalCategory = 'round';
+        if (reqCat === 'round') finalCategory = 'round';
     }
 
     if (!localEnabled && finalCategory === 'local') throw new Error("Local rides are disabled by admin.");

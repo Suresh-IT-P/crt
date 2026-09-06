@@ -453,7 +453,7 @@
                     </div>
                     <div style="background: rgba(0, 107, 58, 0.05); border: 1px solid rgba(0, 107, 58, 0.12); padding: 10px 14px; border-radius: 12px; font-size: 0.8rem; color: var(--text-gray); display: flex; align-items: center; gap: 8px;">
                         <i class="ph-bold ph-shield-check" style="color: var(--accent-brand); font-size: 1.1rem;"></i>
-                        <span style="font-size: 0.75rem;">₹10 is deducted upon ride acceptance, and ₹5 platform fee is deducted upon ride completion.</span>
+                        <span id="wallet-fee-info-text" style="font-size: 0.75rem;">The platform commission (as per CityRide rates) is deducted from your wallet upon ride acceptance.</span>
                     </div>
                 </div>
 
@@ -490,7 +490,7 @@
             <section id="view-profile" class="tab-view hidden">
                 <!-- Driver profile detail -->
                 <div class="glass-card" style="display: flex; align-items: center; gap: 20px;">
-                    <div style="flex-shrink:0; width: 80px; height: 80px; border-radius: 50%; background: rgba(183, 28, 28, 0.1); border: 2px solid var(--accent-brand); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: var(--accent-brand); box-shadow: 0 0 20px rgba(183,28,28,0.2);">
+                    <div id="profile-picture-container" style="flex-shrink:0; width: 80px; height: 80px; border-radius: 50%; background: rgba(183, 28, 28, 0.1); border: 2px solid var(--accent-brand); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: var(--accent-brand); box-shadow: 0 0 20px rgba(183,28,28,0.2); overflow: hidden;">
                         <i class="ph-bold ph-user-circle"></i>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 6px;">
@@ -512,23 +512,23 @@
                     <div class="doc-list">
                         <div class="doc-item">
                             <span class="doc-label"><i class="ph-bold ph-identification-card"></i> Driver's License</span>
-                            <span class="doc-status-badge verified">Verified</span>
+                            <span id="doc-status-dl" class="doc-status-badge verified">Verified</span>
                         </div>
                         <div class="doc-item">
                             <span class="doc-label"><i class="ph-bold ph-shield-checkered"></i> Police Verification (PVC)</span>
-                            <span class="doc-status-badge verified">Verified</span>
+                            <span id="doc-status-pvc" class="doc-status-badge verified">Verified</span>
                         </div>
                         <div class="doc-item">
                             <span class="doc-label"><i class="ph-bold ph-barcode"></i> Aadhar Identification</span>
-                            <span class="doc-status-badge verified">Verified</span>
+                            <span id="doc-status-aadhar" class="doc-status-badge verified">Verified</span>
                         </div>
                         <div class="doc-item">
                             <span class="doc-label"><i class="ph-bold ph-car-profile"></i> Vehicle Registration (RC)</span>
-                            <span class="doc-status-badge verified">Verified</span>
+                            <span id="doc-status-rc" class="doc-status-badge verified">Verified</span>
                         </div>
                         <div class="doc-item">
                             <span class="doc-label"><i class="ph-bold ph-file-text"></i> Car Insurance & Permits</span>
-                            <span class="doc-status-badge verified">Verified</span>
+                            <span id="doc-status-insurance" class="doc-status-badge verified">Verified</span>
                         </div>
                     </div>
                 </div>
@@ -654,7 +654,9 @@
                 <span class="nav-item-lbl">History</span>
             </div>
             <div class="nav-item" onclick="switchTab('profile', this)">
-                <i class="ph-bold ph-user-circle"></i>
+                <div id="nav-profile-icon" style="width: 24px; height: 24px; margin-bottom: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 50%;">
+                    <i class="ph-bold ph-user-circle" style="font-size: 1.5rem; margin: 0;"></i>
+                </div>
                 <span class="nav-item-lbl">Profile</span>
             </div>
         </nav>
@@ -808,6 +810,7 @@ return response;
 })();
 let isOnline = false;
 let driverData = null;
+let activeCommissionConfig = null;
 let gpsWatchId = null;
 let wakeLock = null;
 let driverMap = null;
@@ -930,6 +933,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Safe startup sequence
     try { renderLedgerList([]); } catch(e) {}
     try { cacheTariffs().catch(() => {}); } catch(e) {}
+    // Fetch commission config immediately so it is ready before any ride ping arrives
+    try { 
+        fetch(`${API_BASE_URL}/api/commissions/active`)
+            .then(r => r.ok ? r.json() : null)
+            .then(cfg => { if (cfg) activeCommissionConfig = cfg; })
+            .catch(() => {});
+    } catch(e) {}
     try { syncDashboardStats().catch(() => {}); } catch(e) {}
     setInterval(() => { syncDashboardStats().catch(() => {}); }, 30000);
 
@@ -1037,7 +1047,7 @@ function updateDriverProfileUI() {
     const nameEl = document.getElementById('driver-name');
     if (nameEl) nameEl.textContent = driverData.name || 'CityRide Partner';
     const carEl = document.getElementById('driver-car');
-    if (carEl) carEl.textContent = `Vehicle: ${driverData.car_model || '---'} (${driverData.car_number || '---'}) • ${driverData.seating_capacity || 5} Seater`;
+    if (carEl) carEl.textContent = `Vehicle: ${driverData.car_model || '---'} (${driverData.car_number || '---'}) - ${driverData.seating_capacity || 5} Seater`;
     const pNameEl = document.getElementById('profile-driver-name');
     if (pNameEl) pNameEl.textContent = driverData.name || 'CityRide Partner';
     const pPhoneEl = document.getElementById('profile-driver-phone');
@@ -1050,6 +1060,55 @@ function updateDriverProfileUI() {
     if (modEl) modEl.textContent = `Model: ${driverData.car_model || 'Standard'}`;
     const balEl = document.getElementById('wallet-balance-lbl');
     if (balEl) balEl.textContent = parseFloat(driverData.wallet_balance || 0).toFixed(2);
+
+    // Update Profile Picture
+    const picContainer = document.getElementById('profile-picture-container');
+    const navPicContainer = document.getElementById('nav-profile-icon');
+    
+    if (driverData.profile_photo) {
+        const imgHtml = `<img src="${driverData.profile_photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        if (picContainer) picContainer.innerHTML = imgHtml;
+        if (navPicContainer) navPicContainer.innerHTML = imgHtml;
+    } else {
+        const iconHtml = '<i class="ph-bold ph-user-circle"></i>';
+        const navIconHtml = '<i class="ph-bold ph-user-circle" style="font-size: 1.5rem; margin: 0;"></i>';
+        if (picContainer) picContainer.innerHTML = iconHtml;
+        if (navPicContainer) navPicContainer.innerHTML = navIconHtml;
+    }
+
+    // Document Validation Helper
+    const setDocStatus = (id, hasDoc, expiryDateStr) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (!hasDoc) {
+            el.className = 'doc-status-badge';
+            el.style.background = 'rgba(255, 152, 0, 0.15)';
+            el.style.color = '#FF9800';
+            el.textContent = 'Missing';
+            return;
+        }
+        if (expiryDateStr) {
+            const expiry = new Date(expiryDateStr);
+            const now = new Date();
+            if (expiry < now) {
+                el.className = 'doc-status-badge';
+                el.style.background = 'rgba(183, 28, 28, 0.15)';
+                el.style.color = '#ff3b30';
+                el.textContent = 'Expired';
+                return;
+            }
+        }
+        el.className = 'doc-status-badge verified';
+        el.style.background = '';
+        el.style.color = '';
+        el.textContent = 'Verified';
+    };
+
+    setDocStatus('doc-status-dl', driverData.has_dl, driverData.dl_expiry);
+    setDocStatus('doc-status-pvc', driverData.has_pvc, driverData.pvc_expiry);
+    setDocStatus('doc-status-aadhar', driverData.has_aadhar, null); // Aadhar doesn't expire
+    setDocStatus('doc-status-rc', driverData.has_rc, null); // RC usually valid long term
+    setDocStatus('doc-status-insurance', driverData.has_insurance_permit, driverData.insurance_expiry);
 }
 function switchTab(tabId, el) {
 document.querySelectorAll('.tab-view').forEach(view => view.classList.add('hidden'));
@@ -1115,6 +1174,13 @@ async function proceedToOnline() {
     startGpsTracking();
     startOpportunityPolling();
     startRadarMessageCycle();
+    
+    // Sync status with backend
+    if (window.lastGpsCoords) {
+        updateBackendDriverStatus(true, window.lastGpsCoords.lat, window.lastGpsCoords.lng);
+    } else {
+        updateBackendDriverStatus(true);
+    }
 
     // Start Native Driver Background Duty & Check Overlay Permission for Mini Mode Popup
     if (window.Capacitor && window.Capacitor.Plugins) {
@@ -1372,6 +1438,7 @@ async function toggleDutyStatus() {
                 showConfirmButton: false,
                 ...swalDarkOpts
             });
+            updateBackendDriverStatus(false);
         }
 }
 function initializeDriverMap() {
@@ -1719,6 +1786,36 @@ function processDriverLocationUpdate(lat, lng, acc, speedMps, timeStamp) {
     if (acceptedOpportunityId && (now - lastGpsSendTime >= 1500)) {
         lastGpsSendTime = now;
         sendGpsTrackingUpdate(acceptedOpportunityId, lat, lng, acc, speedKmh);
+    }
+    
+    // Periodically update the driver's idle status on the backend every 15 seconds
+    if (!window.lastIdleSyncTime || (now - window.lastIdleSyncTime >= 15000)) {
+        window.lastIdleSyncTime = now;
+        updateBackendDriverStatus(isOnline, lat, lng);
+    }
+}
+
+async function updateBackendDriverStatus(onlineFlag, lat, lng) {
+    const tokenRaw = localStorage.getItem('cityride_pilot');
+    let driverToken = '';
+    try { const p = JSON.parse(tokenRaw); driverToken = p?.token || p || ''; } catch { driverToken = tokenRaw || ''; }
+    if (!driverToken) return;
+    try {
+        const body = { is_online: onlineFlag };
+        if (lat !== undefined && lng !== undefined) {
+            body.latitude = lat;
+            body.longitude = lng;
+        }
+        await fetch(`${API_BASE_URL}/api/driver/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${driverToken}`
+            },
+            body: JSON.stringify(body)
+        });
+    } catch (e) {
+        console.warn('Failed to sync driver status', e);
     }
 }
 
@@ -2074,7 +2171,22 @@ document.getElementById('incoming-ping-screen').classList.remove('hidden');
 (async () => {
     const isVendorRide2 = !!(job.vendor_id || job.vendor_profit > 0 || job.isVendorAssigned);
     const vendorMarkup2 = parseFloat(job.vendor_profit || job.vendor_markup || 0);
-    const requiredBal = 10 + (isVendorRide2 ? vendorMarkup2 : 0) + 5; // accept fee + completion fee
+    
+    // Calculate required balance dynamically from the active commission config
+    let pingDrvComm = 0;
+    let pingCustComm = 0;
+    if (activeCommissionConfig) {
+        const cfg = activeCommissionConfig;
+        const rawFare = parseFloat(String(job.fare || '0').replace(/[^0-9.]/g, '')) || 0;
+        pingDrvComm = cfg.driver_commission_type === 'fixed'
+            ? (parseFloat(cfg.driver_commission_fixed) || 0)
+            : (rawFare * (parseFloat(cfg.driver_commission_percent) || 0)) / 100;
+        pingCustComm = cfg.customer_commission_type === 'fixed'
+            ? (parseFloat(cfg.customer_commission_fixed) || 0)
+            : (rawFare * (parseFloat(cfg.customer_commission_percent) || 0)) / 100;
+    }
+    // Upfront deduction only requires driver commission + vendor markup. Customer commission is deducted at the end of the trip.
+    const requiredBal = pingDrvComm + (isVendorRide2 ? vendorMarkup2 : 0);
     const pingWalletLbl = document.getElementById('ping-wallet-balance-lbl');
     const lowBanner = document.getElementById('ping-low-balance-banner');
     const lowMsg = document.getElementById('ping-low-balance-msg');
@@ -2103,7 +2215,7 @@ document.getElementById('incoming-ping-screen').classList.remove('hidden');
 
     if (liveBal < requiredBal) {
         if (lowBanner) lowBanner.classList.remove('hidden');
-        if (lowMsg) lowMsg.textContent = `You need at least ₹${requiredBal.toFixed(2)} (₹10 accept fee + ₹5 completion fee${vendorMarkup2 > 0 ? ` + ₹${vendorMarkup2.toFixed(2)} vendor share` : ''}). Current: ₹${liveBal.toFixed(2)}.`;
+        if (lowMsg) lowMsg.textContent = `You need at least ₹${requiredBal.toFixed(2)} (₹${pingDrvComm.toFixed(2)} driver fee + ₹${pingCustComm.toFixed(2)} customer fee${vendorMarkup2 > 0 ? ` + ₹${vendorMarkup2.toFixed(2)} vendor share` : ''}). Current: ₹${liveBal.toFixed(2)}.`;
         if (acceptBtn) {
             acceptBtn.disabled = true;
             acceptBtn.style.opacity = '0.4';
@@ -2202,7 +2314,34 @@ declinePing();
 const bookingObj = allOpportunities.find(j => j.id === rideId);
 const isVendorRide = bookingObj && (bookingObj.vendor_id || bookingObj.vendor_profit > 0);
 const vendorMarkup = bookingObj ? (parseFloat(bookingObj.vendor_profit) || 0) : 0;
-const requiredBalance = 10 + (isVendorRide ? vendorMarkup : 0);
+
+let driverCommissionAmount = 0;
+let customerCommissionAmount = 0;
+
+if (activeCommissionConfig) {
+    if (activeCommissionConfig.driver_commission_type === 'fixed') {
+        driverCommissionAmount = parseFloat(activeCommissionConfig.driver_commission_fixed) || 0;
+    } else {
+        const rawFare = parseFloat(String(bookingObj?.fare || '0').replace(/[^0-9.]/g, '')) || 0;
+        const drvPct = parseFloat(activeCommissionConfig.driver_commission_percent) || 0;
+        driverCommissionAmount = (rawFare * drvPct) / 100;
+    }
+    
+    if (activeCommissionConfig.customer_commission_type === 'fixed') {
+        customerCommissionAmount = parseFloat(activeCommissionConfig.customer_commission_fixed) || 0;
+    } else {
+        const rawFare = parseFloat(String(bookingObj?.fare || '0').replace(/[^0-9.]/g, '')) || 0;
+        const custPct = parseFloat(activeCommissionConfig.customer_commission_percent) || 0;
+        customerCommissionAmount = (rawFare * custPct) / 100;
+    }
+} else {
+    // Config not yet loaded — will be fetched momentarily. Deduct 0 to avoid wrong charges.
+    driverCommissionAmount = 0;
+    customerCommissionAmount = 0;
+}
+
+const totalCommission = driverCommissionAmount + customerCommissionAmount;
+const requiredBalance = totalCommission + (isVendorRide ? vendorMarkup : 0);
 
 // Re-check live balance from driverData (was refreshed when ping appeared)
 const liveBalance = parseFloat(driverData?.wallet_balance || 0);
@@ -2219,8 +2358,7 @@ try {
 const res = await fetch(`${API_BASE_URL}/api/bookings/accept`, {
 method: 'POST',
 headers: { 
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${localStorage.getItem('cityride_pilot')}`
+    'Content-Type': 'application/json'
 },
 body: JSON.stringify({ 
     bookingId: rideId, 
@@ -2230,17 +2368,17 @@ body: JSON.stringify({
 })
 });
             if (res.ok) {
-                // Immediately deduct ₹10 from local driver wallet state & update UI
+                // Immediately deduct dynamic commission from local driver wallet state & update UI
                 if (typeof driverData !== 'undefined' && driverData && driverData.wallet_balance !== undefined) {
-                    driverData.wallet_balance = Math.max(0, (parseFloat(driverData.wallet_balance || 0) - 10)).toFixed(2);
+                    driverData.wallet_balance = Math.max(0, (parseFloat(driverData.wallet_balance || 0) - totalCommission)).toFixed(2);
                     localStorage.setItem('cityride_pilot', JSON.stringify(driverData));
                     const walletBalEl = document.getElementById('wallet-balance-val');
                     if (walletBalEl) walletBalEl.textContent = '₹' + driverData.wallet_balance;
                 }
 
                 Swal.fire({
-                    title: 'Ride Accepted! (-₹10 Fee)',
-                    text: '₹10 ride accept fee has been deducted from your wallet. Proceed to pickup location.',
+                    title: `Ride Accepted! (-₹${totalCommission.toFixed(2)} Fee)`,
+                    text: `₹${totalCommission.toFixed(2)} platform fee has been deducted from your wallet. Proceed to pickup location.`,
                     icon: 'success',
                     timer: 2200,
                     showConfirmButton: false,
@@ -3064,11 +3202,12 @@ if (result.isConfirmed) {
 try {
 const res = await fetch(`${API_BASE_URL}/api/driver/request-cancel`, {
 method: 'POST',
-headers: { 'Content-Type': 'application/json' },
+headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('driverToken') },
 body: JSON.stringify({ bookingId: rideId, driverId: driverData.id, reason: 'Driver requested cancellation' })
 });
 if (res.ok) {
-Swal.fire('Request Sent', 'Cancellation request is pending review.', 'info');
+Swal.fire('Ride Cancelled', 'The mission has been aborted successfully.', 'info');
+if (typeof fetchActiveRide === 'function') fetchActiveRide();
 pollOpportunityJobs();
 } else {
 const err = await res.json();
@@ -3614,21 +3753,40 @@ async function syncDashboardStats() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
         // Sync Profile details & wallet IN PARALLEL
-        const [resProfile, resStats] = await Promise.all([
+        const [resProfile, resStats, resComm] = await Promise.all([
             fetch(`${API_BASE_URL}/api/driver/info/${driverData.id}`, { signal: controller.signal }).catch(() => null),
             fetch(`${API_BASE_URL}/api/driver/dashboard-stats/${driverData.id}${
                 document.getElementById('filter-from-date')?.value && document.getElementById('filter-to-date')?.value ? 
                 '?startDate=' + document.getElementById('filter-from-date').value + '&endDate=' + document.getElementById('filter-to-date').value : ''
-            }`, { signal: controller.signal }).catch(() => null)
+            }`, { signal: controller.signal }).catch(() => null),
+            fetch(`${API_BASE_URL}/api/commissions/active`, { signal: controller.signal }).catch(() => null)
         ]);
         clearTimeout(timeoutId);
+        
+        if (resComm && resComm.ok) {
+            try { 
+                activeCommissionConfig = await resComm.json(); 
+                // Update wallet fee info text with actual configured amounts
+                const feeEl = document.getElementById('wallet-fee-info-text');
+                if (feeEl && activeCommissionConfig) {
+                    const cfg = activeCommissionConfig;
+                    const drvType = cfg.driver_commission_type === 'fixed' ? 'fixed' : 'percent';
+                    const custType = cfg.customer_commission_type === 'fixed' ? 'fixed' : 'percent';
+                    const drvAmt = drvType === 'fixed' 
+                        ? `₹${parseFloat(cfg.driver_commission_fixed || 0).toFixed(2)} (fixed)`
+                        : `${parseFloat(cfg.driver_commission_percent || 0).toFixed(2)}% of fare`;
+                    const custAmt = custType === 'fixed' 
+                        ? `₹${parseFloat(cfg.customer_commission_fixed || 0).toFixed(2)} (fixed)`
+                        : `${parseFloat(cfg.customer_commission_percent || 0).toFixed(2)}% of fare`;
+                    feeEl.textContent = `Platform fee upon ride acceptance: ${drvAmt}. (Customer fee of ${custAmt} will be collected & deducted at end of trip)`;
+                }
+            } catch(e) {}
+        }
+        
         if (resProfile && resProfile.ok) {
             const dataProfile = await resProfile.json();
             if (dataProfile.success && dataProfile.driver) {
-                driverData.wallet_balance = dataProfile.driver.wallet_balance;
-                if (dataProfile.driver.name) driverData.name = dataProfile.driver.name;
-                if (dataProfile.driver.car_model) driverData.car_model = dataProfile.driver.car_model;
-                if (dataProfile.driver.car_number) driverData.car_number = dataProfile.driver.car_number;
+                driverData = { ...driverData, ...dataProfile.driver };
                 localStorage.setItem('cityride_pilot', JSON.stringify(driverData));
                 updateDriverProfileUI();
             }
