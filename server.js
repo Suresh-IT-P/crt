@@ -1143,11 +1143,11 @@ async function initDB() {
         }
 
         // Fallback to individual variables if MYSQL_URL parsing failed or didn't exist
-        host = host || process.env.MYSQL_HOST || process.env.MYSQLHOST || process.env.DB_HOST || 'mysql.railway.internal';
-        port = port || parseInt(process.env.MYSQLPORT) || publicPort;
-        user = user || process.env.MYSQLUSER || publicUser;
-        password = password || process.env.MYSQLPASSWORD || process.env.MYSQL_ROOT_PASSWORD || publicPassword;
-        database = database || process.env.MYSQLDATABASE || process.env.MYSQL_DATABASE || publicDatabase;
+        host = host || process.env.DB_HOST || process.env.MYSQL_HOST || process.env.MYSQLHOST || 'mysql.railway.internal';
+        port = port || parseInt(process.env.DB_PORT) || parseInt(process.env.MYSQLPORT) || publicPort;
+        user = user || process.env.DB_USER || process.env.MYSQLUSER || publicUser;
+        password = password || process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || process.env.MYSQL_ROOT_PASSWORD || publicPassword;
+        database = database || process.env.DB_NAME || process.env.MYSQLDATABASE || process.env.MYSQL_DATABASE || publicDatabase;
 
         console.log('Detected Railway Container environment. Connecting internally to MySQL at:', host, 'on port:', port);
     } else {
