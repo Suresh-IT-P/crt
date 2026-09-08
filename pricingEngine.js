@@ -15,6 +15,25 @@ async function calculateCanonicalFare(db, {
     pickupDate, 
     preRideWaitingCharge = 0 
 }) {
+    // Fetch active commission config for dynamic customer platform fee
+    let activeCommissionConfig = null;
+    if (db) {
+        try {
+            const [commRows] = await db.query("SELECT * FROM taxi_commission_configs WHERE status = 'active' ORDER BY version DESC LIMIT 1");
+            if (commRows.length > 0) activeCommissionConfig = commRows[0];
+        } catch (err) {
+            console.error("Error fetching active commission config in pricingEngine:", err);
+        }
+    }
+
+    const getPlatformFee = (baseAmt) => {
+        if (!activeCommissionConfig) return 0;
+        if (activeCommissionConfig.customer_commission_type === 'fixed') {
+            return parseFloat(activeCommissionConfig.customer_commission_fixed) || 0;
+        }
+        return (baseAmt * (parseFloat(activeCommissionConfig.customer_commission_percent) || 0)) / 100;
+    };
+
     // 1. Fetch Pricing Config (check vendor first, then fallback)
     let pricingConfig = null;
     if (vendorId) {
