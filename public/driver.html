@@ -1493,9 +1493,10 @@ if (calculatedSpeedMPS <= 45.0 && segmentDist >= 0.001 && calculatedSpeedMPS >= 
 incrementalDistanceKm = segmentDist;
 }
 }
-if (incrementalDistanceKm > 0 && incrementalDistanceKm < 5.0) {
-window.localDistanceCovered = (window.localDistanceCovered || 0) + incrementalDistanceKm;
-}
+        if (incrementalDistanceKm > 0 && incrementalDistanceKm < 5.0) {
+            window.localDistanceCovered = (window.localDistanceCovered || parseFloat(localStorage.getItem('localDistanceCovered')) || 0) + incrementalDistanceKm;
+            localStorage.setItem('localDistanceCovered', window.localDistanceCovered);
+        }
 }
 window.lastSmoothedCoords = { lat: smoothed.lat, lng: smoothed.lng };
 window.lastOdoCalcTime = Date.now();
@@ -2583,6 +2584,27 @@ function startWaitingTimer(ride) {
         if (elapsedDisplay) {
             elapsedDisplay.textContent = `${String(eH).padStart(2,'0')}:${String(eM).padStart(2,'0')}:${String(eS).padStart(2,'0')}`;
             elapsedDisplay.style.color = 'var(--text-white)';
+            
+            if (window.localDistanceCovered === undefined) {
+                window.localDistanceCovered = parseFloat(localStorage.getItem('localDistanceCovered')) || 0;
+            }
+            
+            const badge = document.getElementById('timer-status-badge');
+            if (badge && badge.textContent === 'ON TRIP') {
+                let odoDisplay = document.getElementById('live-odometer-display');
+                if (!odoDisplay) {
+                    const odoHtml = `
+                    <div style="display:flex; justify-content:center; align-items:center; gap:8px; margin-top:15px; margin-bottom:5px;">
+                        <span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; color:var(--text-gray); letter-spacing:0.8px;">LIVE ODOMETER</span>
+                        <span id="live-odometer-display" style="font-size:1.4rem; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:-0.5px; color:var(--success-green); background: rgba(52, 199, 89, 0.1); padding: 4px 12px; border-radius: 12px; border: 1px solid rgba(52, 199, 89, 0.2);">0.00 KM</span>
+                    </div>`;
+                    elapsedDisplay.parentElement.insertAdjacentHTML('afterend', odoHtml);
+                    odoDisplay = document.getElementById('live-odometer-display');
+                }
+                if (odoDisplay) {
+                    odoDisplay.textContent = (window.localDistanceCovered || 0).toFixed(2) + ' KM';
+                }
+            }
         }
         if (ride.journey_start_time) {
             const parsed = new Date(ride.journey_start_time);
@@ -3107,6 +3129,8 @@ otp: otp
 });
 hideProcessingLoader();
 if (res.ok) {
+window.localDistanceCovered = 0;
+localStorage.setItem('localDistanceCovered', '0');
 const data = await res.json();
 let fareInfoHtml = `<div style="text-align:left; font-size:0.82rem; display:flex; flex-direction:column; gap:6px; margin-top:8px;">`;
 if (data.estimatedDistance && data.dynamicDistance) {
@@ -3256,6 +3280,8 @@ clientDistance: window.localDistanceCovered || 0
 });
 hideProcessingLoader();
 if (res.ok) {
+window.localDistanceCovered = 0;
+localStorage.setItem('localDistanceCovered', '0');
             const data = await res.json();
             
             // Secondary fetch to get the full fare breakdown
