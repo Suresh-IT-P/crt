@@ -1,0 +1,989 @@
+        // Passengers
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_passengers (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100),
+                email VARCHAR(100),
+                password VARCHAR(255),
+                phone VARCHAR(20) UNIQUE,
+                otp_verified TINYINT DEFAULT 0,
+                banned_until TIMESTAMP NULL,
+                is_blocked TINYINT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS passengers (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100),
+                email VARCHAR(100),
+                password VARCHAR(255),
+                phone VARCHAR(20) UNIQUE,
+                otp_verified TINYINT DEFAULT 0,
+                banned_until TIMESTAMP NULL,
+                is_blocked TINYINT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Migration: Ensure is_blocked exists
+        try {
+            await db.query('ALTER TABLE taxi_passengers ADD COLUMN is_blocked TINYINT DEFAULT 0');
+        } catch (e) { /* existing */ }
+        try {
+            await db.query('ALTER TABLE passengers ADD COLUMN is_blocked TINYINT DEFAULT 0');
+        } catch (e) { /* existing */ }
+
+        // taxi_drivers
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_drivers (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100),
+                email VARCHAR(100) UNIQUE,
+                password VARCHAR(255),
+                phone VARCHAR(20),
+                car_model VARCHAR(50),
+                car_number VARCHAR(20),
+                vehicle_type VARCHAR(50) DEFAULT 'sedan',
+                wallet_balance DECIMAL(10,2) DEFAULT 0,
+                is_blocked TINYINT DEFAULT 0,
+                approval_status VARCHAR(20) DEFAULT 'approved',
+                
+                -- Driver Documents (Stored upon approval)
+                dl_front LONGTEXT,
+                dl_back LONGTEXT,
+                pvc LONGTEXT,
+                aadhar_front LONGTEXT,
+                aadhar_back LONGTEXT,
+                rc_book LONGTEXT,
+                insurance LONGTEXT,
+                pollution LONGTEXT,
+                permit LONGTEXT,
+                payment_qr LONGTEXT,
+                pref_loc_1 VARCHAR(100),
+                pref_loc_2 VARCHAR(100),
+                pref_loc_3 VARCHAR(100),
+                ride_local TINYINT DEFAULT 1,
+                ride_oneway TINYINT DEFAULT 1,
+                ride_round TINYINT DEFAULT 1,
+                seating_capacity INT DEFAULT 5,
+
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Migration: Ensure columns exist
+        try { await db.query('ALTER TABLE taxi_drivers ADD COLUMN is_blocked TINYINT DEFAULT 0'); } catch (e) { }
+        try { await db.query("ALTER TABLE taxi_drivers ADD COLUMN approval_status VARCHAR(20) DEFAULT 'approved'"); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_drivers ADD COLUMN profile_photo LONGTEXT'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_drivers ADD COLUMN seating_capacity INT DEFAULT 5'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_drivers ADD COLUMN dl_expiry DATE NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_drivers ADD COLUMN pvc_expiry DATE NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_drivers ADD COLUMN insurance_expiry DATE NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_drivers ADD COLUMN pollution_expiry DATE NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_drivers ADD COLUMN permit_expiry DATE NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_drivers ADD UNIQUE (phone)'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_driver_applications ADD UNIQUE (phone)'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_driver_applications ADD COLUMN profile_photo LONGTEXT'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_driver_applications ADD COLUMN seating_capacity INT DEFAULT 5'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_driver_applications ADD COLUMN dl_expiry DATE NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_driver_applications ADD COLUMN pvc_expiry DATE NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_driver_applications ADD COLUMN insurance_expiry DATE NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_driver_applications ADD COLUMN pollution_expiry DATE NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_driver_applications ADD COLUMN permit_expiry DATE NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_driver_applications ADD COLUMN payment_qr LONGTEXT'); } catch (e) { }
+
+        // Add Preferences & Seating Capacity Migrations
+        const prefCols = ['pref_loc_1 VARCHAR(100)', 'pref_loc_2 VARCHAR(100)', 'pref_loc_3 VARCHAR(100)', 'ride_local TINYINT DEFAULT 1', 'ride_oneway TINYINT DEFAULT 1', 'ride_round TINYINT DEFAULT 1', 'seating_capacity INT DEFAULT 5'];
+        for (const col of prefCols) {
+            try { await db.query(`ALTER TABLE taxi_drivers ADD COLUMN ${col}`); } catch (e) { }
+            try { await db.query(`ALTER TABLE taxi_driver_applications ADD COLUMN ${col}`); } catch (e) { }
+        }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN seating_capacity INT DEFAULT 4'); } catch (e) { }
+
+        // Add Document Columns to Drivers if missing
+        const docCols = ['dl_front', 'dl_back', 'pvc', 'aadhar_front', 'aadhar_back', 'rc_book', 'insurance', 'pollution', 'permit', 'payment_qr'];
+        for (const col of docCols) {
+            try { await db.query(`ALTER TABLE taxi_drivers ADD COLUMN ${col} LONGTEXT`); } catch (e) { }
+        }
+
+        // Add GPS Location & Status Columns to Drivers if missing
+        const gpsCols = ['latitude DECIMAL(10, 8) NULL', 'longitude DECIMAL(11, 8) NULL', 'is_online TINYINT DEFAULT 0'];
+        for (const col of gpsCols) {
+            try { await db.query(`ALTER TABLE taxi_drivers ADD COLUMN ${col}`); } catch (e) { }
+        }
+
+        // District, Association & ID Card Columns
+        const driverAssocCols = [
+            'district VARCHAR(100) NULL',
+            'association_id INT NULL',
+            "association_name VARCHAR(150) DEFAULT 'CityRide Driver (Independent)'",
+            'association_id_card LONGTEXT NULL'
+        ];
+        for (const col of driverAssocCols) {
+            try { await db.query(`ALTER TABLE taxi_drivers ADD COLUMN ${col}`); } catch (e) { }
+            try { await db.query(`ALTER TABLE taxi_driver_applications ADD COLUMN ${col}`); } catch (e) { }
+        }
+
+        // SOS Emergency Alerts Table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_sos_alerts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                booking_id INT,
+                user_type VARCHAR(20) DEFAULT 'passenger',
+                user_id INT,
+                association_id INT,
+                user_name VARCHAR(100),
+                user_phone VARCHAR(20),
+                latitude DECIMAL(10, 8),
+                longitude DECIMAL(11, 8),
+                status VARCHAR(20) DEFAULT 'active',
+                resolution_notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        try { await db.query('ALTER TABLE taxi_sos_alerts ADD COLUMN association_id INT'); } catch (e) { }
+
+        // Association Support Tickets
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_association_support_tickets (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                association_id INT,
+                booking_id INT,
+                customer_id INT,
+                driver_id INT,
+                issue_text TEXT,
+                status VARCHAR(20) DEFAULT 'open',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Association Incentives
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_association_incentives (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                association_id INT,
+                title VARCHAR(255),
+                target_rides INT,
+                bonus_amount DECIMAL(10,2),
+                period VARCHAR(50),
+                is_active TINYINT DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Association Surge Config
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_association_surge_config (
+                association_id INT PRIMARY KEY,
+                multiplier DECIMAL(3, 2) DEFAULT 1.00,
+                night_surcharge_percent INT DEFAULT 0,
+                bata_per_day DECIMAL(10, 2) DEFAULT 0.00,
+                is_active TINYINT DEFAULT 0,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Global Surge Pricing Config Table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_surge_config (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                surge_key VARCHAR(50) UNIQUE,
+                multiplier DECIMAL(3, 2) DEFAULT 1.00,
+                is_active TINYINT DEFAULT 0,
+                description VARCHAR(255),
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Seed default surge config keys if empty
+        try {
+            await db.query(`
+                INSERT IGNORE INTO taxi_surge_config (surge_key, multiplier, is_active, description) VALUES 
+                ('night_surge', 1.25, 0, 'Night Surcharge (10 PM - 5 AM)'),
+                ('rain_surge', 1.30, 0, 'Rain & Monsoon Surge'),
+                ('demand_surge', 1.50, 0, 'High Demand Zone Surge')
+            `);
+        } catch (e) { }
+
+        // taxi_driver_applications (New Registrations)
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_driver_applications (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100),
+                email VARCHAR(100) UNIQUE,
+                password VARCHAR(255),
+                phone VARCHAR(20),
+                car_model VARCHAR(50),
+                car_number VARCHAR(20),
+                vehicle_type VARCHAR(50) DEFAULT 'sedan',
+                
+                -- Driver Documents
+                dl_front LONGTEXT,
+                dl_back LONGTEXT,
+                pvc LONGTEXT,
+                aadhar_front LONGTEXT,
+                aadhar_back LONGTEXT,
+                
+                -- Vehicle Documents
+                rc_book LONGTEXT,
+                insurance LONGTEXT,
+                pollution LONGTEXT,
+                permit LONGTEXT,
+                payment_qr LONGTEXT,
+                pref_loc_1 VARCHAR(100),
+                pref_loc_2 VARCHAR(100),
+                pref_loc_3 VARCHAR(100),
+                ride_local TINYINT DEFAULT 1,
+                ride_oneway TINYINT DEFAULT 1,
+                ride_round TINYINT DEFAULT 1,
+                seating_capacity INT DEFAULT 5,
+                
+                status VARCHAR(20) DEFAULT 'pending', -- pending, approved, rejected
+                admin_note TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Migration: Modify document columns to LONGTEXT to support Base64 images
+        const docColsToMigrate = ['dl_front', 'dl_back', 'pvc', 'aadhar_front', 'aadhar_back', 'rc_book', 'insurance', 'pollution', 'permit', 'payment_qr'];
+        for (const col of docColsToMigrate) {
+            try { await db.query(`ALTER TABLE taxi_drivers MODIFY COLUMN ${col} LONGTEXT`); } catch (e) { }
+            try { await db.query(`ALTER TABLE taxi_driver_applications MODIFY COLUMN ${col} LONGTEXT`); } catch (e) { }
+        }
+
+        // taxi_admins
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_admins (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100),
+                email VARCHAR(100) UNIQUE,
+                password VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Seed default admin if empty
+        const [adminRows] = await db.query('SELECT COUNT(*) as cnt FROM taxi_admins');
+        if (adminRows[0].cnt === 0) {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash('adminpass', salt);
+            await db.query('INSERT INTO taxi_admins (name, email, password) VALUES (?, ?, ?)',
+                ['CityRide Admin', 'admin@cityridetaxi', hashedPassword]);
+            console.log('Default admin seeded.');
+        }
+
+        // taxi_vendors (Partners/Dealers)
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_vendors (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                vendor_id VARCHAR(50) UNIQUE,
+                name VARCHAR(100),
+                business_name VARCHAR(100),
+                email VARCHAR(100) UNIQUE,
+                password VARCHAR(255),
+                phone VARCHAR(20),
+                is_blocked TINYINT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // taxi_bookings
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_bookings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT,
+                pickup_loc TEXT,
+                pickup_coords VARCHAR(100),
+                drop_loc TEXT,
+                drop_coords VARCHAR(100),
+                pickup_date DATE,
+                pickup_time TIME,
+                passengers INT,
+                vehicle_type VARCHAR(50),
+                trip_type VARCHAR(50),
+                fare VARCHAR(20),
+                status VARCHAR(20) DEFAULT 'pending',
+                driver_id INT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Migration: Ensure coords exist
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN pickup_coords VARCHAR(100) AFTER pickup_loc'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN drop_coords VARCHAR(100) AFTER drop_loc'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN extra_drops TEXT AFTER drop_coords'); } catch (e) { }
+
+        // Migration: Ensure trip_type exists
+        try {
+            await db.query('ALTER TABLE taxi_bookings ADD COLUMN trip_type VARCHAR(50) AFTER vehicle_type');
+        } catch (e) { /* already exists */ }
+
+        // Migration: Ensure cancel_reason exists
+        try {
+            await db.query('ALTER TABLE taxi_bookings ADD COLUMN cancel_reason TEXT AFTER status');
+        } catch (e) { /* already exists */ }
+
+        // Migration: Ensure distance exists
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN distance VARCHAR(50)'); } catch (e) { }
+
+        // Migration: Ensure core columns exist (Safe recovery)
+        try {
+            await db.query("ALTER TABLE taxi_bookings ADD COLUMN status VARCHAR(20) DEFAULT 'pending' AFTER fare");
+            console.log('âo. Migration: status column added to bookings.');
+        } catch (e) {
+            if (!e.message.includes('Duplicate column name')) console.error('â?O Migration Error (status):', e.message);
+        }
+
+        try {
+            await db.query('ALTER TABLE taxi_bookings ADD COLUMN journey_otp VARCHAR(10) AFTER status');
+            console.log('âo. Migration: journey_otp column added to bookings.');
+        } catch (e) {
+            if (!e.message.includes('Duplicate column name')) console.error('â?O Migration Error (journey_otp):', e.message);
+        }
+
+        try {
+            await db.query('ALTER TABLE taxi_bookings ADD COLUMN vendor_id INT NULL');
+            console.log('âo. Migration: vendor_id column added to bookings.');
+        } catch (e) {
+            if (!e.message.includes('Duplicate column name')) console.error('â?O Migration Error (vendor_id):', e.message);
+        }
+
+        try {
+            await db.query('ALTER TABLE taxi_bookings ADD COLUMN vendor_markup DECIMAL(10,2) DEFAULT 0');
+            console.log('âo. Migration: vendor_markup column added to bookings.');
+        } catch (e) {
+            if (!e.message.includes('Duplicate column name')) console.error('â?O Migration Error (vendor_markup):', e.message);
+        }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN journey_otp VARCHAR(10)'); } catch (e) { }
+
+        // Migration: Odometer and Timer for Rental
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN start_odometer INT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN end_odometer INT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN journey_start_time DATETIME NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN journey_end_time DATETIME NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN rental_package VARCHAR(50) NULL'); } catch (e) { }
+        // Ensure status column can handle all states including vendor flow
+        try { await db.query("ALTER TABLE taxi_bookings MODIFY COLUMN status ENUM('pending', 'assigned', 'vendor_assigned', 'pending_vendor_assignment', 'ongoing', 'finished', 'completed', 'cancelled', 'cancel_requested') DEFAULT 'pending'"); } catch (e) { }
+        // Migration: Vendor assignment driver acceptance tracking
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN driver_accept_required TINYINT DEFAULT 0'); } catch (e) { }
+
+        // Migration: Vendor Support
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN vendor_id INT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN vendor_markup DECIMAL(10,2) DEFAULT 0'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN passenger_name VARCHAR(100) DEFAULT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN passenger_phone VARCHAR(20) DEFAULT NULL'); } catch (e) { }
+
+        // Migration: GPS Tracking & Deviation
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN actual_distance VARCHAR(50) DEFAULT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN is_deviated TINYINT DEFAULT 0'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN original_fare VARCHAR(50) DEFAULT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN return_date DATE DEFAULT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN start_gps_coords VARCHAR(100) DEFAULT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN end_gps_coords VARCHAR(100) DEFAULT NULL'); } catch (e) { }
+
+        // Migration: Dual Distance Calculation (Static + Dynamic)
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN estimated_distance VARCHAR(50) DEFAULT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN estimated_fare VARCHAR(50) DEFAULT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN estimated_duration VARCHAR(50) DEFAULT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN dynamic_distance VARCHAR(50) DEFAULT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN dynamic_fare VARCHAR(50) DEFAULT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN reached_pickup_time DATETIME NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN end_otp VARCHAR(10) DEFAULT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN rating TINYINT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN rating_comment TEXT NULL'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN air_distance_boost_km DECIMAL(10,2) DEFAULT 0'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_bookings ADD COLUMN pickup_incentive_fare DECIMAL(10,2) DEFAULT 0'); } catch (e) { }
+
+        // GPS Logs Table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_ride_gps_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                booking_id INT,
+                latitude DECIMAL(10, 8),
+                longitude DECIMAL(11, 8),
+                accuracy DECIMAL(8, 2),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX (booking_id)
+            )
+        `);
+
+        // Alter to add speed column to gps logs if not exists
+        try { await db.query('ALTER TABLE taxi_ride_gps_logs ADD COLUMN speed DECIMAL(5, 2) DEFAULT 0.00'); } catch (e) { }
+
+        // Recovery: Generate OTPs for legacy rides that don't have one
+        try {
+            const [missing] = await db.query("SELECT id FROM taxi_bookings WHERE journey_otp IS NULL OR journey_otp = ''");
+            for (const ride of missing) {
+                const newOtp = Math.floor(1000 + Math.random() * 9000).toString();
+                await db.query('UPDATE taxi_bookings SET journey_otp = ? WHERE id = ?', [newOtp, ride.id]);
+                console.log(`[RECOVERY] Generated legacy OTP [${newOtp}] for Ride #B${ride.id}`);
+            }
+        } catch (e) { console.error('Recovery script failed:', e.message); }
+
+        // Recovery: Generate end_otp for legacy rides that don't have one and are not local
+        try {
+            const [missingEnd] = await db.query("SELECT id FROM taxi_bookings WHERE (end_otp IS NULL OR end_otp = '') AND trip_type != 'local'");
+            for (const ride of missingEnd) {
+                const newOtp = Math.floor(1000 + Math.random() * 9000).toString();
+                await db.query('UPDATE taxi_bookings SET end_otp = ? WHERE id = ?', [newOtp, ride.id]);
+                console.log(`[RECOVERY] Generated legacy end OTP [${newOtp}] for Ride #B${ride.id}`);
+            }
+        } catch (e) { console.error('End OTP recovery script failed:', e.message); }
+
+        // Abort Rejections Table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_abort_rejections (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                booking_id INT,
+                driver_id INT,
+                original_reason TEXT,
+                admin_note TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS abort_rejections (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                booking_id INT,
+                driver_id INT,
+                original_reason TEXT,
+                admin_note TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // OTPs Table (For Email Verification)
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_otps (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                email VARCHAR(100),
+                otp VARCHAR(10),
+                expires_at TIMESTAMP
+            )
+        `);
+
+        // Tariffs
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_tariffs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                vehicle_type VARCHAR(50),
+                category VARCHAR(50),
+                config JSON,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_vendor_tariffs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                vendor_id INT,
+                vehicle_type VARCHAR(50),
+                category VARCHAR(50),
+                config JSON,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY vendor_vehicle_cat (vendor_id, vehicle_type, category)
+            )
+        `);
+
+        // Vendor Wallet Tables
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_vendor_wallets (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                vendor_id INT NOT NULL UNIQUE,
+                balance DECIMAL(12,2) DEFAULT 0.00,
+                total_earned DECIMAL(12,2) DEFAULT 0.00,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (vendor_id) REFERENCES taxi_vendors(id) ON DELETE CASCADE
+            )
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_vendor_wallet_transactions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                vendor_id INT NOT NULL,
+                booking_id INT NULL,
+                driver_id INT NULL,
+                amount DECIMAL(10,2) NOT NULL,
+                type ENUM('credit', 'debit') DEFAULT 'credit',
+                note TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_vendor_wallet_txn (vendor_id),
+                INDEX idx_booking_wallet_txn (booking_id)
+            )
+        `);
+        console.log('âo. Vendor wallet tables ready.');
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS tariffs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                vehicle_type VARCHAR(50),
+                category VARCHAR(50),
+                config JSON,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Peak Rules Table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_peak_rules (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                start_time TIME,
+                end_time TIME,
+                surcharge_percentage DECIMAL(5,2),
+                is_active TINYINT DEFAULT 1
+            )
+        `);
+
+        // Insert default peak rules if empty
+        const [peakRows] = await db.query('SELECT COUNT(*) as cnt FROM taxi_peak_rules');
+        if (peakRows[0].cnt === 0) {
+            await db.query("INSERT INTO taxi_peak_rules (start_time, end_time, surcharge_percentage) VALUES ('08:00:00', '11:00:00', 25.00)");
+            await db.query("INSERT INTO taxi_peak_rules (start_time, end_time, surcharge_percentage) VALUES ('16:00:00', '21:00:00', 25.00)");
+            console.log('Default peak rules initialized.');
+        }
+
+        // Special Location Charges Table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_special_location_charges (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                place_type VARCHAR(100) NOT NULL UNIQUE,
+                display_name VARCHAR(150) NOT NULL,
+                surcharge_percentage DECIMAL(5,2) DEFAULT 0.00,
+                is_active TINYINT DEFAULT 1,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Seed default special location charges if table is empty
+        const [spRows] = await db.query('SELECT COUNT(*) as cnt FROM taxi_special_location_charges');
+        if (spRows[0].cnt === 0) {
+            const defaultSpecialCharges = [
+                ['mall', 'Shopping Mall', 10.00],
+                ['cinema', 'Cinema Theatre', 10.00],
+                ['beach', 'Beach / Waterfront', 15.00],
+                ['resort', 'Resort / Hotel', 15.00],
+                ['restaurant', 'Restaurant / Dine-In', 10.00],
+                ['railway_station', 'Railway Station', 5.00]
+            ];
+            for (const [pt, dn, sp] of defaultSpecialCharges) {
+                await db.query('INSERT INTO taxi_special_location_charges (place_type, display_name, surcharge_percentage) VALUES (?, ?, ?)', [pt, dn, sp]);
+            }
+            console.log('âo. Default special location charges initialized.');
+        }
+
+        // Chat Table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_booking_chats (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                booking_id INT NOT NULL,
+                sender_role VARCHAR(20) NOT NULL,
+                sender_name VARCHAR(100),
+                message TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_booking (booking_id)
+            )
+        `);
+
+        // Calls Table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_booking_calls (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                booking_id INT NOT NULL,
+                caller_role VARCHAR(20) NOT NULL,
+                caller_name VARCHAR(100),
+                status VARCHAR(20) NOT NULL DEFAULT 'ringing',
+                started_at DATETIME NOT NULL,
+                answered_at DATETIME NULL,
+                ended_at DATETIME NULL,
+                duration_seconds INT DEFAULT 0,
+                INDEX idx_booking_calls (booking_id)
+            )
+        `);
+
+        // Migration: add special_place_type and association_id to taxi_bookings if missing
+        try {
+            await db.query('ALTER TABLE taxi_bookings ADD COLUMN special_place_type VARCHAR(50) DEFAULT NULL');
+            console.log('âo. Migration: special_place_type column added to taxi_bookings.');
+        } catch (e) { /* Already exists */ }
+        
+        try {
+            await db.query('ALTER TABLE taxi_bookings ADD COLUMN association_id INT DEFAULT NULL');
+            console.log('âo. Migration: association_id column added to taxi_bookings.');
+        } catch (e) { /* Already exists */ }
+        
+        try {
+            await db.query('ALTER TABLE taxi_drivers ADD COLUMN association_id INT DEFAULT NULL');
+            console.log('âo. Migration: association_id column added to taxi_drivers.');
+        } catch (e) { /* Already exists */ }
+
+        // --- SYSTEM COMMISSION CONFIGS ---
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_commission_configs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                version INT NOT NULL,
+                customer_commission_type VARCHAR(20) NOT NULL DEFAULT 'percentage',
+                driver_commission_type VARCHAR(20) NOT NULL DEFAULT 'percentage',
+                customer_commission_percent DECIMAL(5,2) DEFAULT 0,
+                customer_commission_fixed DECIMAL(10,2) DEFAULT 0,
+                driver_commission_percent DECIMAL(5,2) DEFAULT 0,
+                driver_commission_fixed DECIMAL(10,2) DEFAULT 0,
+                total_commission_percent DECIMAL(5,2) DEFAULT 0,
+                total_commission_fixed DECIMAL(10,2) DEFAULT 0,
+                maintenance_percent DECIMAL(5,2) DEFAULT 0,
+                maintenance_fixed DECIMAL(10,2) DEFAULT 0,
+                association_percent DECIMAL(5,2) DEFAULT 0,
+                association_fixed DECIMAL(10,2) DEFAULT 0,
+                cityride_percent DECIMAL(5,2) DEFAULT 0,
+                cityride_fixed DECIMAL(10,2) DEFAULT 0,
+                effective_from DATETIME DEFAULT CURRENT_TIMESTAMP,
+                effective_to DATETIME DEFAULT NULL,
+                status VARCHAR(20) DEFAULT 'active',
+                created_by INT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        
+        const [configCount] = await db.query('SELECT COUNT(*) as cnt FROM taxi_commission_configs');
+        if (configCount[0].cnt === 0) {
+            await db.query(`
+                INSERT INTO taxi_commission_configs 
+                (version, customer_commission_percent, driver_commission_percent, total_commission_percent, maintenance_percent, association_percent, cityride_percent)
+                VALUES (1, 10.00, 5.00, 15.00, 2.00, 8.00, 5.00)
+            `);
+            console.log('âo. Migration: default commission config initialized.');
+        }
+
+        // --- ASSOCIATION TABLES ---
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_associations (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                city_name VARCHAR(100) NOT NULL,
+                admin_username VARCHAR(50) UNIQUE NOT NULL,
+                admin_password VARCHAR(255) NOT NULL,
+                commission_type ENUM('percentage', 'fixed') DEFAULT 'percentage',
+                commission_value DECIMAL(10, 2) DEFAULT 0,
+                geofence_radius DECIMAL(10, 2) DEFAULT 50,
+                latitude DECIMAL(10,8) DEFAULT NULL,
+                longitude DECIMAL(11,8) DEFAULT NULL,
+                is_active TINYINT DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        try { await db.query('ALTER TABLE taxi_associations ADD COLUMN latitude DECIMAL(10,8) DEFAULT NULL'); } catch (e) {}
+        try { await db.query('ALTER TABLE taxi_associations ADD COLUMN longitude DECIMAL(11,8) DEFAULT NULL'); } catch (e) {}
+        try { await db.query('ALTER TABLE taxi_associations ADD COLUMN commission_customer_pct DECIMAL(10,2) DEFAULT 0'); } catch (e) {}
+        try { await db.query('ALTER TABLE taxi_associations ADD COLUMN commission_customer_fixed DECIMAL(10,2) DEFAULT 0'); } catch (e) {}
+        try { await db.query('ALTER TABLE taxi_associations ADD COLUMN commission_driver_pct DECIMAL(10,2) DEFAULT 0'); } catch (e) {}
+        try { await db.query('ALTER TABLE taxi_associations ADD COLUMN commission_driver_fixed DECIMAL(10,2) DEFAULT 0'); } catch (e) {}
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_association_wallets (
+                association_id INT PRIMARY KEY,
+                balance DECIMAL(10,2) DEFAULT 0.00,
+                FOREIGN KEY (association_id) REFERENCES taxi_associations(id) ON DELETE CASCADE
+            )
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_association_wallet_transactions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                association_id INT,
+                booking_id INT NULL,
+                driver_id INT NULL,
+                type ENUM('credit', 'debit') NOT NULL,
+                amount DECIMAL(10,2) NOT NULL,
+                note VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (association_id) REFERENCES taxi_associations(id) ON DELETE CASCADE
+            )
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_association_tariffs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                association_id INT NOT NULL,
+                trip_type VARCHAR(20) NOT NULL,
+                vehicle_type VARCHAR(20) NOT NULL,
+                config JSON,
+                UNIQUE KEY unique_assoc_tariff (association_id, trip_type, vehicle_type),
+                FOREIGN KEY (association_id) REFERENCES taxi_associations(id) ON DELETE CASCADE
+            )
+        `);
+        console.log('âo. Association tables ensured.');
+
+        // Insert default tariffs if empty
+        try {
+            const [tariffRows] = await db.query('SELECT COUNT(*) as cnt FROM taxi_tariffs');
+
+            const defaultTariffs = [
+                {
+                    vehicle_type: 'bike',
+                    category: 'local',
+                    config: JSON.stringify({ base: 0, perKm: 10, minKm: 5 })
+                },
+                {
+                    vehicle_type: 'bike',
+                    category: 'oneway',
+                    config: JSON.stringify({ base: 0, perKm: 10, minKm: 5, convenience: 0 })
+                },
+                {
+                    vehicle_type: 'auto',
+                    category: 'local',
+                    config: JSON.stringify({ base: 60, perKm: 12, minKm: 0 })
+                },
+                {
+                    vehicle_type: 'auto',
+                    category: 'oneway',
+                    config: JSON.stringify({ base: 0, perKm: 9, minKm: 50 })
+                },
+                {
+                    vehicle_type: 'auto',
+                    category: 'round',
+                    config: JSON.stringify({ base: 0, perKm: 8, minKmPerDay: 100 })
+                },
+                {
+                    vehicle_type: 'auto',
+                    category: 'rental',
+                    config: JSON.stringify({
+                        '2-20': { base: 200, extraKm: 10, extraHour: 80 },
+                        '4-40': { base: 380, extraKm: 10, extraHour: 80 },
+                        '8-80': { base: 700, extraKm: 9, extraHour: 70 },
+                        '12-120': { base: 1000, extraKm: 9, extraHour: 70 }
+                    })
+                },
+                {
+                    vehicle_type: 'sedan',
+                    category: 'local',
+                    config: JSON.stringify({ base: 200, perKm: 25, minKm: 0 })
+                },
+                {
+                    vehicle_type: 'sedan',
+                    category: 'oneway',
+                    config: JSON.stringify({ base: 0, perKm: 13, minKm: 130 })
+                },
+                {
+                    vehicle_type: 'sedan',
+                    category: 'round',
+                    config: JSON.stringify({ base: 0, perKm: 12, minKmPerDay: 250 })
+                },
+                {
+                    vehicle_type: 'sedan',
+                    category: 'rental',
+                    config: JSON.stringify({
+                        '2-20': { base: 600, extraKm: 18, extraHour: 150 },
+                        '4-40': { base: 1100, extraKm: 18, extraHour: 150 },
+                        '8-80': { base: 2100, extraKm: 16, extraHour: 120 },
+                        '12-120': { base: 2800, extraKm: 15, extraHour: 120 }
+                    })
+                },
+                {
+                    vehicle_type: 'suv',
+                    category: 'local',
+                    config: JSON.stringify({ base: 300, perKm: 35, minKm: 0 })
+                },
+                {
+                    vehicle_type: 'suv',
+                    category: 'oneway',
+                    config: JSON.stringify({ base: 0, perKm: 19, minKm: 130 })
+                },
+                {
+                    vehicle_type: 'suv',
+                    category: 'round',
+                    config: JSON.stringify({ base: 0, perKm: 18, minKmPerDay: 250 })
+                },
+                {
+                    vehicle_type: 'suv',
+                    category: 'rental',
+                    config: JSON.stringify({
+                        '2-20': { base: 900, extraKm: 25, extraHour: 250 },
+                        '4-40': { base: 1600, extraKm: 25, extraHour: 250 },
+                        '8-80': { base: 3100, extraKm: 22, extraHour: 200 },
+                        '12-120': { base: 4200, extraKm: 20, extraHour: 200 }
+                    })
+                },
+                {
+                    vehicle_type: 'hatchback',
+                    category: 'local',
+                    config: JSON.stringify({ base: 150, perKm: 20, minKm: 0 })
+                },
+                {
+                    vehicle_type: 'hatchback',
+                    category: 'oneway',
+                    config: JSON.stringify({ base: 0, perKm: 11, minKm: 100 })
+                },
+                {
+                    vehicle_type: 'hatchback',
+                    category: 'round',
+                    config: JSON.stringify({ base: 0, perKm: 10, minKmPerDay: 200 })
+                },
+                {
+                    vehicle_type: 'hatchback',
+                    category: 'rental',
+                    config: JSON.stringify({
+                        '2-20': { base: 450, extraKm: 15, extraHour: 120 },
+                        '4-40': { base: 850, extraKm: 15, extraHour: 120 },
+                        '8-80': { base: 1600, extraKm: 14, extraHour: 100 },
+                        '12-120': { base: 2200, extraKm: 13, extraHour: 100 }
+                    })
+                },
+                {
+                    vehicle_type: '8plus1',
+                    category: 'local',
+                    config: JSON.stringify({ base: 600, perKm: 32, minKm: 0 })
+                },
+                {
+                    vehicle_type: '8plus1',
+                    category: 'oneway',
+                    config: JSON.stringify({ base: 0, perKm: 22, minKm: 150 })
+                },
+                {
+                    vehicle_type: '8plus1',
+                    category: 'round',
+                    config: JSON.stringify({ base: 0, perKm: 20, minKmPerDay: 250 })
+                },
+                {
+                    vehicle_type: '8plus1',
+                    category: 'rental',
+                    config: JSON.stringify({
+                        '2-20': { base: 1800, extraKm: 30, extraHour: 300 },
+                        '4-40': { base: 3200, extraKm: 30, extraHour: 300 },
+                        '8-80': { base: 6000, extraKm: 28, extraHour: 250 },
+                        '12-120': { base: 8500, extraKm: 25, extraHour: 250 }
+                    })
+                },
+                {
+                    vehicle_type: 'van24',
+                    category: 'local',
+                    config: JSON.stringify({ base: 1500, perKm: 55, minKm: 0 })
+                },
+                {
+                    vehicle_type: 'van24',
+                    category: 'oneway',
+                    config: JSON.stringify({ base: 0, perKm: 42, minKm: 200 })
+                },
+                {
+                    vehicle_type: 'van24',
+                    category: 'round',
+                    config: JSON.stringify({ base: 0, perKm: 38, minKmPerDay: 300 })
+                },
+                {
+                    vehicle_type: 'van24',
+                    category: 'rental',
+                    config: JSON.stringify({
+                        '2-20': { base: 4000, extraKm: 50, extraHour: 500 },
+                        '4-40': { base: 7000, extraKm: 50, extraHour: 500 },
+                        '8-80': { base: 13000, extraKm: 45, extraHour: 450 },
+                        '12-120': { base: 18000, extraKm: 40, extraHour: 400 }
+                    })
+                }
+            ];
+
+            // If table is empty, insert all
+            if (tariffRows[0].cnt === 0) {
+                for (const t of defaultTariffs) {
+                    await db.query('INSERT INTO taxi_tariffs (vehicle_type, category, config) VALUES (?, ?, ?)', [t.vehicle_type, t.category, t.config]);
+                }
+                console.log('Default tariffs initialized.');
+            } else {
+                // Check if hatchbacks specifically are missing (Migration)
+                const [hatchRows] = await db.query("SELECT COUNT(*) as cnt FROM taxi_tariffs WHERE vehicle_type = 'hatchback'");
+                if (hatchRows[0].cnt === 0) {
+                    const hatchTariffs = defaultTariffs.filter(t => t.vehicle_type === 'hatchback');
+                    for (const t of hatchTariffs) {
+                        await db.query('INSERT INTO taxi_tariffs (vehicle_type, category, config) VALUES (?, ?, ?)', [t.vehicle_type, t.category, t.config]);
+                    }
+                    console.log('âo. Migration: Hatchback tariffs added.');
+                }
+                // Check if 8plus1 specifically are missing (Migration)
+                const [newRows] = await db.query("SELECT COUNT(*) as cnt FROM taxi_tariffs WHERE vehicle_type = '8plus1'");
+                if (newRows[0].cnt === 0) {
+                    const newTariffs = defaultTariffs.filter(t => t.vehicle_type === '8plus1' || t.vehicle_type === 'van24');
+                    for (const t of newTariffs) {
+                        await db.query('INSERT INTO taxi_tariffs (vehicle_type, category, config) VALUES (?, ?, ?)', [t.vehicle_type, t.category, t.config]);
+                    }
+                    console.log('âo. Migration: 8plus1 and van24 tariffs added to taxi_tariffs.');
+                }
+                // Check if auto specifically are missing (Migration)
+                const [autoRows] = await db.query("SELECT COUNT(*) as cnt FROM taxi_tariffs WHERE vehicle_type = 'auto'");
+                if (autoRows[0].cnt === 0) {
+                    const autoTariffs = defaultTariffs.filter(t => t.vehicle_type === 'auto');
+                    for (const t of autoTariffs) {
+                        await db.query('INSERT INTO taxi_tariffs (vehicle_type, category, config) VALUES (?, ?, ?)', [t.vehicle_type, t.category, t.config]);
+                    }
+                    console.log('âo. Migration: auto tariffs added to taxi_tariffs.');
+                }
+            }
+
+            // Also seed non-prefixed tariffs table if empty
+            const [tariffRows2] = await db.query('SELECT COUNT(*) as cnt FROM tariffs');
+            if (tariffRows2[0].cnt === 0) {
+                for (const t of defaultTariffs) {
+                    await db.query('INSERT INTO tariffs (vehicle_type, category, config) VALUES (?, ?, ?)', [t.vehicle_type, t.category, t.config]);
+                }
+                console.log('Default tariffs (non-prefixed) initialized.');
+            } else {
+                // Check if hatchbacks specifically are missing (Migration)
+                const [hatchRows2] = await db.query("SELECT COUNT(*) as cnt FROM tariffs WHERE vehicle_type = 'hatchback'");
+                if (hatchRows2[0].cnt === 0) {
+                    const hatchTariffs = defaultTariffs.filter(t => t.vehicle_type === 'hatchback');
+                    for (const t of hatchTariffs) {
+                        await db.query('INSERT INTO tariffs (vehicle_type, category, config) VALUES (?, ?, ?)', [t.vehicle_type, t.category, t.config]);
+                    }
+                    console.log('âo. Migration: Hatchback tariffs (non-prefixed) added.');
+                }
+                // Check if 8plus1 specifically are missing (Migration)
+                const [newRows2] = await db.query("SELECT COUNT(*) as cnt FROM tariffs WHERE vehicle_type = '8plus1'");
+                if (newRows2[0].cnt === 0) {
+                    const newTariffs = defaultTariffs.filter(t => t.vehicle_type === '8plus1' || t.vehicle_type === 'van24');
+                    for (const t of newTariffs) {
+                        await db.query('INSERT INTO tariffs (vehicle_type, category, config) VALUES (?, ?, ?)', [t.vehicle_type, t.category, t.config]);
+                    }
+                    console.log('âo. Migration: 8plus1 and van24 tariffs (non-prefixed) added to tariffs.');
+                }
+                // Check if auto specifically are missing (Migration)
+                const [autoRows2] = await db.query("SELECT COUNT(*) as cnt FROM tariffs WHERE vehicle_type = 'auto'");
+                if (autoRows2[0].cnt === 0) {
+                    const autoTariffs = defaultTariffs.filter(t => t.vehicle_type === 'auto');
+                    for (const t of autoTariffs) {
+                        await db.query('INSERT INTO tariffs (vehicle_type, category, config) VALUES (?, ?, ?)', [t.vehicle_type, t.category, t.config]);
+                    }
+                    console.log('âo. Migration: auto tariffs added to tariffs.');
+                }
+            }
+        } catch (e) {
+            console.error('Tariff initialization failed:', e.message);
+        }
+
+        // 4. Create Indexes for performance (Non-blocking)
+        (async () => {
+            try { await db.query('CREATE INDEX idx_bookings_user_id ON taxi_bookings(user_id)'); } catch (e) {}
+            try { await db.query('CREATE INDEX idx_bookings_driver_id ON taxi_bookings(driver_id)'); } catch (e) {}
+            try { await db.query('CREATE INDEX idx_bookings_status ON taxi_bookings(status)'); } catch (e) {}
+        })();
+
+        // 5. System Settings Table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_settings (
+                setting_key VARCHAR(100) PRIMARY KEY,
+                setting_value TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
+        // Seed default setting: air_distance_restrict = enabled
+        await db.query(`
+            INSERT IGNORE INTO taxi_settings (setting_key, setting_value)
+            VALUES ('air_distance_restrict', '1')
+        `);
+        console.log('âo. System settings table ensured.');
+
+        // Live Offers Table (Enterprise Upgrade)
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS taxi_offers (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                code VARCHAR(50) UNIQUE,
+                description TEXT,
