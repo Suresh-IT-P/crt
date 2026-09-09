@@ -814,18 +814,7 @@
                         </select>
                     </div>
                     
-                    <!-- Commission Setup -->
-                    <div class="input-group">
-                        <label>Association Share Type</label>
-                        <select id="a-comm-type">
-                            <option value="fixed">Fixed Amount (\u20B9 per ride)</option>
-                            <option value="percent">Percentage (% of fare)</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label>Share Value</label>
-                        <input type="number" id="a-comm-value" placeholder="e.g. 5" required>
-                    </div>
+
 
                     <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-top: 1rem;">
                         <button type="submit" class="btn btn-primary" style="padding: 1rem 3rem; border-radius: 12px; font-weight: 800; font-size: 1.05rem;">Create Association</button>
@@ -2291,9 +2280,7 @@ document.getElementById('create-assoc-form').addEventListener('submit', async (e
         name: document.getElementById('a-name').value,
         admin_username: document.getElementById('a-username').value,
         admin_password: document.getElementById('a-pass').value,
-        city_name: document.getElementById('a-city').value,
-        commission_type: document.getElementById('a-comm-type').value,
-        commission_value: document.getElementById('a-comm-value').value
+        city_name: document.getElementById('a-city').value
     };
     try {
         const res = await fetch(`${API_BASE_URL}/api/admin/create-association`, {
@@ -5031,14 +5018,12 @@ async function updateSurgeRule(surgeKey, inputId) {
             const admin_username = document.getElementById('a-username')?.value;
             const admin_password = document.getElementById('a-pass')?.value;
             const city_name = document.getElementById('a-city')?.value;
-            const commission_type = document.getElementById('a-comm-type')?.value;
-            const commission_value = parseFloat(document.getElementById('a-comm-value')?.value) || 0;
 
             try {
                 const res = await fetch(`${API_BASE_URL}/api/admin/create-association`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, admin_username, admin_password, city_name, commission_type, commission_value })
+                    body: JSON.stringify({ name, admin_username, admin_password, city_name })
                 });
                 const data = await res.json();
                 if (res.ok) {
