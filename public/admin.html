@@ -39,15 +39,36 @@
             --info-blue: #3B82F6;
         }
         body { background: var(--admin-bg) !important; color: var(--text-main) !important; display: flex; height: 100vh; overflow: hidden; scroll-behavior: smooth; font-family: 'Outfit', sans-serif; }
-        .sidebar { width: 280px; background: var(--admin-sidebar); color: var(--text-main); padding: 2.5rem 1.5rem; display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.4s cubic-bezier(0.4,0,0.2,1); height: 100vh; position: sticky; top: 0; overflow-y: auto; padding-bottom: 4rem; border-right: 1px solid var(--border-color); }
+        .sidebar { width: 260px; background: var(--admin-sidebar); color: var(--text-main); padding: 0; display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.35s cubic-bezier(0.4,0,0.2,1); height: 100vh; position: sticky; top: 0; overflow: hidden; border-right: 1px solid var(--border-color); }
+        .sidebar.collapsed { width: 64px; }
         .sidebar::-webkit-scrollbar { width: 4px; }
         .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-        .sidebar .logo { margin-bottom: 4rem; cursor: pointer; filter: brightness(1.5); }
-        .sidebar-nav { flex-grow: 1; display: flex; flex-direction: column; min-height: min-content; }
-        .nav-item { padding: 1rem 1.2rem; margin-bottom: 0.4rem; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 1rem; opacity: 0.6; font-size: 0.9rem; color: var(--text-main) !important; font-weight: 600 !important; }
-        .logout-item { margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 2rem; opacity: 0.8; }
-        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.03); opacity: 1; }
-        .nav-item.active { border-left: 3px solid var(--primary-red); color: var(--primary-red) !important; font-weight: 700 !important; background: linear-gradient(90deg, rgba(16,185,129,0.1) 0%, transparent 100%); }
+        .sidebar-inner { display: flex; flex-direction: column; height: 100%; overflow-y: auto; overflow-x: hidden; padding-bottom: 1rem; }
+        .sidebar-inner::-webkit-scrollbar { width: 3px; }
+        .sidebar-inner::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
+        .sidebar-top { display: flex; align-items: center; justify-content: space-between; padding: 1.4rem 1.2rem 1.2rem; border-bottom: 1px solid var(--border-color); flex-shrink: 0; min-height: 68px; }
+        .sidebar-logo { display: flex; align-items: center; gap: 0.8rem; cursor: pointer; overflow: hidden; white-space: nowrap; }
+        .sidebar-logo img { width: 36px; height: auto; flex-shrink: 0; filter: drop-shadow(0 2px 8px rgba(16,185,129,0.3)); }
+        .sidebar-logo-text { font-size: 0.95rem; font-weight: 800; color: var(--primary-red); letter-spacing: -0.3px; opacity: 1; transition: opacity 0.25s ease; }
+        .sidebar.collapsed .sidebar-logo-text { opacity: 0; width: 0; }
+        .sidebar-toggle { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; border-radius: 8px; transition: all 0.2s ease; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .sidebar-toggle:hover { background: rgba(255,255,255,0.06); color: var(--text-main); }
+        .sidebar-toggle svg { width: 18px; height: 18px; transition: transform 0.35s ease; }
+        .sidebar.collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+        /* Nav groups */
+        .sidebar-nav { flex-grow: 1; padding: 0.5rem 0; }
+        .nav-group { margin-bottom: 0.25rem; }
+        .nav-group-label { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted); padding: 0.8rem 1.4rem 0.3rem; opacity: 0.5; white-space: nowrap; overflow: hidden; transition: opacity 0.2s ease; }
+        .sidebar.collapsed .nav-group-label { opacity: 0; }
+        .nav-item { padding: 0.7rem 1.2rem; margin: 0.1rem 0.5rem; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 0.85rem; opacity: 0.55; font-size: 0.85rem; color: var(--text-main) !important; font-weight: 600 !important; white-space: nowrap; overflow: hidden; }
+        .nav-item:hover { background: rgba(255,255,255,0.05); opacity: 0.9; }
+        .nav-item.active { background: linear-gradient(90deg, rgba(16,185,129,0.12) 0%, transparent 100%); opacity: 1; border-left: 3px solid var(--primary-red); color: var(--primary-red) !important; font-weight: 700 !important; }
+        .nav-item .nav-icon { font-size: 1.05rem; flex-shrink: 0; width: 20px; text-align: center; }
+        .nav-item .nav-label { transition: opacity 0.2s ease; }
+        .sidebar.collapsed .nav-label { opacity: 0; width: 0; }
+        .nav-item[title]:hover::after { content: attr(title); position: fixed; left: 72px; background: #1E1E22; color: #fff; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; pointer-events: none; z-index: 99999; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        .sidebar-footer { padding: 0.75rem 0.5rem; border-top: 1px solid var(--border-color); flex-shrink: 0; }
+        .logout-item { margin: 0; padding: 0.7rem 1.2rem; border-radius: 10px; opacity: 0.55; font-size: 0.85rem; }
         .main-stage { flex-grow: 1; padding: 3rem; overflow-y: auto; background: var(--admin-bg); scroll-behavior: smooth; }
         .main-stage::-webkit-scrollbar { width: 8px; }
         .main-stage::-webkit-scrollbar-track { background: var(--admin-bg); }
@@ -235,26 +256,87 @@
         </div>
     </div>
     <aside class="sidebar" id="admin-sidebar">
-        <div class="logo" onclick="window.location.href='admin.html'" style="cursor:pointer; text-align: center; margin-bottom: 3rem;">
-            <img src="logo.png" alt="CityRideTaxi" style="width: 140px; height: auto; filter: drop-shadow(0 4px 12px rgba(16,185,129,0.2));">
+        <div class="sidebar-top">
+            <div class="sidebar-logo" onclick="window.location.href='admin.html'">
+                <img src="logo.png" alt="CityRideTaxi">
+                <span class="sidebar-logo-text">CityRide</span>
+            </div>
+            <button class="sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Toggle sidebar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
         </div>
-        <div class="sidebar-nav">
-            <div class="nav-item active" onclick="switchTab('overview', this)">📊 Execution Overview</div>
-            <div class="nav-item" onclick="switchTab('radar', this)">🗺️ Live Fleet Radar</div>
-            <div class="nav-item" onclick="switchTab('bookings', this)">🚕 Mission Control</div>
-            <div class="nav-item" onclick="switchTab('fleet', this)">🏎️ Pilot Management</div>
-            <div class="nav-item" onclick="switchTab('wallets', this)">💳 Wallet Registry</div>
-            <div class="nav-item" onclick="switchTab('users', this)">👥 Member Registry</div>
-            <div class="nav-item" onclick="switchTab('vendors', this)">🤝 Network Partners</div>
-            <div class="nav-item" onclick="switchTab('associations', this)">🏢 District Associations</div>
-            <div class="nav-item" onclick="switchTab('reports', this)">📈 System Reports</div>
-            <div class="nav-item" onclick="switchTab('underground', this)">🕵️ Underground Level</div>
-            <div class="nav-item" onclick="switchTab('tariffs', this)">💰 Rate Tariffs</div>
-            <div class="nav-item" onclick="switchTab('offers', this)">🎁 Promotional Offers</div>
-            <div class="nav-item" onclick="switchTab('system-settings', this)">⚙️ System Settings</div>
-            <div class="nav-item" onclick="switchTab('commissions', this)">💰 Profit Deductions</div>
+
+        <div class="sidebar-inner">
+            <nav class="sidebar-nav">
+                <!-- Operations Group -->
+                <div class="nav-group">
+                    <div class="nav-group-label">Operations</div>
+                    <div class="nav-item active" onclick="switchTab('overview', this)" title="Execution Overview">
+                        <span class="nav-icon">📊</span><span class="nav-label">Execution Overview</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('radar', this)" title="Live Fleet Radar">
+                        <span class="nav-icon">🗺️</span><span class="nav-label">Live Fleet Radar</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('bookings', this)" title="Mission Control">
+                        <span class="nav-icon">🚕</span><span class="nav-label">Mission Control</span>
+                    </div>
+                </div>
+
+                <!-- Management Group -->
+                <div class="nav-group">
+                    <div class="nav-group-label">Management</div>
+                    <div class="nav-item" onclick="switchTab('fleet', this)" title="Pilot Management">
+                        <span class="nav-icon">🏎️</span><span class="nav-label">Pilot Management</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('wallets', this)" title="Wallet Registry">
+                        <span class="nav-icon">💳</span><span class="nav-label">Wallet Registry</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('users', this)" title="Member Registry">
+                        <span class="nav-icon">👥</span><span class="nav-label">Member Registry</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('vendors', this)" title="Network Partners">
+                        <span class="nav-icon">🤝</span><span class="nav-label">Network Partners</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('associations', this)" title="District Associations">
+                        <span class="nav-icon">🏢</span><span class="nav-label">District Associations</span>
+                    </div>
+                </div>
+
+                <!-- Analytics Group -->
+                <div class="nav-group">
+                    <div class="nav-group-label">Analytics</div>
+                    <div class="nav-item" onclick="switchTab('reports', this)" title="System Reports">
+                        <span class="nav-icon">📈</span><span class="nav-label">System Reports</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('underground', this)" title="Underground Level">
+                        <span class="nav-icon">🕵️</span><span class="nav-label">Underground Level</span>
+                    </div>
+                </div>
+
+                <!-- Configuration Group -->
+                <div class="nav-group">
+                    <div class="nav-group-label">Configuration</div>
+                    <div class="nav-item" onclick="switchTab('tariffs', this)" title="Rate Tariffs">
+                        <span class="nav-icon">💰</span><span class="nav-label">Rate Tariffs</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('offers', this)" title="Promotional Offers">
+                        <span class="nav-icon">🎁</span><span class="nav-label">Promotional Offers</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('system-settings', this)" title="System Settings">
+                        <span class="nav-icon">⚙️</span><span class="nav-label">System Settings</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('commissions', this)" title="Profit Deductions">
+                        <span class="nav-icon">💸</span><span class="nav-label">Profit Deductions</span>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="nav-item logout-item" onclick="logoutAdmin()" title="Sign Out">
+                    <span class="nav-icon">🚪</span><span class="nav-label">Sign Out</span>
+                </div>
+            </div>
         </div>
-        <div class="nav-item logout-item" onclick="logoutAdmin()">🚪 Sign Out</div>
     </aside>
 
     <main class="main-stage">
@@ -1695,6 +1777,18 @@ adminBurger.classList.toggle('active');
 adminSidebar.classList.toggle('active');
 });
 }
+function toggleSidebar() {
+    const sidebar = document.getElementById('admin-sidebar');
+    const isCollapsed = sidebar.classList.toggle('collapsed');
+    localStorage.setItem('adminSidebarCollapsed', isCollapsed ? '1' : '0');
+}
+// Restore sidebar state on load
+(function() {
+    const sidebar = document.getElementById('admin-sidebar');
+    if (localStorage.getItem('adminSidebarCollapsed') === '1' && sidebar) {
+        sidebar.classList.add('collapsed');
+    }
+})();
 async function loadTabData(tabId) {
 if (tabId === 'reports') {
     loadSystemReports();
