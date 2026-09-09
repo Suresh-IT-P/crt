@@ -2125,7 +2125,10 @@ body.innerHTML += `
 </td>
 <td data-label="Current Balance"><strong style="color:var(--primary-red); font-size: 1.2rem;">\u20B9${parseFloat(d.wallet_balance || 0).toFixed(2)}</strong></td>
 <td data-label="Wallet Operations">
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
 <button class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.8rem;" onclick="openWalletModal(${d.id}, \`${d.name}\`, ${d.wallet_balance || 0})">💳 Quick Update</button>
+<button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem; background: var(--partner-sidebar); color: white; border: none;" onclick="openDetailedLedger(${d.id}, \`${d.name}\`, ${d.wallet_balance || 0})">👁️ View Ledger</button>
+</div>
 </td>
 </tr>
 `;
@@ -5341,10 +5344,78 @@ async function deleteOffer(id) {
             headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
         });
         loadAdminOffers();
-    } catch (e) { console.error(e); }
+async function openDetailedLedger(id, driverName, currentBalance) {
+    document.getElementById('driver-ledger-modal').style.display = 'flex';
+    document.getElementById('ledger-driver-title').innerText = `Ledger: ${driverName}`;
+    document.getElementById('ledger-driver-balance').innerHTML = `Current Balance: <strong style="color: ${currentBalance >= 0 ? 'var(--success-green)' : 'var(--danger-red)'}">\u20B9${parseFloat(currentBalance).toFixed(2)}</strong>`;
+    
+    const list = document.getElementById('ledger-transactions-list');
+    list.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 2rem;">Loading detailed ledger...</td></tr>';
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/admin/driver/wallet-transactions/${id}`);
+        const data = await res.json();
+        if (data.transactions && data.transactions.length > 0) {
+            list.innerHTML = data.transactions.map(t => `
+                <tr style="border-bottom: 1px solid var(--cr-border-light);">
+                    <td style="padding: 1rem;">
+                        <div style="font-weight: 600;">${new Date(t.created_at).toLocaleDateString()}</div>
+                        <div style="font-size: 0.75rem; color: var(--cr-text-muted);">${new Date(t.created_at).toLocaleTimeString()}</div>
+                    </td>
+                    <td style="padding: 1rem;">
+                        <span style="display:inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; background: ${t.type === 'credit' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; color: ${t.type === 'credit' ? '#10b981' : '#ef4444'};">
+                            ${t.type === 'credit' ? 'CREDIT' : 'DEBIT'}
+                        </span>
+                    </td>
+                    <td style="padding: 1rem; color: ${t.type === 'credit' ? '#10b981' : '#ef4444'}; font-weight: 800; font-size: 1.1rem;">
+                        ${t.type === 'credit' ? '+' : '-'} \u20B9${parseFloat(t.amount).toFixed(2)}
+                    </td>
+                    <td style="padding: 1rem;">
+                        <div style="font-weight: 500;">${t.note || 'No notes provided'}</div>
+                        <div style="font-size: 0.75rem; color: var(--cr-text-muted);">Processed By: ${t.updated_by || 'System'}</div>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            list.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 2rem; color: var(--cr-text-muted);">No ledger history found for this pilot.</td></tr>';
+        }
+    } catch (err) {
+        list.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 2rem; color: var(--danger-red);">Failed to load ledger data.</td></tr>';
+    }
 }
-    </script>
+
+function closeDetailedLedger() {
+    document.getElementById('driver-ledger-modal').style.display = 'none';
+}
+</script>
+
+<!-- Detailed Ledger Modal -->
+<div id="driver-ledger-modal" class="map-modal" style="display: none; align-items: flex-start; padding-top: 2rem;">
+    <div class="map-modal-content" style="max-width: 850px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+        <div class="map-header" style="background: var(--partner-sidebar); color: white; border: none; padding: 1.5rem;">
+            <div>
+                <h3 id="ledger-driver-title" style="margin: 0; font-size: 1.4rem;">Ledger: Loading...</h3>
+                <div id="ledger-driver-balance" style="font-size: 0.95rem; margin-top: 6px; opacity: 0.9;">Current Balance: </div>
+            </div>
+            <button class="close-map" onclick="closeDetailedLedger()" style="color: white; background: rgba(0,0,0,0.2);">&times;</button>
+        </div>
+        <div style="padding: 0; overflow-y: auto; flex-grow: 1;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead style="background: var(--card-bg); position: sticky; top: 0; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <tr>
+                        <th style="padding: 1rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--cr-text-muted); border-bottom: 1px solid var(--cr-border-light);">Date & Time</th>
+                        <th style="padding: 1rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--cr-text-muted); border-bottom: 1px solid var(--cr-border-light);">Transaction</th>
+                        <th style="padding: 1rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--cr-text-muted); border-bottom: 1px solid var(--cr-border-light);">Amount</th>
+                        <th style="padding: 1rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--cr-text-muted); border-bottom: 1px solid var(--cr-border-light);">Details & Notes</th>
+                    </tr>
+                </thead>
+                <tbody id="ledger-transactions-list">
+                    <!-- Transactions loaded dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 </body>
-
 </html>
