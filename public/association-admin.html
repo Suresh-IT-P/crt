@@ -51,16 +51,42 @@
         #login-error { color: #ff3b30; font-size: 0.85rem; text-align: center; margin-top: 1rem; display: none; }
 
         /* SIDEBAR */
-        .sidebar { width: 280px; background: var(--admin-sidebar); padding: 2.5rem 1.5rem; display: flex; flex-direction: column; flex-shrink: 0; height: 100vh; position: sticky; top: 0; overflow-y: auto; padding-bottom: 4rem; border-right: 1px solid var(--border); }
-        .sidebar .logo { margin-bottom: 2rem; cursor: pointer; }
-        .assoc-badge { background: linear-gradient(135deg, rgba(0,107,58,0.1), rgba(0,107,58,0.05)); border: 1px solid var(--border); border-radius: 14px; padding: 1rem 1.2rem; margin-bottom: 2.5rem; }
+        .sidebar { width: 260px; background: var(--admin-sidebar); padding: 0; display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.35s cubic-bezier(0.4,0,0.2,1); height: 100vh; position: sticky; top: 0; overflow: hidden; border-right: 1px solid var(--border); }
+        .sidebar.collapsed { width: 64px; }
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(0,107,58,0.15); border-radius: 10px; }
+        .sidebar-inner { display: flex; flex-direction: column; height: 100%; overflow-y: auto; overflow-x: hidden; padding-bottom: 1rem; }
+        .sidebar-inner::-webkit-scrollbar { width: 3px; }
+        .sidebar-inner::-webkit-scrollbar-thumb { background: rgba(0,107,58,0.15); }
+        .sidebar-top { display: flex; align-items: center; justify-content: space-between; padding: 1.4rem 1.2rem 1.2rem; border-bottom: 1px solid var(--border); flex-shrink: 0; min-height: 68px; }
+        .sidebar-logo { display: flex; align-items: center; gap: 0.8rem; cursor: pointer; overflow: hidden; white-space: nowrap; }
+        .sidebar-logo img { width: 32px; height: auto; flex-shrink: 0; }
+        .sidebar-logo-text { font-size: 0.95rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.3px; opacity: 1; transition: opacity 0.25s ease; }
+        .sidebar.collapsed .sidebar-logo-text { opacity: 0; width: 0; }
+        .sidebar-toggle { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; border-radius: 8px; transition: all 0.2s ease; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .sidebar-toggle:hover { background: rgba(0,107,58,0.08); color: var(--text-main); }
+        .sidebar-toggle svg { width: 18px; height: 18px; transition: transform 0.35s ease; }
+        .sidebar.collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+
+        .assoc-badge { background: linear-gradient(135deg, rgba(0,107,58,0.1), rgba(0,107,58,0.05)); border: 1px solid var(--border); border-radius: 14px; padding: 1rem; margin: 1rem; transition: all 0.3s ease; white-space: nowrap; overflow: hidden; }
+        .sidebar.collapsed .assoc-badge { padding: 0.5rem; margin: 0.5rem; opacity: 0; height: 0; display: none; }
         .assoc-badge .assoc-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 700; }
         .assoc-badge .assoc-name { font-size: 0.95rem; font-weight: 800; color: var(--primary); margin-top: 0.3rem; }
-        .sidebar-nav { flex-grow: 1; display: flex; flex-direction: column; }
-        .nav-item { padding: 1rem 1.2rem; margin-bottom: 0.4rem; border-radius: 12px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 1rem; opacity: 0.85; font-size: 0.9rem; color: var(--text-main) !important; font-weight: 700 !important; }
-        .nav-item:hover, .nav-item.active { background: rgba(0,107,58,0.08); opacity: 1; }
-        .nav-item.active { border-left: 4px solid var(--primary); color: var(--primary) !important; }
-        .logout-item { margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 2rem; }
+        
+        .sidebar-nav { flex-grow: 1; padding: 0.5rem 0; }
+        .nav-group { margin-bottom: 0.25rem; }
+        .nav-group-label { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted); padding: 0.8rem 1.4rem 0.3rem; opacity: 0.5; white-space: nowrap; overflow: hidden; transition: opacity 0.2s ease; }
+        .sidebar.collapsed .nav-group-label { opacity: 0; }
+        .nav-item { padding: 0.7rem 1.2rem; margin: 0.1rem 0.5rem; border-radius: 10px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 0.85rem; opacity: 0.85; font-size: 0.85rem; color: var(--text-main) !important; font-weight: 700 !important; white-space: nowrap; overflow: hidden; }
+        .nav-item:hover { background: rgba(0,107,58,0.08); opacity: 1; }
+        .nav-item.active { border-left: 4px solid var(--primary); color: var(--primary) !important; background: linear-gradient(90deg, rgba(0,107,58,0.1) 0%, transparent 100%); }
+        .nav-item .nav-icon { font-size: 1.05rem; flex-shrink: 0; width: 20px; text-align: center; }
+        .nav-item .nav-label { transition: opacity 0.2s ease; }
+        .sidebar.collapsed .nav-label { opacity: 0; width: 0; }
+        .nav-item[title]:hover::after { content: attr(title); position: fixed; left: 72px; background: var(--white); color: var(--text-main); padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; pointer-events: none; z-index: 99999; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        .sidebar-footer { padding: 0.75rem 0.5rem; border-top: 1px solid var(--border); flex-shrink: 0; }
+        .logout-item { margin: 0; padding: 0.7rem 1.2rem; border-radius: 10px; opacity: 0.85; font-size: 0.85rem; }
 
         /* MAIN */
         .main-stage { flex-grow: 1; padding: 3rem; overflow-y: auto; background: var(--admin-bg); }
@@ -223,29 +249,88 @@
 
     <!-- SIDEBAR -->
     <aside class="sidebar" id="assoc-sidebar">
-        <div class="logo">
-            <img src="logo.png" alt="CityRide" style="height:50px;width:auto;">
+        <div class="sidebar-top">
+            <div class="sidebar-logo">
+                <img src="logo.png" alt="CityRide">
+                <span class="sidebar-logo-text">District Admin</span>
+            </div>
+            <button class="sidebar-toggle" onclick="toggleAssocSidebar()" title="Toggle sidebar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
         </div>
-        <div class="assoc-badge">
-            <div class="assoc-label">District Association</div>
-            <div class="assoc-name" id="sidebar-assoc-name">Loading...</div>
+        
+        <div class="sidebar-inner">
+            <div class="assoc-badge">
+                <div class="assoc-label">District Association</div>
+                <div class="assoc-name" id="sidebar-assoc-name">Loading...</div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-group">
+                    <div class="nav-group-label">Operations</div>
+                    <div class="nav-item active" onclick="switchTab('overview', this)" title="Overview">
+                        <span class="nav-icon">📊</span><span class="nav-label">Overview</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('radar', this)" title="Live GPS Radar">
+                        <span class="nav-icon">📡</span><span class="nav-label">Live GPS Radar</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('bookings', this)" title="Mission Control">
+                        <span class="nav-icon">🚕</span><span class="nav-label">Mission Control</span>
+                    </div>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-label">Fleet Management</div>
+                    <div class="nav-item" onclick="switchTab('fleet', this)" title="Pilot Management">
+                        <span class="nav-icon">🏎️</span><span class="nav-label">Pilot Management</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('applications', this)" title="Pilot Applications">
+                        <span class="nav-icon">📑</span><span class="nav-label">Pilot Applications</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('idcards', this)" title="ID Cards & Compliance">
+                        <span class="nav-icon">🪪</span><span class="nav-label">ID Cards & Compliance</span>
+                    </div>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-label">Support & Comms</div>
+                    <div class="nav-item" onclick="switchTab('broadcast', this)" title="District Broadcast">
+                        <span class="nav-icon">📢</span><span class="nav-label">District Broadcast</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('sosdesk', this)" title="Emergency SOS & Helpdesk">
+                        <span class="nav-icon">🚨</span><span class="nav-label">Emergency SOS & Helpdesk</span>
+                    </div>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-label">Finance & Pricing</div>
+                    <div class="nav-item" onclick="switchTab('incentives', this)" title="Incentives & Welfare">
+                        <span class="nav-icon">🎁</span><span class="nav-label">Incentives & Welfare</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('surgedesk', this)" title="Surge & Bata Control">
+                        <span class="nav-icon">⚡</span><span class="nav-label">Surge & Bata Control</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('wallets', this)" title="Treasury & Payouts">
+                        <span class="nav-icon">💳</span><span class="nav-label">Treasury & Payouts</span>
+                    </div>
+                    <div class="nav-item" onclick="switchTab('tariffs', this)" title="Rate Tariffs">
+                        <span class="nav-icon">💰</span><span class="nav-label">Rate Tariffs</span>
+                    </div>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-label">Insights</div>
+                    <div class="nav-item" onclick="switchTab('analytics', this)" title="Analytics & Reports">
+                        <span class="nav-icon">📈</span><span class="nav-label">Analytics & Reports</span>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="nav-item logout-item" onclick="doLogout()" title="Sign Out">
+                    <span class="nav-icon">🚪</span><span class="nav-label">Sign Out</span>
+                </div>
+            </div>
         </div>
-        <div class="sidebar-nav">
-            <div class="nav-item active" onclick="switchTab('overview', this)">📊 Overview</div>
-            <div class="nav-item" onclick="switchTab('radar', this)">📡 Live GPS Radar</div>
-            <div class="nav-item" onclick="switchTab('bookings', this)">🚕 Mission Control</div>
-            <div class="nav-item" onclick="switchTab('fleet', this)">🏎️ Pilot Management</div>
-            <div class="nav-item" onclick="switchTab('idcards', this)">🪪 ID Cards &amp; Compliance</div>
-            <div class="nav-item" onclick="switchTab('applications', this)">📑 Pilot Applications</div>
-            <div class="nav-item" onclick="switchTab('broadcast', this)">📢 District Broadcast</div>
-            <div class="nav-item" onclick="switchTab('sosdesk', this)">🚨 Emergency SOS &amp; Helpdesk</div>
-            <div class="nav-item" onclick="switchTab('incentives', this)">🎁 Incentives &amp; Welfare</div>
-            <div class="nav-item" onclick="switchTab('surgedesk', this)">⚡ Surge &amp; Bata Control</div>
-            <div class="nav-item" onclick="switchTab('wallets', this)">💳 Treasury &amp; Payouts</div>
-            <div class="nav-item" onclick="switchTab('tariffs', this)">💰 Rate Tariffs</div>
-            <div class="nav-item" onclick="switchTab('analytics', this)">📈 Analytics &amp; Reports</div>
-        </div>
-        <div class="nav-item logout-item" onclick="doLogout()">🚪 Sign Out</div>
     </aside>
 
     <!-- MAIN STAGE -->
@@ -673,6 +758,18 @@
     </div>
 
     <script>
+    function toggleAssocSidebar() {
+        const sidebar = document.getElementById('assoc-sidebar');
+        const isCollapsed = sidebar.classList.toggle('collapsed');
+        localStorage.setItem('assocSidebarCollapsed', isCollapsed ? '1' : '0');
+    }
+    // Restore sidebar state on load
+    (function() {
+        const sidebar = document.getElementById('assoc-sidebar');
+        if (localStorage.getItem('assocSidebarCollapsed') === '1' && sidebar) {
+            sidebar.classList.add('collapsed');
+        }
+    })();
     const BASE = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : '';
     const TOKEN_KEY = 'assoc_admin_token';
     let currentVehicle = 'sedan';
