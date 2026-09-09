@@ -1843,12 +1843,20 @@ const dbConfig = {
             CREATE TABLE IF NOT EXISTS taxi_commission_configs (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 version INT NOT NULL,
+                customer_commission_type VARCHAR(20) NOT NULL DEFAULT 'percentage',
+                driver_commission_type VARCHAR(20) NOT NULL DEFAULT 'percentage',
                 customer_commission_percent DECIMAL(5,2) DEFAULT 0,
+                customer_commission_fixed DECIMAL(10,2) DEFAULT 0,
                 driver_commission_percent DECIMAL(5,2) DEFAULT 0,
+                driver_commission_fixed DECIMAL(10,2) DEFAULT 0,
                 total_commission_percent DECIMAL(5,2) DEFAULT 0,
+                total_commission_fixed DECIMAL(10,2) DEFAULT 0,
                 maintenance_percent DECIMAL(5,2) DEFAULT 0,
+                maintenance_fixed DECIMAL(10,2) DEFAULT 0,
                 association_percent DECIMAL(5,2) DEFAULT 0,
+                association_fixed DECIMAL(10,2) DEFAULT 0,
                 cityride_percent DECIMAL(5,2) DEFAULT 0,
+                cityride_fixed DECIMAL(10,2) DEFAULT 0,
                 effective_from DATETIME DEFAULT CURRENT_TIMESTAMP,
                 effective_to DATETIME DEFAULT NULL,
                 status VARCHAR(20) DEFAULT 'active',
@@ -1856,13 +1864,23 @@ const dbConfig = {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        // Migration: Add new commission type and fixed columns if missing (for older DB instances)
+        try { await db.query("ALTER TABLE taxi_commission_configs ADD COLUMN customer_commission_type VARCHAR(20) NOT NULL DEFAULT 'percentage' AFTER version"); } catch (e) { }
+        try { await db.query("ALTER TABLE taxi_commission_configs ADD COLUMN driver_commission_type VARCHAR(20) NOT NULL DEFAULT 'percentage' AFTER customer_commission_type"); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_commission_configs ADD COLUMN customer_commission_fixed DECIMAL(10,2) DEFAULT 0 AFTER customer_commission_percent'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_commission_configs ADD COLUMN driver_commission_fixed DECIMAL(10,2) DEFAULT 0 AFTER driver_commission_percent'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_commission_configs ADD COLUMN total_commission_fixed DECIMAL(10,2) DEFAULT 0 AFTER total_commission_percent'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_commission_configs ADD COLUMN maintenance_fixed DECIMAL(10,2) DEFAULT 0 AFTER maintenance_percent'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_commission_configs ADD COLUMN association_fixed DECIMAL(10,2) DEFAULT 0 AFTER association_percent'); } catch (e) { }
+        try { await db.query('ALTER TABLE taxi_commission_configs ADD COLUMN cityride_fixed DECIMAL(10,2) DEFAULT 0 AFTER cityride_percent'); } catch (e) { }
         
         const [configCount] = await db.query('SELECT COUNT(*) as cnt FROM taxi_commission_configs');
         if (configCount[0].cnt === 0) {
             await db.query(`
                 INSERT INTO taxi_commission_configs 
-                (version, customer_commission_percent, driver_commission_percent, total_commission_percent, maintenance_percent, association_percent, cityride_percent)
-                VALUES (1, 10.00, 5.00, 15.00, 2.00, 8.00, 5.00)
+                (version, customer_commission_type, driver_commission_type, customer_commission_percent, driver_commission_percent, total_commission_percent, maintenance_percent, association_percent, cityride_percent)
+                VALUES (1, 'percentage', 'percentage', 10.00, 5.00, 15.00, 2.00, 8.00, 5.00)
             `);
             console.log('✅ Migration: default commission config initialized.');
         }
@@ -2277,9 +2295,12 @@ const dbConfig = {
                 type ENUM('credit', 'debit'),
                 amount DECIMAL(10,2) DEFAULT 0,
                 note TEXT,
+                updated_by VARCHAR(100) DEFAULT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        // Migration: ensure updated_by column exists
+        try { await db.query('ALTER TABLE wallet_transactions ADD COLUMN updated_by VARCHAR(100) DEFAULT NULL'); } catch (e) { }
 
         await db.query(`
             CREATE TABLE IF NOT EXISTS taxi_audit_logs (
