@@ -5344,6 +5344,9 @@ async function deleteOffer(id) {
             headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
         });
         loadAdminOffers();
+    } catch (e) { console.error(e); }
+}
+
 async function openDetailedLedger(id, driverName, currentBalance) {
     document.getElementById('driver-ledger-modal').style.display = 'flex';
     document.getElementById('ledger-driver-title').innerText = `Ledger: ${driverName}`;
