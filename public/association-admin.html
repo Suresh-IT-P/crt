@@ -541,9 +541,9 @@
                 <h3>Pilot Wallet Balances</h3>
                 <table class="cityride-table">
                     <thead><tr>
-                        <th>Pilot ID</th><th>Pilot Details</th><th>Balance</th><th>Operations</th>
+                        <th>Pilot ID</th><th>Pilot Details</th><th>Balance</th>
                     </tr></thead>
-                    <tbody id="wallets-body"><tr><td colspan="4" style="text-align:center;padding:3rem;color:var(--text-muted)">Loading...</td></tr></tbody>
+                    <tbody id="wallets-body"><tr><td colspan="3" style="text-align:center;padding:3rem;color:var(--text-muted)">Loading...</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -961,7 +961,7 @@
             '<td data-label="Type"><span class="status-tag status-assigned">' + (d.vehicle_type||'—') + '</span></td>' +
             '<td data-label="Wallet"><strong>\u20B9' + parseFloat(d.wallet_balance||0).toFixed(2) + '</strong></td>' +
             '<td data-label="Status"><span class="status-tag ' + (d.is_active ? 'status-completed' : 'status-cancelled') + '">' + (d.is_active ? 'Active' : 'Inactive') + '</span></td>' +
-            '<td data-label="Actions"><button class="action-btn" onclick="showWalletAdjust(' + d.id + ',\'' + d.name.replace(/'/g,"\\'") + '\')">💳 Wallet</button> <button class="action-btn ' + (d.is_active ? 'danger' : '') + '" onclick="toggleDriver(' + d.id + ')">' + (d.is_active ? '🚫 Suspend' : '✅ Activate') + '</button></td>' +
+            '<td data-label="Actions"><button class="action-btn ' + (d.is_active ? 'danger' : '') + '" onclick="toggleDriver(' + d.id + ')">' + (d.is_active ? '🚫 Suspend' : '✅ Activate') + '</button></td>' +
             '</tr>'
         ).join('');
     }
@@ -1028,7 +1028,6 @@
             '<td data-label="Pilot ID"><strong>#' + d.id + '</strong></td>' +
             '<td data-label="Pilot">' + d.name + '<br><small style="color:var(--text-muted)">' + (d.phone||'') + '</small></td>' +
             '<td data-label="Balance"><strong style="font-size:1.1rem;">\u20B9' + parseFloat(d.wallet_balance||0).toFixed(2) + '</strong></td>' +
-            '<td data-label="Operations"><button class="btn btn-primary" style="padding:0.4rem 0.9rem;font-size:0.8rem;" onclick="showWalletAdjust(' + d.id + ',\'' + d.name.replace(/'/g,"\\'") + '\')">Manage Wallet</button></td>' +
             '</tr>'
         ).join('');
     }
