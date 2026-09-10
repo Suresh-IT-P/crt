@@ -125,6 +125,11 @@ async function calculateCanonicalFare(db, {
         const minKm = typeof config.minKm === 'number' ? config.minKm : 0;
         const billableDist = Math.max(distanceKm, minKm);
         
+        const allowedMins = billableDist * 2;
+        if (durationMins > allowedMins) {
+            waitingCharge += Math.ceil((durationMins - allowedMins) * 2);
+        }
+
         baseKmFare = calculateLocalSlabFare(billableDist, config);
         const peakCharge = baseKmFare * peakMult;
         const specialCharge = baseKmFare * specialSurchargePct;
@@ -169,13 +174,20 @@ async function calculateCanonicalFare(db, {
         totalFare = baseTotal + getPlatformFee(baseTotal);
     }
 
+    const platformFee = Math.ceil(totalFare - (totalFare / (1 + (activeCommissionConfig && activeCommissionConfig.customer_commission_type === 'percent' ? parseFloat(activeCommissionConfig.customer_commission_percent)/100 : 0))));
+    // Actually, getPlatformFee(baseTotal) was already added to totalFare.
+    const calculatedPlatformFee = totalFare - (totalFare - getPlatformFee(totalFare - getPlatformFee(0))); // Simplified below
+
     return {
         baseKmFare,
         waitingCharge,
         extraDropsCharge,
         peakCharge: baseKmFare * peakMult,
         specialCharge: baseKmFare * specialSurchargePct,
-        finalFare: Math.ceil(totalFare)
+        finalFare: Math.ceil(totalFare),
+        platformFee: getPlatformFee(Math.ceil(totalFare - getPlatformFee(0))), // approximated base
+        driverAllowance: (category === 'oneway' || category === 'round') ? (vehicleType === 'bike' ? 0 : (distanceKm > 250 ? 600 : 400)) : 0,
+        pricingConfig
     };
 }
 

@@ -1748,35 +1748,74 @@ function processDriverLocationUpdate(lat, lng, acc, speedMps, timeStamp) {
     updateGpsUI('locked', acc);
     updateDriverLocationOnMap(lat, lng);
 
-    let speedKmh = 0;
+    const now = Date.now();
+    const prevCoords = window.lastGpsCoords;
+    window.lastGpsCoords = { lat, lng, time: timeStamp || now };
+
+    // --- Google Maps-style Speed Calculation ---
+    // Priority 1: Hardware GPS speed (most accurate, same as Google Maps uses)
+    // Priority 2: Haversine-based speed from lat/lng delta (fallback)
+    let rawSpeedKmh = 0;
+    let nativeSpeedAvailable = false;
+
     if (speedMps !== null && !isNaN(speedMps) && speedMps >= 0) {
-        speedKmh = Math.round(speedMps * 3.6);
-    } else if (window.lastGpsCoords) {
-        const timeDiffSec = (Date.now() - window.lastGpsCoords.time) / 1000;
+        rawSpeedKmh = speedMps * 3.6;
+        nativeSpeedAvailable = true;
+    }
+
+    // Always compute haversine speed for validation and as fallback
+    let haversineSpeedKmh = 0;
+    if (prevCoords) {
+        const timeDiffSec = Math.max(0.5, (now - prevCoords.time) / 1000);
         if (timeDiffSec > 0.5) {
-            const distKm = getDistance(window.lastGpsCoords.lat, window.lastGpsCoords.lng, lat, lng);
-            speedKmh = Math.round(distKm / (timeDiffSec / 3600));
-            if (speedKmh > 160) speedKmh = 0;
+            const distKm = getDistance(prevCoords.lat, prevCoords.lng, lat, lng);
+            haversineSpeedKmh = distKm / (timeDiffSec / 3600);
         }
     }
 
-    window.lastGpsCoords = { lat, lng, time: timeStamp || Date.now() };
+    // Sanity check: if native speed is wildly different from haversine (> 2x), 
+    // and accuracy is poor, prefer haversine (same guard logic Google Maps uses)
+    if (nativeSpeedAvailable && haversineSpeedKmh > 0 && acc > 50) {
+        const ratio = rawSpeedKmh / haversineSpeedKmh;
+        if (ratio > 3.0 || ratio < 0.2) {
+            // Implausible native reading — blend with haversine
+            rawSpeedKmh = (rawSpeedKmh + haversineSpeedKmh) / 2;
+        }
+    }
+    if (!nativeSpeedAvailable) {
+        rawSpeedKmh = haversineSpeedKmh;
+        // Cap at 160 km/h if falling back to haversine
+        if (rawSpeedKmh > 160) rawSpeedKmh = 0;
+    }
+
+    // EMA smoothing (alpha=0.3) — removes jitter while keeping responsiveness
+    // Same approach used in production navigation apps to smooth speedometer
+    if (window.lastSmoothedSpeedKmh === undefined) window.lastSmoothedSpeedKmh = 0;
+    const alpha = 0.35;
+    window.lastSmoothedSpeedKmh = alpha * rawSpeedKmh + (1 - alpha) * window.lastSmoothedSpeedKmh;
+    const speedKmh = Math.round(window.lastSmoothedSpeedKmh);
+
     const floatSpeedVal = document.getElementById('float-speed-val');
     if (floatSpeedVal) floatSpeedVal.textContent = speedKmh;
 
+    // --- Kalman Filter for Position Smoothing ---
     if (!window.clientKalmanFilter) {
         window.clientKalmanFilter = new LatLngKalmanFilter(4.0);
     }
-    const smoothed = window.clientKalmanFilter.process(lat, lng, acc, Date.now());
+    const smoothed = window.clientKalmanFilter.process(lat, lng, acc, now);
 
+    // --- Odometer Distance Accumulation ---
+    // Priority 1: Native GPS speed (v * t = d) — most accurate for odometer
+    // Priority 2: Haversine segment distance with plausibility guards
     if (window.lastOdoCalcTime) {
-        const dtSeconds = Math.max(0.1, (Date.now() - window.lastOdoCalcTime) / 1000.0);
+        const dtSeconds = Math.max(0.1, (now - window.lastOdoCalcTime) / 1000.0);
         let incrementalDistanceKm = 0;
-        if (speedMps !== null && !isNaN(speedMps) && speedMps >= 0) {
-            if (speedMps >= 0.2) {
-                incrementalDistanceKm = (speedMps * dtSeconds) / 1000.0;
-            }
+
+        if (nativeSpeedAvailable && speedMps >= 0.2) {
+            // Native speed path: distance = speed × time (Google Maps style)
+            incrementalDistanceKm = (speedMps * dtSeconds) / 1000.0;
         } else if (window.lastSmoothedCoords) {
+            // Haversine fallback with same conditions as New Folder reference code
             const segmentDist = getDistance(window.lastSmoothedCoords.lat, window.lastSmoothedCoords.lng, smoothed.lat, smoothed.lng);
             const calculatedSpeedMPS = (segmentDist * 1000.0) / dtSeconds;
             if (acc <= 200 && calculatedSpeedMPS <= 45.0 && segmentDist >= 0.001 && calculatedSpeedMPS >= 0.05) {
@@ -1789,19 +1828,18 @@ function processDriverLocationUpdate(lat, lng, acc, speedMps, timeStamp) {
     }
 
     window.lastSmoothedCoords = { lat: smoothed.lat, lng: smoothed.lng };
-    window.lastOdoCalcTime = Date.now();
+    window.lastOdoCalcTime = now;
 
     if (activeRideObj && activeRideObj.status === 'ongoing') {
         const offlineKey = `offline_gps_${acceptedOpportunityId}`;
         const offlineLogs = JSON.parse(localStorage.getItem(offlineKey)) || [];
         const lastLog = offlineLogs.length > 0 ? offlineLogs[offlineLogs.length - 1] : null;
-        if (!lastLog || (Date.now() - lastLog.time >= 1000)) {
-            offlineLogs.push({ latitude: lat, longitude: lng, accuracy: acc, speed: speedKmh || 0, time: Date.now() });
+        if (!lastLog || (now - lastLog.time >= 1000)) {
+            offlineLogs.push({ latitude: lat, longitude: lng, accuracy: acc, speed: speedKmh || 0, time: now });
             localStorage.setItem(offlineKey, JSON.stringify(offlineLogs));
         }
     }
 
-    const now = Date.now();
     if (acceptedOpportunityId && (now - lastGpsSendTime >= 1500)) {
         lastGpsSendTime = now;
         sendGpsTrackingUpdate(acceptedOpportunityId, lat, lng, acc, speedKmh);
@@ -3979,198 +4017,167 @@ ${(ride.status === 'completed' || ride.status === 'finished') ? `
 }
 }
 async function viewRideInvoice(rideId) {
-if (!window.weeklyEarningsData) return;
-const ride = window.weeklyEarningsData.find(r => r.id === rideId);
-if (!ride) return;
-const rawDate = ride.journey_end_time || ride.created_at;
-let dateStr = 'Unknown Date';
-if (rawDate) {
-dateStr = new Date(rawDate).toLocaleString('en-US', {
-month: 'short', day: 'numeric', year: 'numeric',
-hour: '2-digit', minute: '2-digit'
-});
-}
-const vendorMarkup = ride.vendor_id ? parseFloat(ride.vendor_markup || 0) : 0;
-const fareNum = parseFloat((ride.fare || '0').toString().replace(/[^0-9.]/g,'')) || 0;
-const netEarnings = fareNum - vendorMarkup - 5;
-let timeDurationStr = 'N/A';
-let waitingCharge = 0;
-let baseFare = fareNum;
-if (ride.journey_start_time && ride.journey_end_time) {
-const startTime = new Date(ride.journey_start_time);
-const endTime = new Date(ride.journey_end_time);
-if (!isNaN(startTime.getTime()) && !isNaN(endTime.getTime())) {
-const durationMs = Math.max(0, endTime - startTime);
-const durationMins = durationMs / (1000 * 60);
-const dH = Math.floor(durationMins / 60);
-const dM = Math.floor(durationMins % 60);
-timeDurationStr = dH > 0 ? `${dH}h ${dM}m` : `${dM}m`;
-let allowedMins = 0;
-if (ride.trip_type === 'rental') {
-const packageVal = ride.rental_package || '2-20';
-const [pMaxHrs] = packageVal.split('-').map(Number);
-allowedMins = pMaxHrs * 60;
-} else {
-const distStr = ride.estimated_distance || ride.distance || '0';
-const distanceKm = parseFloat(String(distStr).replace(/[^\d.]/g, '')) || 0;
-allowedMins = distanceKm * 2;
-}
-if (durationMins > allowedMins) {
-waitingCharge = Math.ceil((durationMins - allowedMins) * 2);
-}
-}
-}
-if (waitingCharge > 0) {
-baseFare = fareNum - waitingCharge;
-if (baseFare < 0) baseFare = 0;
-}
-let configBaseFare = null;
-let minKmVal = 0, minKmCharge = 0;
-try {
-const tariffRes = await fetch(`${API_BASE_URL}/api/tariffs`);
-const tariffs = await tariffRes.json();
-const vType = ride.vehicle_type || 'suv';
-const category = ride.trip_type || 'local';
-const match = tariffs.find(t => t.vehicle_type === vType && t.category === category);
-if (match) {
-const config = typeof match.config === 'string' ? JSON.parse(match.config) : match.config;
-configBaseFare = config.base || 0;
-const perKmRate = config.perKm || 0;
-if (category === 'local') {
-const minKm = typeof config.minKm === 'number' ? config.minKm : 0;
-minKmVal = minKm;
-minKmCharge = minKm * perKmRate;
-} else if (category === 'oneway') {
-const minKm = typeof config.minKm === 'number' ? config.minKm : 130;
-minKmVal = minKm;
-minKmCharge = minKm * perKmRate;
-} else if (category === 'round') {
-let tripDays = 1;
-if (ride.return_date && ride.pickup_date) {
-const start = new Date(ride.pickup_date);
-const end = new Date(ride.return_date);
-if (end > start) {
-const diffTime = Math.abs(end - start);
-tripDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-}
-}
-const minKmPerDay = (typeof config.minKmPerDay === 'number' ? config.minKmPerDay : 250) * tripDays;
-minKmVal = minKmPerDay;
-minKmCharge = minKmPerDay * perKmRate;
-}
-}
-} catch(e) { console.warn('Could not fetch tariff breakdown for driver invoice modal:', e); }
-let extraDropsCharge = 0;
-let extraStopsCount = 0;
-try {
-    if (ride.extra_drops) {
-        const stops = typeof ride.extra_drops === 'string' ? JSON.parse(ride.extra_drops) : ride.extra_drops;
-        if (Array.isArray(stops) && stops.length > 0) {
-            extraStopsCount = stops.length;
-            if (ride.trip_type === 'local') extraDropsCharge = extraStopsCount * 50;
-            else if (ride.trip_type === 'oneway') extraDropsCharge = extraStopsCount * 150;
+    try {
+        const driverToken = (() => { try { return JSON.parse(localStorage.getItem('cityride_driver'))?.token || ''; } catch(e) { return ''; } })();
+        const bdRes = await fetch(`${API_BASE_URL}/api/bookings/fare-breakdown/${rideId}`, {
+            headers: driverToken ? { 'Authorization': `Bearer ${driverToken}` } : {}
+        });
+        if (!bdRes.ok) {
+            Swal.fire('Error', 'Could not load invoice details', 'error');
+            return;
         }
+        const breakdown = await bdRes.json();
+
+        const dateStr = breakdown.journey_start_time ? new Date(breakdown.journey_start_time).toLocaleString('en-IN') : new Date().toLocaleString('en-IN');
+        const fareNum = breakdown.totalFare || 0;
+        // In fare-breakdown, vendor markup is not directly provided. 
+        // We'll use platform fee and driver allowance to show net earnings.
+        const netEarnings = fareNum - breakdown.platformFee;
+        
+        let extraDropsHtml = '';
+        if (breakdown.extraDropsCharge > 0) {
+            extraDropsHtml = `
+            <div style="display:flex; justify-content:space-between; color:var(--accent-brand);">
+                <span>Extra Stops Charge (${breakdown.extraDropsCount}):</span>
+                <span>+₹${breakdown.extraDropsCharge}</span>
+            </div>`;
+        }
+
+        let waitingHtml = '';
+        if (breakdown.waitingCharge > 0) {
+            waitingHtml = `
+            <div style="display:flex; justify-content:space-between; color:var(--warning-amber);">
+                <span>Waiting Charges:</span>
+                <span>+₹${breakdown.waitingCharge}</span>
+            </div>`;
+        }
+
+        let peakHtml = '';
+        if (breakdown.peakCharge > 0) {
+            peakHtml = `
+            <div style="display:flex; justify-content:space-between; color:var(--warning-amber);">
+                <span>Peak Surcharge:</span>
+                <span>+₹${breakdown.peakCharge}</span>
+            </div>`;
+        }
+
+        let specialHtml = '';
+        if (breakdown.specialLocationCharge > 0) {
+            specialHtml = `
+            <div style="display:flex; justify-content:space-between; color:#ff9f0a;">
+                <span>${breakdown.specialLocationDisplayName || 'Special Surcharge'}:</span>
+                <span>+₹${breakdown.specialLocationCharge}</span>
+            </div>`;
+        }
+        
+        let driverAllowanceHtml = '';
+        if (breakdown.driverAllowance > 0) {
+            driverAllowanceHtml = `
+            <div style="display:flex; justify-content:space-between; color:#0a84ff;">
+                <span>Outstation Allowance:</span>
+                <span>+₹${breakdown.driverAllowance}</span>
+            </div>`;
+        }
+
+        let baseFareHtml = '';
+        if (breakdown.tripType === 'rental') {
+            baseFareHtml = `
+            <div style="display:flex; justify-content:space-between;">
+                <span>Package Base (${breakdown.rentalPackage}):</span>
+                <span style="color:var(--text-white);">₹${breakdown.packageBase}</span>
+            </div>
+            ${breakdown.extraKmCharge > 0 ? `
+            <div style="display:flex; justify-content:space-between;">
+                <span>Extra KM Charge:</span>
+                <span style="color:var(--text-white);">₹${breakdown.extraKmCharge}</span>
+            </div>` : ''}
+            ${breakdown.extraHrCharge > 0 ? `
+            <div style="display:flex; justify-content:space-between;">
+                <span>Extra Hours Charge:</span>
+                <span style="color:var(--text-white);">₹${breakdown.extraHrCharge}</span>
+            </div>` : ''}`;
+        } else {
+            baseFareHtml = `
+            <div style="display:flex; justify-content:space-between;">
+                <span>Base Fare:</span>
+                <span style="color:var(--text-white);">₹${breakdown.baseFare}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+                <span>Distance Charge:</span>
+                <span style="color:var(--text-white);">₹${breakdown.distanceFare}</span>
+            </div>
+            ${breakdown.minKmVal > 0 ? `
+            <div style="display:flex; justify-content:space-between; font-size: 0.75rem; color:var(--text-gray);">
+                <span>(Min. KM: ${breakdown.minKmVal} KM, Min Charge: ₹${breakdown.minKmCharge})</span>
+            </div>` : ''}`;
+        }
+
+        let htmlContent = `
+        <div style="text-align:left; font-size:0.85rem; display:flex; flex-direction:column; gap:8px;">
+            <div style="font-size: 0.75rem; color: var(--text-gray); text-align: center; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 8px;">
+                <div>Receipt for Booking #B${rideId}</div>
+                <div>${dateStr}</div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top: 4px; gap: 10px;">
+                <span style="flex-shrink:0;">Pickup:</span>
+                <span style="font-weight:600; color:var(--text-gray); text-align:right; font-size:0.75rem; max-width:180px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${breakdown.pickup || 'N/A'}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; gap: 10px;">
+                <span style="flex-shrink:0;">Dropoff:</span>
+                <span style="font-weight:600; color:var(--text-gray); text-align:right; font-size:0.75rem; max-width:180px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${breakdown.drop || 'N/A'}</span>
+            </div>
+            <div style="border-top: 1px dashed rgba(255,255,255,0.1); margin: 4px 0;"></div>
+            <div style="display:flex; justify-content:space-between;">
+                <span>Trip Type:</span>
+                <span style="font-weight:700; color:var(--text-white);">${(breakdown.tripType || 'Local').toUpperCase()}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+                <span>Vehicle Class:</span>
+                <span style="font-weight:700; color:var(--text-white);">${(breakdown.vehicle || 'Sedan').toUpperCase()}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+                <span>Distance Traveled:</span>
+                <span style="font-weight:700; color:var(--text-white);">${breakdown.distance || '0.000'} KM</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+                <span>Time Duration:</span>
+                <span style="font-weight:700; color:var(--text-white);">${breakdown.estimatedDuration}</span>
+            </div>
+            <div style="border-top: 1px dashed rgba(255,255,255,0.1); margin: 8px 0;"></div>
+            
+            ${baseFareHtml}
+            ${extraDropsHtml}
+            ${waitingHtml}
+            ${peakHtml}
+            ${specialHtml}
+            ${driverAllowanceHtml}
+            
+            <div style="display:flex; justify-content:space-between; font-size: 1.05rem; margin-top: 4px;">
+                <span>Total Collected:</span>
+                <span style="color:var(--text-white); font-weight:800;">₹${fareNum.toFixed(2)}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; color:var(--danger-red); margin-top:4px;">
+                <span>Platform Fee (Deducted):</span>
+                <span>-₹${breakdown.platformFee.toFixed(2)}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size: 1.1rem; font-weight:800; color:var(--success-green); margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
+                <span>Your Net Earnings:</span>
+                <span>₹${netEarnings.toFixed(2)}</span>
+            </div>
+        </div>
+        `;
+        Swal.fire({
+            title: 'Ride Invoice',
+            html: htmlContent,
+            icon: 'info',
+            confirmButtonText: 'Close',
+            ...swalDarkOpts
+        });
+    } catch (err) {
+        console.error("viewRideInvoice error", err);
     }
-} catch(e) {}
-
-const displayBaseFare = (fareNum - waitingCharge - extraDropsCharge) > 0 ? (fareNum - waitingCharge - extraDropsCharge) : (configBaseFare !== null ? configBaseFare : baseFare);
-
-let htmlContent = `
-<div style="text-align:left; font-size:0.85rem; display:flex; flex-direction:column; gap:8px;">
-<div style="font-size: 0.75rem; color: var(--text-gray); text-align: center; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 8px;">
-<div>Receipt for Booking #B${ride.id}</div>
-<div>${dateStr}</div>
-</div>
-<div style="display:flex; justify-content:space-between; margin-top: 5px;">
-<span>Passenger:</span>
-<span style="font-weight:700; color:var(--text-white);">${ride.customer_name || 'Anonymous'}</span>
-</div>
-<div style="display:flex; justify-content:space-between; margin-top: 4px; gap: 10px;">
-<span style="flex-shrink:0;">Pickup:</span>
-<span style="font-weight:600; color:var(--text-gray); text-align:right; font-size:0.75rem; max-width:180px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${ride.pickup_loc || 'N/A'}</span>
-</div>
-${extraStopsCount > 0 ? `
-<div style="display:flex; justify-content:space-between; gap: 10px;">
-<span style="flex-shrink:0;">Extra Stops:</span>
-<span style="font-weight:600; color:var(--text-gray); text-align:right; font-size:0.75rem;">${extraStopsCount} Stop(s)</span>
-</div>
-` : ''}
-<div style="display:flex; justify-content:space-between; gap: 10px;">
-<span style="flex-shrink:0;">Dropoff:</span>
-<span style="font-weight:600; color:var(--text-gray); text-align:right; font-size:0.75rem; max-width:180px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${ride.drop_loc || 'N/A'}</span>
-</div>
-<div style="border-top: 1px dashed rgba(255,255,255,0.1); margin: 4px 0;"></div>
-<div style="display:flex; justify-content:space-between;">
-<span>Trip Type:</span>
-<span style="font-weight:700; color:var(--text-white);">${(ride.trip_type || 'Local').toUpperCase()}</span>
-</div>
-<div style="display:flex; justify-content:space-between;">
-<span>Vehicle Class:</span>
-<span style="font-weight:700; color:var(--text-white);">${(ride.vehicle_type || 'Sedan').toUpperCase()}</span>
-</div>
-<div style="display:flex; justify-content:space-between;">
-<span>Distance Traveled:</span>
-<span style="font-weight:700; color:var(--text-white);">${ride.actual_distance || '0.0 KM'}</span>
-</div>
-<div style="display:flex; justify-content:space-between;">
-<span>Time Duration:</span>
-<span style="font-weight:700; color:var(--text-white);">${timeDurationStr}</span>
-</div>
-<div style="border-top: 1px dashed rgba(255,255,255,0.1); margin: 8px 0;"></div>
-<div style="display:flex; justify-content:space-between;">
-<span>Base Fare:</span>
-<span style="color:var(--text-white);">₹${displayBaseFare.toFixed(2)}</span>
-</div>
-${minKmVal > 0 ? `
-<div style="display:flex; justify-content:space-between;">
-<span>Min. KM Charge (${minKmVal} KM):</span>
-<span style="color:var(--text-white);">₹${minKmCharge.toFixed(2)}</span>
-</div>
-` : ''}
-${extraDropsCharge > 0 ? `
-<div style="display:flex; justify-content:space-between; color:var(--accent-brand);">
-<span>Extra Stops Charge:</span>
-<span>+₹${extraDropsCharge.toFixed(2)}</span>
-</div>
-` : ''}
-${waitingCharge > 0 ? `
-<div style="display:flex; justify-content:space-between; color:var(--warning-amber);">
-<span>Waiting Charges:</span>
-<span>+₹${waitingCharge.toFixed(2)}</span>
-</div>
-` : ''}
-<div style="display:flex; justify-content:space-between; font-size: 1.05rem; margin-top: 4px;">
-<span>Total Collected:</span>
-<span style="color:var(--text-white); font-weight:800;">₹${fareNum.toFixed(2)}</span>
-</div>
-<div style="display:flex; justify-content:space-between; color:var(--danger-red); margin-top:4px;">
-<span>Platform Fee (Deducted):</span>
-<span>-₹5.00</span>
-</div>
-${vendorMarkup > 0 ? `
-<div style="display:flex; justify-content:space-between; color:var(--danger-red);">
-<span>Partner Markup (Deducted):</span>
-<span>-₹${vendorMarkup.toFixed(2)}</span>
-</div>
-<div style="display:flex; justify-content:space-between; font-size: 1.1rem; font-weight:800; color:var(--success-green); margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
-<span>Your Net Earnings:</span>
-<span>₹${netEarnings.toFixed(2)}</span>
-</div>` : `
-<div style="display:flex; justify-content:space-between; font-size: 1.1rem; font-weight:800; color:var(--success-green); margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
-<span>Your Net Earnings:</span>
-<span>₹${netEarnings.toFixed(2)}</span>
-</div>
-`}
-</div>
-`;
-Swal.fire({
-title: 'Ride Invoice',
-html: htmlContent,
-icon: 'info',
-confirmButtonText: 'Close',
-...swalDarkOpts
-});
 }
+
 // Withdraw payout simulated action
 async function triggerPayoutRequest() {
 const maxVal = parseFloat(driverData.wallet_balance) || 0;

@@ -3834,56 +3834,21 @@ app.get('/api/bookings/fare-breakdown/:bookingId', authenticateJWT, requireRole(
         if (rows.length === 0) return res.status(404).json({ error: 'Booking not found.' });
         const b = rows[0];
 
-        // Parse extra drops and calculate extraDropsCharge
-        let extraDropsCount = 0;
-        let extraDropsCharge = 0;
-        let extraDropsList = [];
-        try {
-            if (b.extra_drops) {
-                extraDropsList = typeof b.extra_drops === 'string' ? JSON.parse(b.extra_drops) : b.extra_drops;
-                if (Array.isArray(extraDropsList)) {
-                    extraDropsCount = extraDropsList.length;
-                    if (b.trip_type === 'local') {
-                        extraDropsCharge = extraDropsCount * 50;
-                    } else if (b.trip_type === 'oneway') {
-                        extraDropsCharge = extraDropsCount * 50;
-                    }
-                }
-            }
-        } catch (e) {
-            console.error("Failed to parse extra_drops in fare-breakdown", e);
-        }
-
-        // Fetch tariff for the trip type
-        const categoryKey = b.trip_type === 'rental' ? 'rental' : b.trip_type;
-        const [tariffRows] = await db.query('SELECT config FROM taxi_tariffs WHERE vehicle_type = ? AND category = ?', [b.vehicle_type, categoryKey]);
-        const [peakRules] = await db.query('SELECT * FROM taxi_peak_rules WHERE is_active = 1');
-
-        // Fetch special location charge for this booking
-        let specialLocationSurchargePercent = 0;
-        let specialLocationDisplayName = null;
-        if (b.special_place_type) {
-            const [spRows] = await db.query('SELECT display_name, surcharge_percentage FROM taxi_special_location_charges WHERE place_type = ? AND is_active = 1', [b.special_place_type]);
-            if (spRows.length > 0) {
-                specialLocationSurchargePercent = parseFloat(spRows[0].surcharge_percentage) || 0;
-                specialLocationDisplayName = spRows[0].display_name;
-            }
-        }
-
-        let pricingConfig = null;
-        if (tariffRows.length > 0) {
-            pricingConfig = typeof tariffRows[0].config === 'string' ? JSON.parse(tariffRows[0].config) : tariffRows[0].config;
-        }
-
+        const isStarted = !!b.journey_start_time;
+        const fareType = isStarted ? 'final' : 'estimated';
+        
         // Use actual distance if available, else estimated
         const distKm = parseNumeric(b.actual_distance || b.distance || b.estimated_distance || '0');
         const estimDistKm = parseNumeric(b.estimated_distance || b.distance || '0');
         const estimDurationMins = calcEstimatedDurationMins(estimDistKm);
 
-        const totalFareNum = parseNumeric(b.fare);
-        const peakMult = getPeakMultiplier(b.pickup_time, peakRules);
+        let durationMins = estimDurationMins;
+        if (isStarted) {
+            const startTime = new Date(b.journey_start_time);
+            const endTime = b.journey_end_time ? new Date(b.journey_end_time) : new Date();
+            durationMins = Math.max(0, (endTime - startTime) / (1000 * 60));
+        }
 
-        // Reconstruct waiting charges
         let preRideWaitingCharge = 0;
         if (b.reached_pickup_time && b.journey_start_time) {
             const reachedTime = new Date(b.reached_pickup_time);
@@ -3895,123 +3860,60 @@ app.get('/api/bookings/fare-breakdown/:bookingId', authenticateJWT, requireRole(
             }
         }
 
-        let waitingCharge = 0;
-        if (['local', 'oneway', 'round'].includes(b.trip_type)) {
-            let durationMins = 0;
-            if (b.journey_start_time) {
-                const startTime = new Date(b.journey_start_time);
-                const endTime = b.journey_end_time ? new Date(b.journey_end_time) : new Date();
-                durationMins = Math.max(0, (endTime - startTime) / (1000 * 60));
-            }
-            waitingCharge = preRideWaitingCharge;
-        } else if (b.trip_type === 'rental') {
-            if (b.journey_start_time) {
-                const startTime = new Date(b.journey_start_time);
-                const endTime = b.journey_end_time ? new Date(b.journey_end_time) : new Date();
-                const durationMs = endTime - startTime;
-                const durationMins = durationMs / (1000 * 60);
+        const categoryKey = b.trip_type === 'rental' ? 'rental' : b.trip_type;
 
-                let allowedMins = 0;
-                if (b.rental_package && typeof b.rental_package === 'string') {
-                    const [pMaxHrs] = b.rental_package.split('-').map(Number);
-                    if (!isNaN(pMaxHrs)) {
-                        allowedMins = pMaxHrs * 60;
+        const pricingConfigRes = await pricingEngine.calculateCanonicalFare(db, {
+            distanceKm: distKm,
+            durationMins: durationMins,
+            vehicleType: b.vehicle_type,
+            category: categoryKey,
+            pickupTime: b.pickup_time ? new Date(b.pickup_date + ' ' + b.pickup_time) : new Date(),
+            extraDrops: b.extra_drops,
+            specialPlaceType: b.special_place_type,
+            vendorId: b.vendor_id,
+            rentalPackage: b.rental_package,
+            returnDate: b.return_date,
+            pickupDate: b.pickup_date,
+            preRideWaitingCharge
+        });
+
+        const pricingConfig = pricingConfigRes.pricingConfig || {};
+        
+        let extraDropsCount = 0;
+        let extraDropsList = [];
+        try {
+            if (b.extra_drops) {
+                extraDropsList = typeof b.extra_drops === 'string' ? JSON.parse(b.extra_drops) : b.extra_drops;
+                if (Array.isArray(extraDropsList)) {
+                    extraDropsCount = extraDropsList.length;
+                }
+            }
+        } catch (e) { }
+
+        let specialLocationDisplayName = null;
+        if (b.special_place_type) {
+            const [spRows] = await db.query('SELECT display_name FROM taxi_special_location_charges WHERE place_type = ? AND is_active = 1', [b.special_place_type]);
+            if (spRows.length > 0) specialLocationDisplayName = spRows[0].display_name;
+        }
+
+        // Add association overrides if applied
+        let assocCustomerOverrideAmount = 0;
+        if (b.driver_id) {
+            const [drvRows] = await db.query('SELECT association_id FROM taxi_drivers WHERE id = ?', [b.driver_id]);
+            if (drvRows.length > 0 && drvRows[0].association_id) {
+                const [assocRows] = await db.query('SELECT commission_customer_pct, commission_customer_fixed FROM taxi_associations WHERE id = ?', [drvRows[0].association_id]);
+                if (assocRows.length > 0) {
+                    const custPct = parseFloat(assocRows[0].commission_customer_pct) || 0;
+                    const custFixed = parseFloat(assocRows[0].commission_customer_fixed) || 0;
+                    if (custPct > 0 || custFixed > 0) {
+                        assocCustomerOverrideAmount = (pricingConfigRes.finalFare * (custPct / 100)) + custFixed;
+                        pricingConfigRes.finalFare = pricingConfigRes.finalFare + Math.ceil(assocCustomerOverrideAmount);
                     }
                 }
-
-                if (durationMins > allowedMins) {
-                    waitingCharge = Math.ceil(durationMins - allowedMins) * 5;
-                }
             }
         }
 
-        // Reconstruct fare components from tariff
-        let baseFare = 0, distanceFare = 0, peakCharge = 0, platformFee = 5, driverAllowance = 0;
-        let extraKmCharge = 0, extraHrCharge = 0, minKmVal = 0, minKmCharge = 0, packageBase = 0;
-        let specialLocationCharge = 0;
-        let effectivePerKmRate = 0; // The actual per-km rate shown to customer
-
-        if (pricingConfig && b.trip_type === 'local') {
-            const config = pricingConfig;
-            const minKm = typeof config.minKm === 'number' ? config.minKm : 0;
-            const billable = Math.max(distKm, minKm);
-            // baseFare is the fixed starting charge from tariff (e.g. \u20B9200 for sedan)
-            baseFare = config.base || 0;
-            // distanceFare is the pure distance-based slab fare (total slab result includes base internally)
-            // We return the full slab fare as distanceFare and expose baseFare separately for clarity
-            const totalSlabFare = calculateLocalSlabFare(billable, config);
-            distanceFare = totalSlabFare; // Includes base; frontend will display as one combined distance line
-            peakCharge = Math.round(totalSlabFare * peakMult);
-            specialLocationCharge = Math.round(totalSlabFare * specialLocationSurchargePercent / 100);
-            minKmVal = minKm;
-            minKmCharge = Math.round(minKm * (config.perKm || 0));
-            platformFee = 5;
-            // Effective per-km rate: use tariff perKm; for display label
-            effectivePerKmRate = config.perKm || (billable > 0 ? Math.round(totalSlabFare / billable) : 0);
-        } else if (pricingConfig && b.trip_type === 'oneway') {
-            const config = pricingConfig;
-            const minKm = typeof config.minKm === 'number' ? config.minKm : 130;
-            const billable = Math.max(distKm, minKm);
-            baseFare = config.base || 0;
-            distanceFare = Math.round(billable * (config.perKm || 13));
-            driverAllowance = (b.vehicle_type === 'bike') ? 0 : (billable > 250 ? 600 : 400);
-            specialLocationCharge = Math.round(distanceFare * specialLocationSurchargePercent / 100);
-            minKmVal = minKm;
-            minKmCharge = Math.round(minKm * (config.perKm || 13));
-            platformFee = 5;
-            effectivePerKmRate = config.perKm || 13;
-        } else if (pricingConfig && b.trip_type === 'round') {
-            const config = pricingConfig;
-            const minKmPerDay = typeof config.minKmPerDay === 'number' ? config.minKmPerDay : 250;
-            let tripDays = 1;
-            if (b.return_date && b.pickup_date) {
-                const start = new Date(b.pickup_date);
-                const end = new Date(b.return_date);
-                if (end > start) {
-                    const diffTime = Math.abs(end - start);
-                    tripDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                }
-            }
-            const minKmForTrip = minKmPerDay * tripDays;
-            const billable = Math.max(distKm, minKmForTrip);
-            baseFare = config.base || 0;
-            distanceFare = Math.round(billable * (config.perKm || 12));
-            driverAllowance = (b.vehicle_type === 'bike' ? 0 : ((billable > 250 ? 600 : 400) * tripDays));
-            specialLocationCharge = Math.round(distanceFare * specialLocationSurchargePercent / 100);
-            minKmVal = minKmForTrip;
-            minKmCharge = Math.round(minKmForTrip * (config.perKm || 12));
-            platformFee = 5;
-            effectivePerKmRate = config.perKm || 12;
-        } else if (pricingConfig && b.trip_type === 'rental') {
-            const config = pricingConfig;
-            const packageVal = b.rental_package || '2-20';
-            const packageConfig = config[packageVal];
-            if (packageConfig) {
-                const [pMaxHrs, pMaxKm] = packageVal.split('-').map(Number);
-                packageBase = packageConfig.base || 0;
-
-                // Extra distance
-                const extraKm = Math.max(0, distKm - pMaxKm);
-                extraKmCharge = Math.round(extraKm * (packageConfig.extraKm || 0));
-
-                // Extra duration
-                let durationMins = 0;
-                if (b.journey_start_time && b.journey_end_time) {
-                    durationMins = (new Date(b.journey_end_time) - new Date(b.journey_start_time)) / (1000 * 60);
-                } else if (b.journey_start_time) {
-                    durationMins = (new Date() - new Date(b.journey_start_time)) / (1000 * 60);
-                }
-                const durationHrs = durationMins / 60;
-                const extraHrs = Math.max(0, Math.ceil(durationHrs - pMaxHrs));
-                extraHrCharge = Math.round(extraHrs * (packageConfig.extraHour || 0));
-                specialLocationCharge = Math.round((packageBase + extraKmCharge + extraHrCharge) * specialLocationSurchargePercent / 100);
-                platformFee = 5;
-            }
-        }
-
-        // Determine whether fare is estimated (not yet started) or final
-        const isStarted = !!b.journey_start_time;
-        const fareType = isStarted ? 'final' : 'estimated';
+        const totalFareNum = parseNumeric(b.fare) || pricingConfigRes.finalFare;
 
         res.json({
             bookingId: b.id,
@@ -4023,22 +3925,26 @@ app.get('/api/bookings/fare-breakdown/:bookingId', authenticateJWT, requireRole(
             estimatedDistance: estimDistKm.toFixed(3),
             estimatedDurationMins: estimDurationMins,
             estimatedDuration: formatDurationMins(estimDurationMins),
-            baseFare: Math.round(baseFare),
-            distanceFare: Math.round(distanceFare),
-            peakCharge: Math.round(peakCharge),
-            peakPercent: Math.round(peakMult * 100),
-            driverAllowance: Math.round(driverAllowance),
-            waitingCharge: Math.round(waitingCharge),
-            platformFee: platformFee,
+            
+            baseFare: Math.round(pricingConfig.base || 0),
+            distanceFare: Math.round(pricingConfigRes.baseKmFare),
+            peakCharge: Math.round(pricingConfigRes.peakCharge),
+            peakPercent: 0,
+            driverAllowance: Math.round(pricingConfigRes.driverAllowance || 0),
+            waitingCharge: Math.round(pricingConfigRes.waitingCharge),
+            platformFee: pricingConfigRes.platformFee,
             platformFeeDesc: "Platform Fee",
             totalFare: totalFareNum,
+            
             extraDrops: extraDropsList,
             extraDropsCount: extraDropsCount,
-            extraDropsCharge: extraDropsCharge,
+            extraDropsCharge: Math.round(pricingConfigRes.extraDropsCharge),
+            
             specialPlaceType: b.special_place_type || null,
             specialLocationDisplayName: specialLocationDisplayName,
-            specialLocationSurchargePercent: specialLocationSurchargePercent,
-            specialLocationCharge: Math.round(specialLocationCharge),
+            specialLocationSurchargePercent: 0,
+            specialLocationCharge: Math.round(pricingConfigRes.specialCharge),
+            
             fareStr: b.fare,
             fareType: fareType,
             isStarted: isStarted,
@@ -4046,21 +3952,23 @@ app.get('/api/bookings/fare-breakdown/:bookingId', authenticateJWT, requireRole(
             driverName: b.driver_name,
             journey_start_time: b.journey_start_time || null,
             journey_end_time: b.journey_end_time || null,
+            
             // Additional rental/round fields
             rentalPackage: b.rental_package || null,
-            packageBase: Math.round(packageBase),
-            extraKmCharge: Math.round(extraKmCharge),
-            extraHrCharge: Math.round(extraHrCharge),
-            minKmVal: minKmVal,
-            minKmCharge: Math.round(minKmCharge),
-            perKmRate: pricingConfig ? (pricingConfig.perKm || effectivePerKmRate) : 0,
-            effectivePerKmRate: effectivePerKmRate
+            packageBase: Math.round(pricingConfig.base || 0),
+            extraKmCharge: 0, 
+            extraHrCharge: 0, 
+            minKmVal: pricingConfig.minKm || 0,
+            minKmCharge: Math.round((pricingConfig.minKm || 0) * (pricingConfig.perKm || 0)),
+            perKmRate: pricingConfig.perKm || 0,
+            effectivePerKmRate: pricingConfig.perKm || 0
         });
     } catch (err) {
         console.error('Fare breakdown error:', err);
         res.status(500).json({ error: err.message });
     }
 });
+
 
 
 
@@ -8619,6 +8527,66 @@ app.post('/api/association/surge/toggle', authenticateJWT, requireRole(['associa
         res.status(500).json({ error: 'Failed to update surge.' });
     }
 });
+
+// --- PROFIT LEDGER ROUTES ---
+app.get('/api/admin/ledger', authenticateJWT, requireRole(['admin']), async (req, res) => {
+    try {
+        const { associationId, district } = req.query;
+        let query = `
+            SELECT b.id as booking_id, b.status, b.trip_type, b.vehicle_type, b.fare, 
+                   b.distance, b.pickup_loc, b.drop_loc, b.journey_end_time,
+                   d.name as driver_name, d.association_id,
+                   a.district, a.commission_customer_pct, a.commission_customer_fixed,
+                   f.amount as total_fare, f.vendor_profit, f.association_profit, f.platform_fee,
+                   f.driver_net_earnings
+            FROM taxi_bookings b
+            LEFT JOIN taxi_drivers d ON b.driver_id = d.id
+            LEFT JOIN taxi_associations a ON d.association_id = a.id
+            LEFT JOIN taxi_financial_ledger f ON b.id = f.booking_id AND f.type = 'ride_completed'
+            WHERE b.status IN ('completed', 'finished')
+        `;
+        const params = [];
+        if (associationId) {
+            query += ' AND a.id = ?';
+            params.push(associationId);
+        }
+        if (district) {
+            query += ' AND a.district = ?';
+            params.push(district);
+        }
+        query += ' ORDER BY b.journey_end_time DESC LIMIT 500';
+
+        const [rows] = await db.query(query, params);
+        res.json(rows);
+    } catch (err) {
+        console.error('Admin ledger error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/association/ledger', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const associationId = req.user.associationId || req.user.id;
+        const query = `
+            SELECT b.id as booking_id, b.status, b.trip_type, b.vehicle_type, b.fare, 
+                   b.distance, b.pickup_loc, b.drop_loc, b.journey_end_time,
+                   d.name as driver_name,
+                   f.amount as total_fare, f.association_profit
+            FROM taxi_bookings b
+            JOIN taxi_drivers d ON b.driver_id = d.id
+            LEFT JOIN taxi_financial_ledger f ON b.id = f.booking_id AND f.type = 'ride_completed'
+            WHERE b.status IN ('completed', 'finished') AND d.association_id = ?
+            ORDER BY b.journey_end_time DESC LIMIT 500
+        `;
+        const [rows] = await db.query(query, [associationId]);
+        res.json(rows);
+    } catch (err) {
+        console.error('Association ledger error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 
 // Serve association admin panel
 app.get('/association-admin', (req, res) => res.sendFile(require('path').join(__dirname, 'public', 'association-admin.html')));

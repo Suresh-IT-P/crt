@@ -1177,6 +1177,51 @@
             </div>
         </div>
 
+        <!-- Profit Ledger Tab -->
+        <div id="ledger" class="tab-section">
+            <div class="stage-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1>Profit <span class="text-accent">Ledger</span></h1>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Monitor financial performance and commission splits down to the individual ride level.</p>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <select id="ledger-district-filter" onchange="fetchAdminLedger()" style="background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 8px;">
+                        <option value="">All Districts</option>
+                    </select>
+                    <select id="ledger-association-filter" onchange="fetchAdminLedger()" style="background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 8px;">
+                        <option value="">All Associations</option>
+                    </select>
+                    <button class="action-btn primary" onclick="fetchAdminLedger()">
+                        <span>↻</span> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="data-table-container">
+                <table class="data-table" id="ledger-table">
+                    <thead>
+                        <tr>
+                            <th>Ride ID</th>
+                            <th>Date / Time</th>
+                            <th>District</th>
+                            <th>Driver & Association</th>
+                            <th>Total Fare</th>
+                            <th style="color:var(--success-green);">Admin Profit</th>
+                            <th style="color:var(--warning-amber);">Assoc. Cut</th>
+                            <th style="color:#0a84ff;">Vendor Cut</th>
+                            <th>Driver Net</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledger-table-body">
+                        <!-- Ledger Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+
         <!-- System Reports Tab -->
         <div id="reports" class="tab-section">
             <div class="stage-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
@@ -5437,6 +5482,76 @@ async function openDetailedLedger(id, driverName, currentBalance) {
 function closeDetailedLedger() {
     document.getElementById('driver-ledger-modal').style.display = 'none';
 }
+// --- PROFIT LEDGER LOGIC ---
+async function fetchAdminLedger() {
+    const tableBody = document.getElementById('ledger-table-body');
+    const districtFilter = document.getElementById('ledger-district-filter').value;
+    const associationFilter = document.getElementById('ledger-association-filter').value;
+    
+    tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Loading ledger data...</td></tr>';
+    
+    try {
+        const queryParams = new URLSearchParams();
+        if (districtFilter) queryParams.append('district', districtFilter);
+        if (associationFilter) queryParams.append('associationId', associationFilter);
+        
+        const res = await fetch(`${API_BASE_URL}/api/admin/ledger?${queryParams.toString()}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken') || (() => { try { return JSON.parse(localStorage.getItem('cityride_master'))?.token || ''; } catch(e) { return ''; } })()}` }
+        });
+        
+        if (!res.ok) throw new Error('Failed to fetch ledger');
+        const data = await res.json();
+        
+        tableBody.innerHTML = '';
+        if (data.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center; color: var(--text-muted);">No records found matching filters.</td></tr>';
+            return;
+        }
+        
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            const dateStr = new Date(row.journey_end_time || Date.now()).toLocaleString('en-IN');
+            
+            // Profit formatting
+            const adminProfitHtml = `<span style="color:var(--success-green); font-weight:bold;">₹${(row.platform_fee || 0).toFixed(2)}</span>`;
+            const assocCutHtml = `<span style="color:var(--warning-amber);">₹${(row.association_profit || 0).toFixed(2)}</span>`;
+            const vendorCutHtml = `<span style="color:#0a84ff;">₹${(row.vendor_profit || 0).toFixed(2)}</span>`;
+            
+            tr.innerHTML = `
+                <td>#B${row.booking_id}</td>
+                <td style="font-size: 0.8rem; color: var(--text-muted);">${dateStr}</td>
+                <td>${row.district || 'Unassigned'}</td>
+                <td style="font-size: 0.85rem;">
+                    <div>${row.driver_name || 'N/A'}</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">Assoc ID: ${row.association_id || 'None'}</div>
+                </td>
+                <td style="font-weight: bold;">₹${(row.total_fare || 0).toFixed(2)}</td>
+                <td>${adminProfitHtml}</td>
+                <td>${assocCutHtml}</td>
+                <td>${vendorCutHtml}</td>
+                <td>₹${(row.driver_net_earnings || 0).toFixed(2)}</td>
+                <td><span class="status-badge status-${row.status === 'completed' ? 'success' : 'warning'}">${row.status.toUpperCase()}</span></td>
+            `;
+            tableBody.appendChild(tr);
+        });
+        
+    } catch (err) {
+        console.error('Ledger Error:', err);
+        tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color: var(--danger-red);">Error loading ledger</td></tr>`;
+    }
+}
+
+// Intercept switchTab to fetch data
+const originalSwitchTabAdmin = switchTab;
+window.switchTab = function(tabId, el) {
+    originalSwitchTabAdmin(tabId, el);
+    if (tabId === 'ledger') {
+        fetchAdminLedger();
+    }
+};
+
+
+
 </script>
 
 <!-- Detailed Ledger Modal -->

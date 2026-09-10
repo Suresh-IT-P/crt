@@ -292,6 +292,14 @@
                 </div>
 
                 <div class="nav-group">
+                    <div class="nav-group-label">Analytics & Reports</div>
+                    <div class="nav-item" onclick="switchTab('ledger', this)" title="District Ledger">
+                        <span class="nav-icon">💵</span><span class="nav-label">District Ledger</span>
+                    </div>
+                </div>
+
+
+                <div class="nav-group">
                     <div class="nav-group-label">Support & Comms</div>
                     <div class="nav-item" onclick="switchTab('broadcast', this)" title="District Broadcast">
                         <span class="nav-icon">📢</span><span class="nav-label">District Broadcast</span>
@@ -340,6 +348,41 @@
     <main class="main-stage">
 
         <!-- OVERVIEW -->
+        <!-- District Ledger Tab -->
+        <div id="ledger" class="tab-section">
+            <div class="stage-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1>District <span class="text-accent">Ledger</span></h1>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Monitor revenue and profit shares for your district's fleet.</p>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <button class="action-btn primary" onclick="fetchAssocLedger()">
+                        <span>↻</span> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="data-table-container">
+                <table class="data-table" id="assoc-ledger-table">
+                    <thead>
+                        <tr>
+                            <th>Ride ID</th>
+                            <th>Date / Time</th>
+                            <th>Driver</th>
+                            <th>Pickup -> Dropoff</th>
+                            <th>Total Fare</th>
+                            <th style="color:var(--success-green);">Your Profit Cut</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assoc-ledger-table-body">
+                        <!-- Ledger Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
         <div id="overview" class="tab-section active">
             <div class="stage-header">
                 <div>
@@ -1851,6 +1894,66 @@ function switchTab(tabId, el) {
             Swal.fire({ icon: 'error', title: 'Error', text: data.error, background: '#FFFFFF', color: '#000' });
         }
     }
+// --- ASSOCIATION LEDGER LOGIC ---
+async function fetchAssocLedger() {
+    const tableBody = document.getElementById('assoc-ledger-table-body');
+    if (!tableBody) return;
+    tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Loading ledger data...</td></tr>';
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/association/ledger`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        });
+        
+        if (!res.ok) throw new Error('Failed to fetch ledger');
+        const data = await res.json();
+        
+        tableBody.innerHTML = '';
+        if (data.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">No records found.</td></tr>';
+            return;
+        }
+        
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            const dateStr = new Date(row.journey_end_time || Date.now()).toLocaleString('en-IN');
+            const assocCutHtml = `<span style="color:var(--success-green); font-weight:bold;">₹${(row.association_profit || 0).toFixed(2)}</span>`;
+            
+            let tripPath = 'N/A';
+            if (row.pickup_loc && row.drop_loc) {
+                tripPath = `<div style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${row.pickup_loc}">${row.pickup_loc}</div>
+                            <div style="font-size:0.8rem; color:var(--text-muted);">⬇</div>
+                            <div style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${row.drop_loc}">${row.drop_loc}</div>`;
+            }
+
+            tr.innerHTML = `
+                <td>#B${row.booking_id}</td>
+                <td style="font-size: 0.8rem; color: var(--text-muted);">${dateStr}</td>
+                <td>${row.driver_name || 'N/A'}</td>
+                <td style="font-size: 0.8rem;">${tripPath}</td>
+                <td style="font-weight: bold;">₹${(row.total_fare || 0).toFixed(2)}</td>
+                <td>${assocCutHtml}</td>
+                <td><span class="status-badge status-${row.status === 'completed' ? 'success' : 'warning'}">${row.status.toUpperCase()}</span></td>
+            `;
+            tableBody.appendChild(tr);
+        });
+        
+    } catch (err) {
+        console.error('Assoc Ledger Error:', err);
+        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--danger-red);">Error loading ledger</td></tr>`;
+    }
+}
+
+// Intercept switchTab
+const originalSwitchTabAssoc = window.switchTab;
+window.switchTab = function(tabId, el) {
+    if (originalSwitchTabAssoc) originalSwitchTabAssoc(tabId, el);
+    if (tabId === 'ledger') {
+        fetchAssocLedger();
+    }
+};
+
+
     </script>
 </body>
 </html>
