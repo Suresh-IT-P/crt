@@ -1506,11 +1506,12 @@ let incrementalDistanceKm = 0;
 if (window.lastSmoothedCoords) {
 const segmentDist = getDistance(window.lastSmoothedCoords.lat, window.lastSmoothedCoords.lng, smoothed.lat, smoothed.lng);
 const calculatedSpeedMPS = (segmentDist * 1000.0) / dtSeconds;
-if (calculatedSpeedMPS <= 45.0 && segmentDist >= 0.001 && calculatedSpeedMPS >= 0.05) {
+if ((calculatedSpeedMPS <= 45.0 && segmentDist >= 0.001 && calculatedSpeedMPS >= 0.05) || (!gpsWatchId && segmentDist >= 0.001)) {
+// Bypassing speed limits if we are simulating (gpsWatchId is null)
 incrementalDistanceKm = segmentDist;
 }
 }
-        if (incrementalDistanceKm > 0 && incrementalDistanceKm < 5.0) {
+        if (incrementalDistanceKm > 0 && (incrementalDistanceKm < 5.0 || !gpsWatchId)) {
             window.localDistanceCovered = (window.localDistanceCovered || parseFloat(localStorage.getItem('localDistanceCovered')) || 0) + incrementalDistanceKm;
             localStorage.setItem('localDistanceCovered', window.localDistanceCovered);
         }
