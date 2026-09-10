@@ -1594,8 +1594,6 @@ async function startGpsTracking() {
     // Native Capacitor Android Background Engine & Floating Overlay Initialization
     if (window.Capacitor && window.Capacitor.Plugins) {
         const plugins = window.Capacitor.Plugins;
-        
-        // 1. Request native permissions
         try {
             if (plugins.Geolocation) {
                 const permStatus = await plugins.Geolocation.checkPermissions();
@@ -1604,11 +1602,8 @@ async function startGpsTracking() {
                 }
             }
         } catch(e) { console.warn('Native geolocation permission check error:', e); }
-
-        // 2. Start Native Background Duty Foreground Service
         try {
             if (plugins.DriverBackgroundPlugin) {
-                console.log('🚀 Starting Native DriverBackgroundPlugin Foreground Duty Service...');
                 await plugins.DriverBackgroundPlugin.startDuty({
                     driverId: (driverData && driverData.id) ? String(driverData.id) : '',
                     driverName: (driverData && driverData.name) ? String(driverData.name) : 'Driver',
@@ -1616,24 +1611,16 @@ async function startGpsTracking() {
                     bookingId: acceptedOpportunityId ? String(acceptedOpportunityId) : '',
                     tripStatus: (activeRideObj && activeRideObj.status) ? activeRideObj.status : ''
                 });
-
-                // Request Battery Optimization Exemption once so OEM task killers don't kill app
                 if (!window.batteryOptPrompted) {
                     window.batteryOptPrompted = true;
                     plugins.DriverBackgroundPlugin.requestIgnoreBatteryOptimizations().catch(() => {});
                 }
-
-                // Request "Display over other apps" (Floating Bubble) permission once
                 if (!window.overlayPermPrompted) {
                     window.overlayPermPrompted = true;
                     plugins.DriverBackgroundPlugin.checkOverlayPermission().then(res => {
-                        if (!res.granted) {
-                            plugins.DriverBackgroundPlugin.requestOverlayPermission().catch(() => {});
-                        }
+                        if (!res.granted) plugins.DriverBackgroundPlugin.requestOverlayPermission().catch(() => {});
                     }).catch(() => {});
                 }
-
-                // Listen for native GPS updates (active even when minimized or screen locked)
                 if (!window.driverNativeGpsSubscribed) {
                     window.driverNativeGpsSubscribed = true;
                     plugins.DriverBackgroundPlugin.addListener('locationUpdate', (loc) => {
@@ -1642,22 +1629,144 @@ async function startGpsTracking() {
                         }
                     });
                 }
-
-                // Listen for 1-Tap Instant Accept from Ola/Uber Floating Heads-up Overlay
                 if (!window.driverFloatingAcceptSubscribed) {
                     window.driverFloatingAcceptSubscribed = true;
                     plugins.DriverBackgroundPlugin.addListener('floatingAcceptBooking', (data) => {
-                        console.log('⚡ Received 1-Tap Instant Accept from Floating Overlay:', data);
-                        if (data && data.bookingId) {
-                            acceptBookingPing(Number(data.bookingId));
-                        }
+                        if (data && data.bookingId) acceptBookingPing(Number(data.bookingId));
                     });
                 }
             }
-        } catch(e) {
-            console.warn('DriverBackgroundPlugin startup warning:', e);
-        }
+        } catch(e) { console.warn('DriverBackgroundPlugin startup warning:', e); }
     }
+
+    // Web GPS (runs on both web browser and Android APK)
+    if ('wakeLock' in navigator) {
+        try {
+            if (!window.driverWakeLock) {
+                window.driverWakeLock = await navigator.wakeLock.request('screen');
+                console.log('WakeLock activated. Screen will stay on to ensure continuous GPS lock.');
+            }
+        } catch (err) { console.warn('WakeLock failed:', err); }
+    }
+
+    if (!navigator.geolocation) {
+        updateGpsUI('disabled');
+        return;
+    }
+
+    updateGpsUI('searching');
+
+    if (window.gpsWatchdogInterval) clearInterval(window.gpsWatchdogInterval);
+    window.gpsWatchdogInterval = setInterval(() => {
+        if (window.lastGpsCoords && (Date.now() - window.lastGpsCoords.time > 15000)) {
+            console.warn('GPS Watchdog: Signal stalled, manually forcing location refresh...');
+            navigator.geolocation.getCurrentPosition((pos) => {
+                window.lastGpsCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude, time: Date.now() };
+                updateGpsUI('locked', pos.coords.accuracy);
+                updateDriverLocationOnMap(pos.coords.latitude, pos.coords.longitude);
+            }, () => { updateGpsUI('searching'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        }
+    }, 10000);
+
+    if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = navigator.geolocation.watchPosition((pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const acc = pos.coords.accuracy;
+        updateGpsUI('locked', acc);
+        updateDriverLocationOnMap(lat, lng);
+
+        // --- Google Maps-style Speed Calculation ---
+        // Priority 1: Hardware GPS speed (native chipset Doppler reading)
+        // Priority 2: Haversine distance/time fallback
+        let rawSpeedKmh = 0;
+        let nativeSpeedAvailable = false;
+        if (pos.coords.speed !== null && !isNaN(pos.coords.speed) && pos.coords.speed >= 0) {
+            rawSpeedKmh = pos.coords.speed * 3.6;
+            nativeSpeedAvailable = true;
+        }
+        let haversineSpeedKmh = 0;
+        const prevCoords = window.lastGpsCoords;
+        if (prevCoords) {
+            const timeDiffSec = Math.max(0.5, (Date.now() - prevCoords.time) / 1000);
+            if (timeDiffSec > 0.5) {
+                const distKm = getDistance(prevCoords.lat, prevCoords.lng, lat, lng);
+                haversineSpeedKmh = distKm / (timeDiffSec / 3600);
+            }
+        }
+        // Sanity check: blend if native is implausible vs haversine and accuracy is poor
+        if (nativeSpeedAvailable && haversineSpeedKmh > 0 && acc > 50) {
+            const ratio = rawSpeedKmh / haversineSpeedKmh;
+            if (ratio > 3.0 || ratio < 0.2) rawSpeedKmh = (rawSpeedKmh + haversineSpeedKmh) / 2;
+        }
+        if (!nativeSpeedAvailable) {
+            rawSpeedKmh = haversineSpeedKmh;
+            if (rawSpeedKmh > 160) rawSpeedKmh = 0;
+        }
+        // EMA smoothing (alpha=0.35) for stable speedometer display
+        if (window.lastSmoothedSpeedKmh === undefined) window.lastSmoothedSpeedKmh = 0;
+        window.lastSmoothedSpeedKmh = 0.35 * rawSpeedKmh + 0.65 * window.lastSmoothedSpeedKmh;
+        const speedKmh = Math.round(window.lastSmoothedSpeedKmh);
+
+        window.lastGpsCoords = { lat, lng, time: Date.now() };
+        const floatSpeedVal = document.getElementById('float-speed-val');
+        if (floatSpeedVal) floatSpeedVal.textContent = speedKmh;
+
+        // Kalman filter for smooth position
+        if (!window.clientKalmanFilter) window.clientKalmanFilter = new LatLngKalmanFilter(4.0);
+        const smoothed = window.clientKalmanFilter.process(lat, lng, acc, Date.now());
+
+        // --- Odometer Distance Accumulation ---
+        if (window.lastOdoCalcTime) {
+            const dtSeconds = Math.max(0.1, (Date.now() - window.lastOdoCalcTime) / 1000.0);
+            let incrementalDistanceKm = 0;
+            if (nativeSpeedAvailable && pos.coords.speed >= 0.2) {
+                // Native GPS speed × time = distance (most accurate, Google Maps style)
+                incrementalDistanceKm = (pos.coords.speed * dtSeconds) / 1000.0;
+            } else if (window.lastSmoothedCoords) {
+                const segmentDist = getDistance(window.lastSmoothedCoords.lat, window.lastSmoothedCoords.lng, smoothed.lat, smoothed.lng);
+                const calculatedSpeedMPS = (segmentDist * 1000.0) / dtSeconds;
+                if (acc <= 200 && calculatedSpeedMPS <= 45.0 && segmentDist >= 0.001 && calculatedSpeedMPS >= 0.05) {
+                    incrementalDistanceKm = segmentDist;
+                }
+            }
+            if (incrementalDistanceKm > 0 && incrementalDistanceKm < 5.0) {
+                window.localDistanceCovered = (window.localDistanceCovered || 0) + incrementalDistanceKm;
+            }
+        }
+        window.lastSmoothedCoords = { lat: smoothed.lat, lng: smoothed.lng };
+        window.lastOdoCalcTime = Date.now();
+
+        if (activeRideObj && activeRideObj.status === 'ongoing') {
+            const offlineKey = `offline_gps_${acceptedOpportunityId}`;
+            const offlineLogs = JSON.parse(localStorage.getItem(offlineKey)) || [];
+            const lastLog = offlineLogs.length > 0 ? offlineLogs[offlineLogs.length - 1] : null;
+            if (!lastLog || (Date.now() - lastLog.time >= 1000)) {
+                offlineLogs.push({ latitude: lat, longitude: lng, accuracy: acc, speed: speedKmh || 0, time: Date.now() });
+                localStorage.setItem(offlineKey, JSON.stringify(offlineLogs));
+            }
+        }
+        const now = Date.now();
+        if (acceptedOpportunityId && (now - lastGpsSendTime >= 1500)) {
+            lastGpsSendTime = now;
+            sendGpsTrackingUpdate(acceptedOpportunityId, lat, lng, acc, speedKmh);
+        }
+        if (!window.lastIdleSyncTime || (now - window.lastIdleSyncTime >= 15000)) {
+            window.lastIdleSyncTime = now;
+            updateBackendDriverStatus(isOnline, lat, lng);
+        }
+    }, (err) => {
+        console.warn('GPS Fail:', err.message);
+        if (err.message.includes('Only secure origins are allowed') || err.message.includes('secure origin') || err.code === 1) {
+            updateGpsUI('insecure');
+        } else {
+            updateGpsUI('searching');
+        }
+    }, {
+        enableHighAccuracy: true,
+        timeout: 30000,
+        maximumAge: 5000
+    });
 }
 
 async function enableFloatingWidgetPrompt() {
@@ -1744,26 +1853,22 @@ async function enableFloatingWidgetPrompt() {
     });
 }
 
+// Called by native Capacitor DriverBackgroundPlugin locationUpdate events.
+// Mirrors the same speed/odometer logic as the watchPosition callback inline.
 function processDriverLocationUpdate(lat, lng, acc, speedMps, timeStamp) {
     updateGpsUI('locked', acc);
     updateDriverLocationOnMap(lat, lng);
 
-    const now = Date.now();
+    const now = timeStamp || Date.now();
     const prevCoords = window.lastGpsCoords;
-    window.lastGpsCoords = { lat, lng, time: timeStamp || now };
 
-    // --- Google Maps-style Speed Calculation ---
-    // Priority 1: Hardware GPS speed (most accurate, same as Google Maps uses)
-    // Priority 2: Haversine-based speed from lat/lng delta (fallback)
+    // Google Maps-style speed: native hardware speed first, haversine fallback
     let rawSpeedKmh = 0;
     let nativeSpeedAvailable = false;
-
     if (speedMps !== null && !isNaN(speedMps) && speedMps >= 0) {
         rawSpeedKmh = speedMps * 3.6;
         nativeSpeedAvailable = true;
     }
-
-    // Always compute haversine speed for validation and as fallback
     let haversineSpeedKmh = 0;
     if (prevCoords) {
         const timeDiffSec = Math.max(0.5, (now - prevCoords.time) / 1000);
@@ -1772,50 +1877,31 @@ function processDriverLocationUpdate(lat, lng, acc, speedMps, timeStamp) {
             haversineSpeedKmh = distKm / (timeDiffSec / 3600);
         }
     }
-
-    // Sanity check: if native speed is wildly different from haversine (> 2x), 
-    // and accuracy is poor, prefer haversine (same guard logic Google Maps uses)
     if (nativeSpeedAvailable && haversineSpeedKmh > 0 && acc > 50) {
         const ratio = rawSpeedKmh / haversineSpeedKmh;
-        if (ratio > 3.0 || ratio < 0.2) {
-            // Implausible native reading — blend with haversine
-            rawSpeedKmh = (rawSpeedKmh + haversineSpeedKmh) / 2;
-        }
+        if (ratio > 3.0 || ratio < 0.2) rawSpeedKmh = (rawSpeedKmh + haversineSpeedKmh) / 2;
     }
     if (!nativeSpeedAvailable) {
         rawSpeedKmh = haversineSpeedKmh;
-        // Cap at 160 km/h if falling back to haversine
         if (rawSpeedKmh > 160) rawSpeedKmh = 0;
     }
-
-    // EMA smoothing (alpha=0.3) — removes jitter while keeping responsiveness
-    // Same approach used in production navigation apps to smooth speedometer
     if (window.lastSmoothedSpeedKmh === undefined) window.lastSmoothedSpeedKmh = 0;
-    const alpha = 0.35;
-    window.lastSmoothedSpeedKmh = alpha * rawSpeedKmh + (1 - alpha) * window.lastSmoothedSpeedKmh;
+    window.lastSmoothedSpeedKmh = 0.35 * rawSpeedKmh + 0.65 * window.lastSmoothedSpeedKmh;
     const speedKmh = Math.round(window.lastSmoothedSpeedKmh);
 
+    window.lastGpsCoords = { lat, lng, time: now };
     const floatSpeedVal = document.getElementById('float-speed-val');
     if (floatSpeedVal) floatSpeedVal.textContent = speedKmh;
 
-    // --- Kalman Filter for Position Smoothing ---
-    if (!window.clientKalmanFilter) {
-        window.clientKalmanFilter = new LatLngKalmanFilter(4.0);
-    }
+    if (!window.clientKalmanFilter) window.clientKalmanFilter = new LatLngKalmanFilter(4.0);
     const smoothed = window.clientKalmanFilter.process(lat, lng, acc, now);
 
-    // --- Odometer Distance Accumulation ---
-    // Priority 1: Native GPS speed (v * t = d) — most accurate for odometer
-    // Priority 2: Haversine segment distance with plausibility guards
     if (window.lastOdoCalcTime) {
         const dtSeconds = Math.max(0.1, (now - window.lastOdoCalcTime) / 1000.0);
         let incrementalDistanceKm = 0;
-
         if (nativeSpeedAvailable && speedMps >= 0.2) {
-            // Native speed path: distance = speed × time (Google Maps style)
             incrementalDistanceKm = (speedMps * dtSeconds) / 1000.0;
         } else if (window.lastSmoothedCoords) {
-            // Haversine fallback with same conditions as New Folder reference code
             const segmentDist = getDistance(window.lastSmoothedCoords.lat, window.lastSmoothedCoords.lng, smoothed.lat, smoothed.lng);
             const calculatedSpeedMPS = (segmentDist * 1000.0) / dtSeconds;
             if (acc <= 200 && calculatedSpeedMPS <= 45.0 && segmentDist >= 0.001 && calculatedSpeedMPS >= 0.05) {
@@ -1826,7 +1912,6 @@ function processDriverLocationUpdate(lat, lng, acc, speedMps, timeStamp) {
             window.localDistanceCovered = (window.localDistanceCovered || 0) + incrementalDistanceKm;
         }
     }
-
     window.lastSmoothedCoords = { lat: smoothed.lat, lng: smoothed.lng };
     window.lastOdoCalcTime = now;
 
@@ -1839,18 +1924,16 @@ function processDriverLocationUpdate(lat, lng, acc, speedMps, timeStamp) {
             localStorage.setItem(offlineKey, JSON.stringify(offlineLogs));
         }
     }
-
     if (acceptedOpportunityId && (now - lastGpsSendTime >= 1500)) {
         lastGpsSendTime = now;
         sendGpsTrackingUpdate(acceptedOpportunityId, lat, lng, acc, speedKmh);
     }
-    
-    // Periodically update the driver's idle status on the backend every 15 seconds
     if (!window.lastIdleSyncTime || (now - window.lastIdleSyncTime >= 15000)) {
         window.lastIdleSyncTime = now;
         updateBackendDriverStatus(isOnline, lat, lng);
     }
 }
+
 
 async function updateBackendDriverStatus(onlineFlag, lat, lng) {
     const tokenRaw = localStorage.getItem('cityride_pilot');
