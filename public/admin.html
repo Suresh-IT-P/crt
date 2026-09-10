@@ -1315,8 +1315,8 @@
                     <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Deep-drill analysis down to specific association, driver, vehicle plate, customer user ID, and ride telemetry.</p>
                 </div>
                 <div style="display: flex; gap: 1rem; align-items: center;">
-                    <button class="btn btn-primary" onclick="exportUndergroundPDF()">📄 Export Audit PDF</button>
-                    <button class="btn" style="background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border-color);" onclick="exportUndergroundCSV()">📊 Export Audit CSV</button>
+                    <button type="button" class="btn btn-primary" onclick="exportUndergroundPDF()">📄 Export Audit PDF</button>
+                    <button type="button" class="btn" style="background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border-color);" onclick="exportUndergroundCSV()">📊 Export Audit CSV</button>
                 </div>
             </div>
 
@@ -1375,8 +1375,8 @@
                         <input type="date" id="ug-filter-end-date">
                     </div>
                     <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn btn-primary" onclick="loadUndergroundReports()" style="flex:1;">⚡ Search</button>
-                        <button class="btn" onclick="resetUndergroundFilters()" style="background: rgba(255,255,255,0.05); color: var(--text-muted);">Reset</button>
+                        <button type="button" class="btn btn-primary" onclick="loadUndergroundReports()" style="flex:1;">⚡ Search</button>
+                        <button type="button" class="btn" onclick="resetUndergroundFilters()" style="background: rgba(255,255,255,0.05); color: var(--text-muted);">Reset</button>
                     </div>
                 </div>
             </div>
@@ -4800,7 +4800,7 @@ async function updateSurgeRule(surgeKey, inputId) {
                         </td>
                         <td data-label="Status"><div style="text-align: right;"><span class="status-tag ${statusClass}" ${badgeStyle}>${(r.status || 'PENDING').toUpperCase()}</span></div></td>
                         <td data-label="Actions">
-                            <div style="text-align: right;"><button class="action-btn" ${isCancelled ? 'style="border-color:#EF4444; color:#EF4444;"' : ''} onclick="openUndergroundAuditModal(${r.id})">🔍 Telemetry</button></div>
+                            <div style="text-align: right;"><button type="button" class="action-btn" ${isCancelled ? 'style="border-color:#EF4444; color:#EF4444;"' : ''} onclick="openUndergroundAuditModal(${r.id})">🔍 Telemetry</button></div>
                         </td>
                     </tr>
                 `;
