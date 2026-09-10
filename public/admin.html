@@ -3655,7 +3655,11 @@ if (match) _activeTab = match[1];
 });
 });
 loadTabData('overview');
-setInterval(() => { loadTabData(_activeTab); }, 20000);
+setInterval(() => { 
+    if (_activeTab !== 'underground' && _activeTab !== 'reports' && _activeTab !== 'tariffs') {
+        loadTabData(_activeTab); 
+    }
+}, 20000);
 
 // --- SOCKET.IO: Real-time connection ---
 (function initAdminSocket() {
