@@ -1685,12 +1685,12 @@
                         <thead>
                             <tr>
                                 <th>Version</th>
-                                <th>Cust %</th>
-                                <th>Drv %</th>
-                                <th>Total %</th>
-                                <th>Maint %</th>
-                                <th>Assoc %</th>
-                                <th>Profit %</th>
+                                <th>Customer Fee</th>
+                                <th>Driver Deduct</th>
+                                <th>Total Comm.</th>
+                                <th>Maint Share</th>
+                                <th>Assoc Share</th>
+                                <th>Platform Profit</th>
                                 <th>Effective From</th>
                                 <th>Status</th>
                             </tr>
@@ -3803,12 +3803,12 @@ async function loadCommissions() {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${c.version}</td>
-                <td>${c.customer_commission_percent}%</td>
-                <td>${c.driver_commission_percent}%</td>
-                <td>${c.total_commission_percent}%</td>
-                <td>${c.maintenance_percent}%</td>
-                <td>${c.association_percent}%</td>
-                <td>${c.cityride_percent}%</td>
+                <td>${c.customer_commission_type === 'fixed' ? '₹' + c.customer_commission_fixed : c.customer_commission_percent + '%'}</td>
+                <td>${c.driver_commission_type === 'fixed' ? '₹' + c.driver_commission_fixed : c.driver_commission_percent + '%'}</td>
+                <td>${(c.customer_commission_type === 'fixed' || c.driver_commission_type === 'fixed') ? '₹' + ((parseFloat(c.customer_commission_fixed)||0) + (parseFloat(c.driver_commission_fixed)||0)).toFixed(2) + ' / Mix' : c.total_commission_percent + '%'}</td>
+                <td>${c.maintenance_percent > 0 ? c.maintenance_percent + '%' : '₹' + c.maintenance_fixed}</td>
+                <td>${c.association_percent > 0 ? c.association_percent + '%' : '₹' + c.association_fixed}</td>
+                <td>${c.cityride_percent > 0 ? c.cityride_percent + '%' : '₹' + c.cityride_fixed}</td>
                 <td>${new Date(c.effective_from).toLocaleString()}</td>
                 <td>${c.status === 'active' ? '<span class="status-badge" style="background:#28a745;color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;">Active</span>' : (c.status === 'scheduled' ? '<span class="status-badge" style="background:#ffc107;color:black;padding:2px 8px;border-radius:12px;font-size:0.75rem;">Scheduled</span>' : '<span class="status-badge" style="background:#6c757d;color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;">Archived</span>')}</td>
             `;
