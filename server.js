@@ -8536,12 +8536,14 @@ app.get('/api/admin/ledger', authenticateJWT, requireRole(['admin']), async (req
             SELECT b.id as booking_id, b.status, b.trip_type, b.vehicle_type, b.fare, 
                    b.distance, b.pickup_loc, b.drop_loc, b.journey_end_time,
                    d.name as driver_name, d.association_id,
-                   a.district, a.commission_customer_pct, a.commission_customer_fixed,
+                   a.district, a.name as association_name, a.commission_customer_pct, a.commission_customer_fixed,
+                   p.name as passenger_name, p.phone as passenger_phone,
                    f.amount as total_fare, f.vendor_profit, f.association_profit, f.platform_fee,
                    f.driver_net_earnings
             FROM taxi_bookings b
             LEFT JOIN taxi_drivers d ON b.driver_id = d.id
             LEFT JOIN taxi_associations a ON d.association_id = a.id
+            LEFT JOIN taxi_passengers p ON b.user_id = p.id
             LEFT JOIN taxi_financial_ledger f ON b.id = f.booking_id AND f.type = 'ride_completed'
             WHERE b.status IN ('completed', 'finished')
         `;

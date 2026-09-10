@@ -1181,8 +1181,8 @@
         <div id="ledger" class="tab-section">
             <div class="stage-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
                 <div>
-                    <h1>Profit <span class="text-accent">Ledger</span></h1>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Monitor financial performance and commission splits down to the individual ride level.</p>
+                    <h1>Complete Ride <span class="text-accent">Ledger</span></h1>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Monitor all rides with user, driver, amount, and association details.</p>
                 </div>
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <select id="ledger-district-filter" onchange="fetchAdminLedger()" style="background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 8px;">
@@ -1203,13 +1203,11 @@
                         <tr>
                             <th>Ride ID</th>
                             <th>Date / Time</th>
+                            <th>User (Customer)</th>
+                            <th>Driver</th>
+                            <th>Amount</th>
                             <th>District</th>
-                            <th>Driver & Association</th>
-                            <th>Total Fare</th>
-                            <th style="color:var(--success-green);">Admin Profit</th>
-                            <th style="color:var(--warning-amber);">Assoc. Cut</th>
-                            <th style="color:#0a84ff;">Vendor Cut</th>
-                            <th>Driver Net</th>
+                            <th>Association</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -5488,7 +5486,7 @@ async function fetchAdminLedger() {
     const districtFilter = document.getElementById('ledger-district-filter').value;
     const associationFilter = document.getElementById('ledger-association-filter').value;
     
-    tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Loading ledger data...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Loading ledger data...</td></tr>';
     
     try {
         const queryParams = new URLSearchParams();
@@ -5504,7 +5502,7 @@ async function fetchAdminLedger() {
         
         tableBody.innerHTML = '';
         if (data.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center; color: var(--text-muted);">No records found matching filters.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--text-muted);">No records found matching filters.</td></tr>';
             return;
         }
         
@@ -5514,22 +5512,17 @@ async function fetchAdminLedger() {
             
             // Profit formatting
             const adminProfitHtml = `<span style="color:var(--success-green); font-weight:bold;">₹${(row.platform_fee || 0).toFixed(2)}</span>`;
-            const assocCutHtml = `<span style="color:var(--warning-amber);">₹${(row.association_profit || 0).toFixed(2)}</span>`;
-            const vendorCutHtml = `<span style="color:#0a84ff;">₹${(row.vendor_profit || 0).toFixed(2)}</span>`;
-            
             tr.innerHTML = `
                 <td data-label="Ride ID">#B${row.booking_id}</td>
                 <td data-label="Date / Time" style="font-size: 0.8rem; color: var(--text-muted);">${dateStr}</td>
-                <td data-label="District">${row.district || 'Unassigned'}</td>
-                <td data-label="Driver & Assoc" style="font-size: 0.85rem;">
-                    <div>${row.driver_name || 'N/A'}</div>
-                    <div style="font-size:0.75rem; color:var(--text-muted);">Assoc ID: ${row.association_id || 'None'}</div>
+                <td data-label="User">
+                    <div>${row.passenger_name || 'N/A'}</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">${row.passenger_phone || ''}</div>
                 </td>
-                <td data-label="Total Fare" style="font-weight: bold;">₹${(row.total_fare || 0).toFixed(2)}</td>
-                <td data-label="Admin Profit">${adminProfitHtml}</td>
-                <td data-label="Assoc. Cut">${assocCutHtml}</td>
-                <td data-label="Vendor Cut">${vendorCutHtml}</td>
-                <td data-label="Driver Net">₹${(row.driver_net_earnings || 0).toFixed(2)}</td>
+                <td data-label="Driver">${row.driver_name || 'N/A'}</td>
+                <td data-label="Amount" style="font-weight: bold;">₹${(row.total_fare || row.fare || 0).toFixed(2)}</td>
+                <td data-label="District">${row.district || 'Unassigned'}</td>
+                <td data-label="Association">${row.association_name || 'None'}</td>
                 <td data-label="Status"><span class="status-badge status-${row.status === 'completed' ? 'success' : 'warning'}">${row.status.toUpperCase()}</span></td>
             `;
             tableBody.appendChild(tr);
@@ -5537,7 +5530,7 @@ async function fetchAdminLedger() {
         
     } catch (err) {
         console.error('Ledger Error:', err);
-        tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color: var(--danger-red);">Error loading ledger</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--danger-red);">Error loading ledger</td></tr>`;
     }
 }
 
