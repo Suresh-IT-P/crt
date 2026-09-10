@@ -4582,7 +4582,8 @@ app.get('/api/admin/stats', async (req, res) => {
             [userCount],
             [pendingPilotsCount],
             [pendingMissionsCount],
-            [cancelRequestsCount]
+            [cancelRequestsCount],
+            [dailyProfitRow]
         ] = await Promise.all([
             db.query("SELECT COUNT(*) as count FROM taxi_bookings"),
             db.query("SELECT COUNT(*) as count FROM taxi_bookings WHERE status IN ('pending', 'assigned')"),
@@ -4607,7 +4608,7 @@ app.get('/api/admin/stats', async (req, res) => {
         });
         
         // Admin daily profit is dynamically calculated from the ledger
-        const dailyProfit = arguments[0][8][0].profit || 0; 
+        const dailyProfit = dailyProfitRow && dailyProfitRow[0] && dailyProfitRow[0].profit ? dailyProfitRow[0].profit : 0; 
 
         res.json({
             totalBookings: totalBookings[0].count,
@@ -7997,10 +7998,7 @@ app.post('/api/association/login', authRateLimiter, async (req, res) => {
 
 app.get('/api/association/ledger', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
     try {
-        const adminId = req.user.id;
-        const [assocRows] = await db.query('SELECT id, city_name FROM taxi_associations WHERE admin_username = (SELECT username FROM taxi_admins WHERE id = ?)', [adminId]);
-        if (assocRows.length === 0) return res.status(403).json({ error: 'Association profile not found' });
-        const assocId = assocRows[0].id;
+        const assocId = req.user.id;
 
         const query = `
             SELECT 

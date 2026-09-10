@@ -1688,9 +1688,6 @@
                                 <th>Customer Fee</th>
                                 <th>Driver Deduct</th>
                                 <th>Total Comm.</th>
-                                <th>Maint Share</th>
-                                <th>Assoc Share</th>
-                                <th>Platform Profit</th>
                                 <th>Effective From</th>
                                 <th>Status</th>
                             </tr>
@@ -3816,9 +3813,6 @@ async function loadCommissions() {
                 <td>${c.customer_commission_type === 'fixed' ? '₹' + c.customer_commission_fixed : c.customer_commission_percent + '%'}</td>
                 <td>${c.driver_commission_type === 'fixed' ? '₹' + c.driver_commission_fixed : c.driver_commission_percent + '%'}</td>
                 <td>${(c.customer_commission_type === 'fixed' || c.driver_commission_type === 'fixed') ? '₹' + ((parseFloat(c.customer_commission_fixed)||0) + (parseFloat(c.driver_commission_fixed)||0)).toFixed(2) + ' / Mix' : c.total_commission_percent + '%'}</td>
-                <td>${c.maintenance_percent > 0 ? c.maintenance_percent + '%' : '₹' + c.maintenance_fixed}</td>
-                <td>${c.association_percent > 0 ? c.association_percent + '%' : '₹' + c.association_fixed}</td>
-                <td>${c.cityride_percent > 0 ? c.cityride_percent + '%' : '₹' + c.cityride_fixed}</td>
                 <td>${new Date(c.effective_from).toLocaleString()}</td>
                 <td>${c.status === 'active' ? '<span class="status-badge" style="background:#28a745;color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;">Active</span>' : (c.status === 'scheduled' ? '<span class="status-badge" style="background:#ffc107;color:black;padding:2px 8px;border-radius:12px;font-size:0.75rem;">Scheduled</span>' : '<span class="status-badge" style="background:#6c757d;color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;">Archived</span>')}</td>
             `;
@@ -3838,11 +3832,6 @@ async function loadCommissions() {
                         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:10px;">
                             <div><strong style="color:var(--primary-red-pista); display:block;">Customer Fee:</strong> ${custDisp}</div>
                             <div><strong style="color:var(--primary-red-pista); display:block;">Driver Deduction:</strong> ${drvDisp}</div>
-                        </div>
-                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr)); gap:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1);">
-                            <div><strong style="color:var(--success-green); display:block;">Maint:</strong> ${c.maintenance_percent > 0 ? c.maintenance_percent + '%' : '₹' + c.maintenance_fixed}</div>
-                            <div><strong style="color:var(--success-green); display:block;">Assoc:</strong> ${c.association_percent > 0 ? c.association_percent + '%' : '₹' + c.association_fixed}</div>
-                            <div><strong style="color:var(--success-green); display:block;">CityRide:</strong> ${c.cityride_percent > 0 ? c.cityride_percent + '%' : '₹' + c.cityride_fixed}</div>
                         </div>
                     `;
                 }
