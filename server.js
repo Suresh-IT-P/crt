@@ -4592,7 +4592,7 @@ app.get('/api/admin/stats', async (req, res) => {
             db.query("SELECT COUNT(*) as count FROM taxi_driver_applications WHERE status = 'pending'"),
             db.query("SELECT COUNT(*) as count FROM taxi_bookings WHERE status = 'pending'"),
             db.query("SELECT COUNT(*) as count FROM taxi_bookings WHERE status = 'cancel_requested'"),
-            db.query("SELECT COUNT(*) as count FROM taxi_bookings WHERE status IN ('completed', 'finished') AND DATE(created_at) = CURDATE()")
+            db.query("SELECT SUM(amount) as profit FROM taxi_financial_ledger WHERE transaction_type = 'cityride_allocation' AND DATE(created_at) = CURDATE()")
         ]);
 
         let revenue = 0;
@@ -4606,9 +4606,8 @@ app.get('/api/admin/stats', async (req, res) => {
             }
         });
         
-        // Admin daily profit is ₹5 platform fee collected per completed ride today
-        const todayCompletedCount = arguments[0][8][0].count || 0; // The 9th query result
-        const dailyProfit = todayCompletedCount * 5; 
+        // Admin daily profit is dynamically calculated from the ledger
+        const dailyProfit = arguments[0][8][0].profit || 0; 
 
         res.json({
             totalBookings: totalBookings[0].count,
