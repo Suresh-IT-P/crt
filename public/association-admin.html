@@ -311,9 +311,7 @@
 
                 <div class="nav-group">
                     <div class="nav-group-label">Finance & Pricing</div>
-                    <div class="nav-item" onclick="switchTab('incentives', this)" title="Incentives & Welfare">
-                        <span class="nav-icon">🎁</span><span class="nav-label">Incentives & Welfare</span>
-                    </div>
+
                     <div class="nav-item" onclick="switchTab('surgedesk', this)" title="Surge & Bata Control">
                         <span class="nav-icon">⚡</span><span class="nav-label">Surge & Bata Control</span>
                     </div>
@@ -689,24 +687,6 @@
             </div>
         </div>
 
-        <!-- INCENTIVES & WELFARE -->
-        <div id="incentives" class="tab-section">
-            <div class="stage-header">
-                <div>
-                    <h1>Incentives &amp; <span class="text-accent">Welfare</span></h1>
-                    <p>Manage pilot trip targets, milestone bonuses, and driver welfare funds.</p>
-                </div>
-                <button class="btn btn-outline" onclick="loadIncentivesAndWelfare()">&#8635; Refresh</button>
-            </div>
-            <div class="stat-banner" style="grid-template-columns:1fr 1fr; margin-bottom:1.5rem;">
-                <div class="b-card"><h4>Association Welfare Fund Pool</h4><div class="val" id="welfare-fund-bal">\u20B90.00</div></div>
-                <div class="b-card"><h4>Active Target Schemes</h4><div class="val" id="active-schemes-count">2 Active</div></div>
-            </div>
-            <div class="data-table-container">
-                <h3>🏆 Active Pilot Milestone Bonus Schemes</h3>
-                <div id="incentives-schemes-grid" style="padding:1rem 0;">Loading...</div>
-            </div>
-        </div>
 
         <!-- SURGE & BATA CONTROL -->
         <div id="surgedesk" class="tab-section">
@@ -941,7 +921,6 @@ function switchTab(tabId, el) {
         else if (tabId === 'applications') loadAssocApplications();
         else if (tabId === 'broadcast') { /* ready */ }
         else if (tabId === 'sosdesk') loadSosAndSupport();
-        else if (tabId === 'incentives') loadIncentivesAndWelfare();
         else if (tabId === 'surgedesk') loadSurgeSettings();
         else if (tabId === 'wallets') { loadWallet(); loadDriverWallets(); }
         else if (tabId === 'tariffs') loadTariffs();
@@ -1845,28 +1824,7 @@ function switchTab(tabId, el) {
         }
     }
 
-    async function loadIncentivesAndWelfare() {
-        const res = await authFetch('/api/association/incentives');
-        if (!res) return;
-        const data = await res.json();
 
-        document.getElementById('welfare-fund-bal').textContent = '\u20B9' + data.welfareFund;
-
-        const grid = document.getElementById('incentives-schemes-grid');
-        if (grid) {
-            grid.innerHTML = data.targets.map(t => `
-                <div style="background:var(--white); border:1px solid var(--border); padding:1rem; border-radius:14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <strong style="font-size:1rem; color:var(--text-main);">${t.title} (${t.period})</strong><br>
-                        <small style="color:var(--text-muted)">Target: Complete ${t.target} rides in a day</small>
-                    </div>
-                    <div style="text-align:right;">
-                        <span class="status-tag status-completed" style="font-size:0.9rem;">+\u20B9${t.bonus} Bonus</span>
-                    </div>
-                </div>
-            `).join('');
-        }
-    }
 
     async function loadSurgeSettings() {
         const res = await authFetch('/api/association/surge');
