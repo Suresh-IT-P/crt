@@ -4767,11 +4767,11 @@ async function updateSurgeRule(surgeKey, inputId) {
 
                 return `
                     <tr ${rowStyle}>
-                        <td data-label="Mission ID"><strong ${isCancelled ? 'style="color:#EF4444;"' : ''}>#B-${r.id}</strong></td>
-                        <td data-label="Date & Time"><small style="color:var(--text-muted); font-weight:600;">${new Date(r.created_at).toLocaleDateString('en-IN')}<br>${new Date(r.created_at).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'})}</small></td>
-                        <td data-label="District / Assoc"><strong>${r.association_name || 'Independent'}</strong><br><small style="color:var(--text-muted);">${r.association_city || 'CityRide Network'}</small></td>
+                        <td data-label="Mission ID"><div style="text-align: right;"><strong ${isCancelled ? 'style="color:#EF4444;"' : ''}>#B-${r.id}</strong></div></td>
+                        <td data-label="Date & Time"><div style="text-align: right;"><small style="color:var(--text-muted); font-weight:600;">${new Date(r.created_at).toLocaleDateString('en-IN')}<br>${new Date(r.created_at).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'})}</small></div></td>
+                        <td data-label="District / Assoc"><div style="text-align: right;"><strong>${r.association_name || 'Independent'}</strong><br><small style="color:var(--text-muted);">${r.association_city || 'CityRide Network'}</small></div></td>
                         <td data-label="Pilot & Vehicle">
-                            <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="display:flex; justify-content:flex-end; align-items:center; gap:8px; text-align:right;">
                                 ${r.driver_photo ? `<img src="${r.driver_photo}" style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:1px solid var(--border-color);">` : `<span style="font-size:1.2rem;">👨‍✈️</span>`}
                                 <div>
                                     <strong>${r.driver_name || 'Unassigned'}</strong>
@@ -4780,23 +4780,27 @@ async function updateSurgeRule(surgeKey, inputId) {
                             </div>
                         </td>
                         <td data-label="Customer Data">
-                            <strong>#USR-${r.user_id || 'GUEST'}</strong><br>
-                            <small style="color:var(--text-muted);">${r.passenger_name || 'Customer'}</small><br>
-                            <small style="color:var(--primary-red);">📞 ${r.passenger_phone || 'N/A'}</small>
+                            <div style="text-align: right;">
+                                <strong>#USR-${r.user_id || 'GUEST'}</strong><br>
+                                <small style="color:var(--text-muted);">${r.passenger_name || 'Customer'}</small><br>
+                                <small style="color:var(--primary-red);">📞 ${r.passenger_phone || 'N/A'}</small>
+                            </div>
                         </td>
                         <td data-label="Route">
-                            <div style="max-width:220px; font-size:0.78rem;">
+                            <div style="max-width:220px; font-size:0.78rem; text-align: right;">
                                 <div style="color:var(--success-green); font-weight:700;">🟢 ${r.pickup_loc || 'N/A'}</div>
                                 <div style="color:var(--danger-red); font-weight:700; margin-top:2px;">🔴 ${r.drop_loc || 'N/A'}</div>
                             </div>
                         </td>
                         <td data-label="Fare & Payout">
-                            <strong style="${isCancelled ? 'color:#EF4444; text-decoration:line-through;' : 'color:var(--primary-red-pista);'}">\u20B9${fare.toFixed(2)}</strong>
-                            <div style="font-size:0.72rem; color:var(--text-muted);">Comm: \u20B9${comm} | Net: \u20B9${payout}</div>
+                            <div style="text-align: right;">
+                                <strong style="${isCancelled ? 'color:#EF4444; text-decoration:line-through;' : 'color:var(--primary-red-pista);'}">\u20B9${fare.toFixed(2)}</strong>
+                                <div style="font-size:0.72rem; color:var(--text-muted);">Comm: \u20B9${comm} | Net: \u20B9${payout}</div>
+                            </div>
                         </td>
-                        <td data-label="Status"><span class="status-tag ${statusClass}" ${badgeStyle}>${(r.status || 'PENDING').toUpperCase()}</span></td>
+                        <td data-label="Status"><div style="text-align: right;"><span class="status-tag ${statusClass}" ${badgeStyle}>${(r.status || 'PENDING').toUpperCase()}</span></div></td>
                         <td data-label="Actions">
-                            <button class="action-btn" ${isCancelled ? 'style="border-color:#EF4444; color:#EF4444;"' : ''} onclick="openUndergroundAuditModal(${r.id})">🔍 Telemetry</button>
+                            <div style="text-align: right;"><button class="action-btn" ${isCancelled ? 'style="border-color:#EF4444; color:#EF4444;"' : ''} onclick="openUndergroundAuditModal(${r.id})">🔍 Telemetry</button></div>
                         </td>
                     </tr>
                 `;
@@ -5516,8 +5520,10 @@ async function fetchAdminLedger() {
                 <td data-label="Ride ID">#B${row.booking_id}</td>
                 <td data-label="Date / Time" style="font-size: 0.8rem; color: var(--text-muted);">${dateStr}</td>
                 <td data-label="User">
-                    <div>${row.passenger_name || 'N/A'}</div>
-                    <div style="font-size:0.75rem; color:var(--text-muted);">${row.passenger_phone || ''}</div>
+                    <div style="text-align: right;">
+                        <div>${row.passenger_name || 'N/A'}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">${row.passenger_phone || ''}</div>
+                    </div>
                 </td>
                 <td data-label="Driver">${row.driver_name || 'N/A'}</td>
                 <td data-label="Amount" style="font-weight: bold;">₹${(row.total_fare || row.fare || 0).toFixed(2)}</td>
