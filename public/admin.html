@@ -305,6 +305,9 @@
                 <!-- Analytics Group -->
                 <div class="nav-group">
                     <div class="nav-group-label">Analytics</div>
+                    <div class="nav-item" onclick="switchTab('ledger', this)" title="Profit Ledger">
+                        <span class="nav-icon">💵</span><span class="nav-label">Profit Ledger</span>
+                    </div>
                     <div class="nav-item" onclick="switchTab('reports', this)" title="System Reports">
                         <span class="nav-icon">📈</span><span class="nav-label">System Reports</span>
                     </div>
@@ -1751,6 +1754,50 @@ async function initAdminSession() {
     }
 }
 initAdminSession();
+
+async function loadAdminLedger() {
+    const tbody = document.getElementById('admin-ledger-tbody');
+    if(!tbody) return;
+    const district = document.getElementById('ledger-district-filter')?.value || '';
+    const assoc = document.getElementById('ledger-assoc-filter')?.value || '';
+    
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Loading...</td></tr>';
+    
+    try {
+        let url = `/api/admin/ledger?t=${Date.now()}`;
+        if (district) url += `&district=${encodeURIComponent(district)}`;
+        if (assoc) url += `&association_id=${encodeURIComponent(assoc)}`;
+        
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${getToken()}` } });
+        if (!res.ok) throw new Error('Failed to load ledger');
+        const data = await res.json();
+        
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No ledger records found</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        data.forEach(r => {
+            const dt = new Date(r.created_at).toLocaleString();
+            html += `
+                <tr>
+                    <td data-label="Ride ID">#B${r.booking_id}</td>
+                    <td data-label="Date">${dt}</td>
+                    <td data-label="Location">${r.district || 'Unknown'}</td>
+                    <td data-label="Association">${r.association_name || 'Independent'}</td>
+                    <td data-label="Total Fare">₹${parseFloat(r.fare || 0).toFixed(2)}</td>
+                    <td data-label="Assoc. Profit" class="text-success">₹${parseFloat(r.association_profit || 0).toFixed(2)}</td>
+                    <td data-label="Vendor Profit" class="text-info">₹${parseFloat(r.vendor_profit || 0).toFixed(2)}</td>
+                    <td data-label="Admin Profit" class="text-accent">₹${parseFloat(r.admin_profit || 0).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--primary-red);">${e.message}</td></tr>`;
+    }
+}
 function switchTab(tabId, el) {
 const section = document.getElementById(tabId);
 if (!section) {

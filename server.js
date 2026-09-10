@@ -5713,7 +5713,39 @@ app.post('/api/admin/commissions', authenticateJWT, requireRole(['admin']), asyn
 
 app.get('/api/admin/ledger', authenticateJWT, requireRole(['admin']), async (req, res) => {
     try {
-        const [rows] = await db.query('SELECT * FROM taxi_financial_ledger ORDER BY created_at DESC LIMIT 500');
+        const { district, association_id } = req.query;
+        let query = `
+            SELECT 
+                b.id as booking_id,
+                b.created_at,
+                b.pickup_loc,
+                b.drop_loc,
+                b.distance,
+                b.fare,
+                b.status,
+                d.district,
+                a.id as association_id,
+                a.name as association_name,
+                COALESCE(b.vendor_markup, 0) as vendor_profit,
+                (SELECT amount FROM taxi_association_wallet_transactions awt WHERE awt.booking_id = b.id LIMIT 1) as association_profit,
+                5.00 as admin_profit
+            FROM taxi_bookings b
+            LEFT JOIN taxi_drivers d ON b.driver_id = d.id
+            LEFT JOIN taxi_associations a ON b.association_id = a.id
+            WHERE b.status = 'finished'
+        `;
+        const params = [];
+        if (district) {
+            query += " AND d.district = ?";
+            params.push(district);
+        }
+        if (association_id) {
+            query += " AND b.association_id = ?";
+            params.push(association_id);
+        }
+        query += " ORDER BY b.created_at DESC LIMIT 500";
+        
+        const [rows] = await db.query(query, params);
         res.json(rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -8052,6 +8084,39 @@ app.post('/api/association/login', authRateLimiter, async (req, res) => {
         res.json({ token, assocId: assoc.id, assocName: assoc.name });
     } catch (err) {
         res.status(500).json({ error: 'Login failed.' });
+    }
+});
+
+app.get('/api/association/ledger', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const adminId = req.user.id;
+        const [assocRows] = await db.query('SELECT id, city_name FROM taxi_associations WHERE admin_username = (SELECT username FROM taxi_admins WHERE id = ?)', [adminId]);
+        if (assocRows.length === 0) return res.status(403).json({ error: 'Association profile not found' });
+        const assocId = assocRows[0].id;
+
+        const query = `
+            SELECT 
+                b.id as booking_id,
+                b.created_at,
+                b.pickup_loc,
+                b.drop_loc,
+                b.distance,
+                b.fare,
+                b.status,
+                d.district,
+                COALESCE(awt.amount, 0) as association_profit
+            FROM taxi_bookings b
+            LEFT JOIN taxi_drivers d ON b.driver_id = d.id
+            LEFT JOIN taxi_association_wallet_transactions awt ON awt.booking_id = b.id AND awt.type = 'credit'
+            WHERE b.status = 'finished' AND b.association_id = ?
+            ORDER BY b.created_at DESC LIMIT 500
+        `;
+        
+        const [rows] = await db.query(query, [assocId]);
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
     }
 });
 
