@@ -1958,7 +1958,12 @@ if (Array.isArray(bookings)) {
                         ${b.pickup_loc} → ${b.drop_loc}${stopsBadge}
                     </td>
 <td data-label="Status"><span class="status-tag status-${b.status}">${b.status}</span></td>
-<td data-label="Actions">${['pending', 'assigned'].includes(b.status) ? `<button class="action-btn" onclick="cancelBooking(${b.id})">Abort</button>` : '<span style="color:#ccc; font-size:0.8rem;">—</span>'}</td>
+<td data-label="Actions">${(() => {
+    let btns = '';
+    if (b.status === 'pending') btns += `<button class="action-btn" style="background:var(--success-green);color:white;margin-right:5px;" onclick="openAssignModal(${b.id})">Assign</button>`;
+    if (['pending', 'assigned'].includes(b.status)) btns += `<button class="action-btn" onclick="cancelBooking(${b.id})">Abort</button>`;
+    return btns || '<span style="color:#ccc; font-size:0.8rem;">—</span>';
+})()}</td>
 </tr>
 `;
 });
@@ -2086,7 +2091,12 @@ ${b.journey_start_time && b.journey_end_time ? `<b>Time:</b> ${((new Date(b.jour
 <td data-label="Financials">${financialInfo}</td>
 <td data-label="Driver">${b.driver_name || '<span style="color:#aaa">Unassigned</span>'}</td>
 <td data-label="Status"><span class="status-tag status-${b.status}">${b.status}</span></td>
-<td data-label="Abort">${['pending', 'assigned'].includes(b.status) ? `<button class="action-btn" onclick="cancelBooking(${b.id})">Cancel Mission</button>` : '<span style="color:#ccc; font-size:0.8rem;">—</span>'}</td>
+<td data-label="Abort">${(() => {
+    let btns = '';
+    if (b.status === 'pending') btns += `<button class="action-btn" style="background:var(--success-green);color:white;margin-right:5px; margin-bottom:5px;" onclick="openAssignModal(${b.id})">Assign Pilot</button>`;
+    if (['pending', 'assigned'].includes(b.status)) btns += `<button class="action-btn" onclick="cancelBooking(${b.id})">Cancel Mission</button>`;
+    return btns || '<span style="color:#ccc; font-size:0.8rem;">—</span>';
+})()}</td>
 <td data-label="Transfer">${isAssigned ? `<button class="action-btn" style="color:var(--info-blue); font-weight:700;" onclick='openTransferModal(${b.id}, ${JSON.stringify(b.driver_name || "Unassigned")}, ${JSON.stringify(b.pickup_loc)}, ${JSON.stringify(b.drop_loc)})'>🔄 Transfer</button>` : '<span style="color:#ccc; font-size:0.8rem;">—</span>'}</td>
 </tr>
 `;
@@ -5584,6 +5594,73 @@ window.switchTab = function(tabId, el) {
         </div>
     </div>
 </div>
+
+<!-- Assign Mission Modal -->
+<div id="assign-mission-modal" class="map-modal" style="display: none; align-items: center; justify-content: center; z-index: 9999;">
+    <div class="map-modal-content" style="max-width: 500px; width: 90%; background: var(--cr-surface); border-radius: 12px; padding: 2rem;">
+        <h3 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.25rem;">Assign Pilot to Mission</h3>
+        <input type="hidden" id="assign-booking-id">
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--cr-text-muted);">Select Pilot</label>
+            <select id="assign-driver-select" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--cr-border-light); background: var(--cr-surface-light); font-size: 1rem;">
+                <option value="">Loading pilots...</option>
+            </select>
+        </div>
+        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+            <button class="btn btn-outline" onclick="closeAssignModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitAssignment()">Dispatch Mission</button>
+        </div>
+    </div>
+</div>
+<script>
+async function openAssignModal(bookingId) {
+    document.getElementById('assign-booking-id').value = bookingId;
+    document.getElementById('assign-mission-modal').style.display = 'flex';
+    
+    const select = document.getElementById('assign-driver-select');
+    select.innerHTML = '<option value="">Loading pilots...</option>';
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/admin/drivers`);
+        const drivers = await res.json();
+        
+        select.innerHTML = '<option value="">-- Select a Pilot --</option>';
+        // Filter out completely blocked drivers or offline
+        const available = drivers.filter(d => d.is_active !== 0);
+        available.forEach(d => {
+            select.innerHTML += `<option value="${d.id}">${d.name} (${d.phone}) - ${d.car_number}</option>`;
+        });
+    } catch (e) {
+        select.innerHTML = '<option value="">Error loading pilots</option>';
+    }
+}
+function closeAssignModal() {
+    document.getElementById('assign-mission-modal').style.display = 'none';
+}
+async function submitAssignment() {
+    const bookingId = document.getElementById('assign-booking-id').value;
+    const driverId = document.getElementById('assign-driver-select').value;
+    if (!driverId) return alert('Please select a pilot first.');
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/admin/driver/assign`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId, driverId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            Swal.fire('Dispatched!', 'The mission has been assigned to the pilot.', 'success');
+            closeAssignModal();
+            loadBookings(); // Refresh missions
+        } else {
+            Swal.fire('Error', data.error || 'Failed to assign.', 'error');
+        }
+    } catch (e) {
+        Swal.fire('Error', 'An error occurred during dispatch.', 'error');
+    }
+}
+</script>
 
 </body>
 </html>

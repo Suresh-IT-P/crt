@@ -8118,6 +8118,32 @@ app.get('/api/association/drivers', authenticateJWT, requireRole(['association_a
     }
 });
 
+// Manual Ride Dispatch Assignment (Association)
+app.post('/api/association/driver/assign', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
+    try {
+        const assocId = req.user.id;
+        const { bookingId, driverId } = req.body;
+        if (!bookingId || !driverId) return res.status(400).json({ error: 'bookingId and driverId required.' });
+        
+        const [driver] = await db.query('SELECT name, phone FROM taxi_drivers WHERE id = ? AND association_id = ?', [driverId, assocId]);
+        if (driver.length === 0) return res.status(404).json({ error: 'Driver not found in your association.' });
+        
+        const [booking] = await db.query('SELECT status FROM taxi_bookings WHERE id = ?', [bookingId]);
+        if (booking.length === 0) return res.status(404).json({ error: 'Mission not found.' });
+        
+        await db.query('UPDATE taxi_bookings SET driver_id = ?, driver_name = ?, status = "assigned" WHERE id = ?', [driverId, driver[0].name, bookingId]);
+        
+        if (io) {
+            io.to(`driver:${driverId}`).emit('new_booking_assigned', { bookingId });
+            io.to(`booking:${bookingId}`).emit('status_change', { status: 'assigned', driverName: driver[0].name });
+        }
+        
+        res.json({ success: true, message: 'Pilot assigned successfully to mission.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.post('/api/association/tariffs', authenticateJWT, requireRole(['association_admin']), async (req, res) => {
     try {
         const assocId = req.user.id;
