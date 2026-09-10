@@ -358,7 +358,7 @@
                     <div class="val" id="stat-revenue">\u20B90</div>
                 </div>
                 <div class="b-card" style="border: 1px solid var(--primary-red); background: rgba(0, 107, 58, 0.02);">
-                    <h4>Platform Profit</h4>
+                    <h4>Daily Profit</h4>
                     <div class="val" id="stat-profit" style="color: var(--primary-red);">\u20B90</div>
                 </div>
                 <div class="b-card">
@@ -4156,7 +4156,7 @@ async function updateSurgeRule(surgeKey, inputId) {
                 revenueChartInstance = new Chart(ctxRev, {
                     type: 'bar',
                     data: {
-                        labels: ['Total Revenue', 'Platform Profit'],
+                        labels: ['Total Revenue', 'Daily Profit'],
                         datasets: [{
                             label: 'Amount (\u20B9)',
                             data: [revenue, profit],

@@ -4591,7 +4591,8 @@ app.get('/api/admin/stats', async (req, res) => {
             db.query("SELECT COUNT(*) as count FROM passengers"),
             db.query("SELECT COUNT(*) as count FROM taxi_driver_applications WHERE status = 'pending'"),
             db.query("SELECT COUNT(*) as count FROM taxi_bookings WHERE status = 'pending'"),
-            db.query("SELECT COUNT(*) as count FROM taxi_bookings WHERE status = 'cancel_requested'")
+            db.query("SELECT COUNT(*) as count FROM taxi_bookings WHERE status = 'cancel_requested'"),
+            db.query("SELECT COUNT(*) as count FROM taxi_bookings WHERE status IN ('completed', 'finished') AND DATE(created_at) = CURDATE()")
         ]);
 
         let revenue = 0;
@@ -4605,15 +4606,15 @@ app.get('/api/admin/stats', async (req, res) => {
             }
         });
         
-        // Admin profit is \u20B95 platform fee collected per completed ride from the driver
-        // (plus any customer markups embedded in the total revenue)
-        const totalProfit = completedCount * 5; 
+        // Admin daily profit is ₹5 platform fee collected per completed ride today
+        const todayCompletedCount = arguments[0][8][0].count || 0; // The 9th query result
+        const dailyProfit = todayCompletedCount * 5; 
 
         res.json({
             totalBookings: totalBookings[0].count,
             activeBookings: activeBookings[0].count,
             revenue: Math.round(revenue * 100) / 100, // Round to 2 decimal places
-            profit: totalProfit,
+            profit: dailyProfit,
             totalDrivers: driverCount[0].count,
             totalUsers: userCount[0].count,
             pendingPilots: pendingPilotsCount[0].count,
