@@ -1068,7 +1068,7 @@
                 </form>
             </div>
             <div class="data-table-container">
-                <table class="data-table">
+                <table class="cityride-table">
                     <thead>
                         <tr>
                             <th>Code</th>
@@ -1198,7 +1198,7 @@
             </div>
 
             <div class="data-table-container">
-                <table class="data-table" id="ledger-table">
+                <table class="cityride-table" id="ledger-table">
                     <thead>
                         <tr>
                             <th>Ride ID</th>
@@ -5518,19 +5518,19 @@ async function fetchAdminLedger() {
             const vendorCutHtml = `<span style="color:#0a84ff;">₹${(row.vendor_profit || 0).toFixed(2)}</span>`;
             
             tr.innerHTML = `
-                <td>#B${row.booking_id}</td>
-                <td style="font-size: 0.8rem; color: var(--text-muted);">${dateStr}</td>
-                <td>${row.district || 'Unassigned'}</td>
-                <td style="font-size: 0.85rem;">
+                <td data-label="Ride ID">#B${row.booking_id}</td>
+                <td data-label="Date / Time" style="font-size: 0.8rem; color: var(--text-muted);">${dateStr}</td>
+                <td data-label="District">${row.district || 'Unassigned'}</td>
+                <td data-label="Driver & Assoc" style="font-size: 0.85rem;">
                     <div>${row.driver_name || 'N/A'}</div>
                     <div style="font-size:0.75rem; color:var(--text-muted);">Assoc ID: ${row.association_id || 'None'}</div>
                 </td>
-                <td style="font-weight: bold;">₹${(row.total_fare || 0).toFixed(2)}</td>
-                <td>${adminProfitHtml}</td>
-                <td>${assocCutHtml}</td>
-                <td>${vendorCutHtml}</td>
-                <td>₹${(row.driver_net_earnings || 0).toFixed(2)}</td>
-                <td><span class="status-badge status-${row.status === 'completed' ? 'success' : 'warning'}">${row.status.toUpperCase()}</span></td>
+                <td data-label="Total Fare" style="font-weight: bold;">₹${(row.total_fare || 0).toFixed(2)}</td>
+                <td data-label="Admin Profit">${adminProfitHtml}</td>
+                <td data-label="Assoc. Cut">${assocCutHtml}</td>
+                <td data-label="Vendor Cut">${vendorCutHtml}</td>
+                <td data-label="Driver Net">₹${(row.driver_net_earnings || 0).toFixed(2)}</td>
+                <td data-label="Status"><span class="status-badge status-${row.status === 'completed' ? 'success' : 'warning'}">${row.status.toUpperCase()}</span></td>
             `;
             tableBody.appendChild(tr);
         });

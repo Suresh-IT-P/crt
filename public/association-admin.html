@@ -363,7 +363,7 @@
             </div>
 
             <div class="data-table-container">
-                <table class="data-table" id="assoc-ledger-table">
+                <table class="cityride-table" id="assoc-ledger-table">
                     <thead>
                         <tr>
                             <th>Ride ID</th>
@@ -1927,13 +1927,13 @@ async function fetchAssocLedger() {
             }
 
             tr.innerHTML = `
-                <td>#B${row.booking_id}</td>
-                <td style="font-size: 0.8rem; color: var(--text-muted);">${dateStr}</td>
-                <td>${row.driver_name || 'N/A'}</td>
-                <td style="font-size: 0.8rem;">${tripPath}</td>
-                <td style="font-weight: bold;">₹${(row.total_fare || 0).toFixed(2)}</td>
-                <td>${assocCutHtml}</td>
-                <td><span class="status-badge status-${row.status === 'completed' ? 'success' : 'warning'}">${row.status.toUpperCase()}</span></td>
+                <td data-label="Ride ID">#B${row.booking_id}</td>
+                <td data-label="Date / Time" style="font-size: 0.8rem; color: var(--text-muted);">${dateStr}</td>
+                <td data-label="Driver">${row.driver_name || 'N/A'}</td>
+                <td data-label="Route" style="font-size: 0.8rem;">${tripPath}</td>
+                <td data-label="Total Fare" style="font-weight: bold;">₹${(row.total_fare || 0).toFixed(2)}</td>
+                <td data-label="Assoc Cut">${assocCutHtml}</td>
+                <td data-label="Status"><span class="status-badge status-${row.status === 'completed' ? 'success' : 'warning'}">${row.status.toUpperCase()}</span></td>
             `;
             tableBody.appendChild(tr);
         });
