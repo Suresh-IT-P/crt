@@ -1524,6 +1524,10 @@
                     <h4>UNIQUE USERS</h4>
                     <div class="val" id="va-card-users">0</div>
                 </div>
+                <div class="b-card" style="grid-column: 1 / -1;">
+                    <h4>COVERED DISTRICTS</h4>
+                    <div class="val" id="va-card-districts" style="font-size:1.1rem; color: var(--text-muted); line-height: 1.4;">-</div>
+                </div>
             </div>
 
             <!-- Per-Vehicle Summary Table -->
@@ -2034,7 +2038,7 @@ if (tabId === 'underground') {
     return;
 }
 if (tabId === 'vehicle-audit') {
-    loadVehicleAudit();
+    loadVehicleAudit(true);
     return;
 }
 if (tabId === 'radar') {
@@ -5709,7 +5713,7 @@ window.switchTab = function(tabId, el) {
 let _vaData = { summary: {}, vehicles: [], rides: [] };
 let _vaDriversLoaded = false;
 
-async function loadVehicleAudit() {
+async function loadVehicleAudit(isTabSwitch = false) {
     // Populate driver dropdown once
     if (!_vaDriversLoaded) {
         try {
@@ -5729,6 +5733,11 @@ async function loadVehicleAudit() {
                 }
             }
         } catch(e) { /* silently fail */ }
+    }
+
+    if (isTabSwitch) {
+        // Just populate the dropdown and wait for manual Search click
+        return;
     }
 
     const vehicleType = document.getElementById('va-filter-type')?.value || 'all';
@@ -5763,6 +5772,9 @@ async function loadVehicleAudit() {
         document.getElementById('va-card-fare').textContent      = '\u20B9' + fmt(s.total_fare);
         document.getElementById('va-card-vehicles').textContent  = s.active_vehicles  || 0;
         document.getElementById('va-card-users').textContent     = s.unique_users     || 0;
+        
+        const distCard = document.getElementById('va-card-districts');
+        if (distCard) distCard.textContent = s.covered_districts || '-';
 
         // --- Per-vehicle table ---
         const vehicles = _vaData.vehicles || [];
@@ -5873,6 +5885,7 @@ function resetVehicleAuditFilters() {
     if (rt) rt.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:3rem;">Ride list will appear after search.</td></tr>';
     ['va-card-total','va-card-completed','va-card-cancelled','va-card-vehicles','va-card-users'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent='0'; });
     const fc = document.getElementById('va-card-fare'); if(fc) fc.textContent='\u20B90.00';
+    const dc = document.getElementById('va-card-districts'); if(dc) dc.textContent='-';
     document.getElementById('va-vehicle-count').textContent = '0 vehicles';
     document.getElementById('va-ride-count').textContent    = '0 rides';
     document.getElementById('va-rides-title').textContent   = 'Ride History';

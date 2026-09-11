@@ -4660,7 +4660,8 @@ app.get('/api/admin/vehicle-audit', async (req, res) => {
                 SUM(CASE WHEN b.status IN ('completed','finished') THEN
                     CAST(REGEXP_REPLACE(REGEXP_REPLACE(COALESCE(b.fare,'0'), '[^0-9.]', ''), '^[.]+', '0') AS DECIMAL(10,2))
                 ELSE 0 END) as total_fare,
-                COUNT(DISTINCT COALESCE(b.passenger_name, b.user_id)) as unique_users
+                COUNT(DISTINCT COALESCE(b.passenger_name, b.user_id)) as unique_users,
+                GROUP_CONCAT(DISTINCT SUBSTRING_INDEX(SUBSTRING_INDEX(b.drop_loc, ',', -2), ',', 1) SEPARATOR ' | ') as covered_districts
             FROM taxi_bookings b
             JOIN taxi_drivers d ON b.driver_id = d.id
             ${whereClause}
