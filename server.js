@@ -3607,6 +3607,21 @@ app.post('/api/bookings/create', authenticateJWT, requireRole(['user', 'vendor',
             }
         }
 
+        // --- Fallback Text Matching (City Name) ---
+        if (!finalAssociationId && booking.pickup) {
+            try {
+                const [assocs] = await db.query('SELECT id, city_name FROM taxi_associations WHERE is_active = 1 AND city_name IS NOT NULL AND city_name != ""');
+                const pickupLower = String(booking.pickup).toLowerCase();
+                // Match if the pickup text contains the association's city name
+                const matched = assocs.find(a => pickupLower.includes(String(a.city_name).toLowerCase()));
+                if (matched) {
+                    finalAssociationId = matched.id;
+                }
+            } catch (assocErr) {
+                console.warn('Text association lookup warning:', assocErr.message);
+            }
+        }
+
         const airDistanceBoostKm = parseFloat(booking.airDistanceBoostKm || 0);
         const pickupIncentiveFare = parseFloat(booking.pickupIncentiveFare || 0);
 
