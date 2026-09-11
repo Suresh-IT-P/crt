@@ -5788,24 +5788,37 @@ async function loadVehicleAudit(isTabSwitch = false) {
                 const districts = v.covered_districts ? v.covered_districts.split(' | ').slice(0,3).join(', ') : '-';
                 const completedPct = v.total_rides > 0 ? Math.round((v.completed_rides/v.total_rides)*100) : 0;
                 return `<tr>
-                    <td style="font-weight:700;color:var(--text-muted);">${i+1}</td>
-                    <td>
-                        <div style="font-weight:700;">${v.driver_name||'-'}</div>
-                        <div style="font-size:0.78rem;color:var(--text-muted);">${v.driver_phone||''}</div>
-                        <div style="font-size:0.78rem;color:var(--text-muted);">${v.district||''}</div>
+                    <td style="font-weight:700;color:var(--text-muted);" data-label="#">${i+1}</td>
+                    <td data-label="Driver & Vehicle">
+                        <div style="display: flex; flex-direction: column;">
+                            <div style="font-weight:700;">${v.driver_name||'-'}</div>
+                            <div style="font-size:0.78rem;color:var(--text-muted);">${v.driver_phone||''}</div>
+                            <div style="font-size:0.78rem;color:var(--text-muted);">${v.district||''}</div>
+                        </div>
                     </td>
-                    <td>
-                        <div style="font-weight:700;font-family:monospace;">${v.car_number||'-'}</div>
-                        <div style="font-size:0.78rem;color:var(--text-muted);">${v.car_model||'-'}</div>
+                    <td data-label="Plate / Model">
+                        <div style="display: flex; flex-direction: column;">
+                            <div style="font-weight:700;font-family:monospace;">${v.car_number||'-'}</div>
+                            <div style="font-size:0.78rem;color:var(--text-muted);">${v.car_model||'-'}</div>
+                        </div>
                     </td>
-                    <td><span style="background:rgba(255,255,255,0.08);padding:3px 8px;border-radius:6px;font-size:0.78rem;">${typeLabel}</span></td>
-                    <td style="font-weight:700;">${v.total_rides}</td>
-                    <td><span style="color:var(--primary);font-weight:700;">${v.completed_rides}</span><br><span style="font-size:0.75rem;color:var(--text-muted);">${completedPct}%</span></td>
-                    <td><span style="color:#EF4444;font-weight:700;">${v.cancelled_rides}</span></td>
-                    <td style="font-weight:700;color:var(--primary);">\u20B9${fare}</td>
-                    <td>${v.unique_users}</td>
-                    <td style="font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${v.covered_districts||''}"><span style="color:var(--text-muted);">${districts}</span></td>
-                    <td>
+                    <td data-label="Type"><span style="background:rgba(255,255,255,0.08);padding:3px 8px;border-radius:6px;font-size:0.78rem;">${typeLabel}</span></td>
+                    <td style="font-weight:700;" data-label="Total Rides">${v.total_rides}</td>
+                    <td data-label="Completed">
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="color:var(--primary);font-weight:700;">${v.completed_rides}</span>
+                            <span style="font-size:0.75rem;color:var(--text-muted);">${completedPct}%</span>
+                        </div>
+                    </td>
+                    <td data-label="Rejected"><span style="color:#EF4444;font-weight:700;">${v.cancelled_rides}</span></td>
+                    <td style="font-weight:700;color:var(--primary);" data-label="Fare Collected">\u20B9${fare}</td>
+                    <td data-label="Unique Users">${v.unique_users}</td>
+                    <td data-label="Covered Districts">
+                        <div style="font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${v.covered_districts||''}">
+                            <span style="color:var(--text-muted);">${districts}</span>
+                        </div>
+                    </td>
+                    <td data-label="Action">
                         <button class="btn" style="padding:4px 10px;font-size:0.78rem;background:rgba(255,255,255,0.06);border:1px solid var(--border-color);" onclick="vaShowDriverRides(${v.driver_id},'${(v.driver_name||'').replace(/'/g,"\\'")}')">Rides</button>
                     </td>
                 </tr>`;
@@ -5841,21 +5854,27 @@ function _vaRenderRides(rides, title) {
         const pickup = (r.pickup_loc||'-').split(',')[0];
         const drop   = (r.drop_loc||'-').split(',')[0];
         return `<tr>
-            <td style="font-family:monospace;font-weight:700;font-size:0.82rem;">#${r.id}</td>
-            <td style="font-size:0.82rem;">${dt}</td>
-            <td>
-                <div style="font-weight:600;">${r.driver_name||'-'}</div>
-                <div style="font-size:0.75rem;color:var(--text-muted);font-family:monospace;">${r.car_number||''} ${r.car_model||''}</div>
+            <td style="font-family:monospace;font-weight:700;font-size:0.82rem;" data-label="ID">#${r.id}</td>
+            <td style="font-size:0.82rem;" data-label="Date/Time">${dt}</td>
+            <td data-label="Pilot / Vehicle">
+                <div style="display: flex; flex-direction: column;">
+                    <div style="font-weight:600;">${r.driver_name||'-'}</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);font-family:monospace;">${r.car_number||''} ${r.car_model||''}</div>
+                </div>
             </td>
-            <td>
-                <div style="font-weight:600;">${r.customer_name||'Guest'}</div>
-                <div style="font-size:0.75rem;color:var(--text-muted);">${r.customer_phone||''}</div>
+            <td data-label="Passenger">
+                <div style="display: flex; flex-direction: column;">
+                    <div style="font-weight:600;">${r.customer_name||'Guest'}</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);">${r.customer_phone||''}</div>
+                </div>
             </td>
-            <td style="font-size:0.82rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.pickup_loc||''}">${pickup}</td>
-            <td style="font-size:0.82rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.drop_loc||''}">${drop}</td>
-            <td style="font-size:0.82rem;">${dist !== '-' ? dist + ' km' : '-'}</td>
-            <td style="font-weight:700;color:var(--primary);">${fare !== '0' ? '\u20B9'+parseFloat(fare).toFixed(2) : '-'}</td>
-            <td><span style="background:${statusColor(r.status)};color:#fff;padding:3px 9px;border-radius:20px;font-size:0.73rem;font-weight:700;text-transform:uppercase;">${r.status||'-'}</span></td>
+            <td style="font-size:0.82rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.pickup_loc||''}" data-label="Pickup">${pickup}</td>
+            <td style="font-size:0.82rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.drop_loc||''}" data-label="Drop">${drop}</td>
+            <td style="font-size:0.82rem;" data-label="Distance">${dist !== '-' ? dist + ' km' : '-'}</td>
+            <td style="font-weight:700;color:var(--primary);" data-label="Fare">${fare !== '0' ? '\u20B9'+parseFloat(fare).toFixed(2) : '-'}</td>
+            <td data-label="Status">
+                <span style="background:${statusColor(r.status)};color:#fff;padding:3px 9px;border-radius:20px;font-size:0.73rem;font-weight:700;text-transform:uppercase;">${r.status||'-'}</span>
+            </td>
         </tr>`;
     }).join('');
     // Scroll to rides table
