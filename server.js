@@ -4571,6 +4571,117 @@ app.get('/api/driver/my-jobs/:driverId', authenticateJWT, (req, res, next) => {
 
 
 
+
+// Vehicle Level Audit API
+app.get('/api/admin/vehicle-audit', async (req, res) => {
+    try {
+        const { vehicleType, carNumber, driverId, startDate, endDate } = req.query;
+
+        // Build WHERE clause for bookings
+        let conditions = ["b.driver_id IS NOT NULL"];
+        let params = [];
+
+        if (vehicleType && vehicleType !== 'all') {
+            conditions.push("d.vehicle_type = ?");
+            params.push(vehicleType);
+        }
+        if (carNumber && carNumber.trim()) {
+            conditions.push("(d.car_number LIKE ? OR d.car_model LIKE ?)");
+            params.push(`%${carNumber.trim()}%`, `%${carNumber.trim()}%`);
+        }
+        if (driverId && driverId !== 'all') {
+            conditions.push("b.driver_id = ?");
+            params.push(driverId);
+        }
+        if (startDate) {
+            conditions.push("DATE(b.created_at) >= ?");
+            params.push(startDate);
+        }
+        if (endDate) {
+            conditions.push("DATE(b.created_at) <= ?");
+            params.push(endDate);
+        }
+
+        const whereClause = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
+
+        // Per-vehicle summary
+        const [vehicleSummary] = await db.query(`
+            SELECT
+                d.id as driver_id,
+                d.name as driver_name,
+                d.car_model,
+                d.car_number,
+                d.vehicle_type,
+                d.district,
+                d.phone as driver_phone,
+                COUNT(b.id) as total_rides,
+                COUNT(CASE WHEN b.status IN ('completed','finished') THEN 1 END) as completed_rides,
+                COUNT(CASE WHEN b.status = 'cancelled' THEN 1 END) as cancelled_rides,
+                COUNT(CASE WHEN b.status = 'pending' THEN 1 END) as pending_rides,
+                SUM(CASE WHEN b.status IN ('completed','finished') THEN
+                    CAST(REGEXP_REPLACE(REGEXP_REPLACE(COALESCE(b.fare,'0'), '[^0-9.]', ''), '^[.]+', '0') AS DECIMAL(10,2))
+                ELSE 0 END) as fare_collected,
+                COUNT(DISTINCT COALESCE(b.passenger_name, b.user_id)) as unique_users,
+                GROUP_CONCAT(DISTINCT
+                    SUBSTRING_INDEX(SUBSTRING_INDEX(b.drop_loc, ',', -2), ',', 1)
+                    ORDER BY b.created_at DESC
+                    SEPARATOR ' | '
+                ) as covered_districts
+            FROM taxi_bookings b
+            JOIN taxi_drivers d ON b.driver_id = d.id
+            ${whereClause}
+            GROUP BY d.id, d.name, d.car_model, d.car_number, d.vehicle_type, d.district, d.phone
+            ORDER BY completed_rides DESC, fare_collected DESC
+            LIMIT 200
+        `, params);
+
+        // Summary totals
+        const [totals] = await db.query(`
+            SELECT
+                COUNT(b.id) as total_rides,
+                COUNT(CASE WHEN b.status IN ('completed','finished') THEN 1 END) as completed_rides,
+                COUNT(CASE WHEN b.status = 'cancelled' THEN 1 END) as cancelled_rides,
+                COUNT(DISTINCT b.driver_id) as active_vehicles,
+                SUM(CASE WHEN b.status IN ('completed','finished') THEN
+                    CAST(REGEXP_REPLACE(REGEXP_REPLACE(COALESCE(b.fare,'0'), '[^0-9.]', ''), '^[.]+', '0') AS DECIMAL(10,2))
+                ELSE 0 END) as total_fare,
+                COUNT(DISTINCT COALESCE(b.passenger_name, b.user_id)) as unique_users
+            FROM taxi_bookings b
+            JOIN taxi_drivers d ON b.driver_id = d.id
+            ${whereClause}
+        `, params);
+
+        // Recent rides list (for a specific driver if selected, else latest 100)
+        let ridesParams = [...params];
+        const [rides] = await db.query(`
+            SELECT
+                b.id, b.pickup_loc, b.drop_loc, b.fare, b.status,
+                b.pickup_date, b.pickup_time, b.trip_type, b.vehicle_type,
+                b.created_at, b.journey_start_time, b.journey_end_time,
+                b.actual_distance, b.distance,
+                COALESCE(b.passenger_name, p.name, tp.name) as customer_name,
+                COALESCE(b.passenger_phone, p.phone, tp.phone) as customer_phone,
+                d.name as driver_name, d.car_model, d.car_number, d.vehicle_type as driver_vehicle_type
+            FROM taxi_bookings b
+            JOIN taxi_drivers d ON b.driver_id = d.id
+            LEFT JOIN passengers p ON b.user_id = p.id
+            LEFT JOIN taxi_passengers tp ON b.user_id = tp.id
+            ${whereClause}
+            ORDER BY b.created_at DESC
+            LIMIT 300
+        `, ridesParams);
+
+        res.json({
+            summary: totals[0] || {},
+            vehicles: vehicleSummary,
+            rides: rides
+        });
+    } catch (err) {
+        console.error('Vehicle Audit Error:', err);
+        res.status(500).json({ error: 'Vehicle audit failed', details: err.message });
+    }
+});
+
 // 3. Admin Panel Stats
 app.get('/api/admin/stats', async (req, res) => {
     try {

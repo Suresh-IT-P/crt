@@ -314,6 +314,9 @@
                     <div class="nav-item" onclick="switchTab('underground', this)" title="Underground Level">
                         <span class="nav-icon">🕵️</span><span class="nav-label">Underground Level</span>
                     </div>
+                    <div class="nav-item" onclick="switchTab('vehicle-audit', this)" title="Vehicle Audit">
+                        <span class="nav-icon">🚗</span><span class="nav-label">Vehicle Audit</span>
+                    </div>
                 </div>
 
                 <!-- Configuration Group -->
@@ -1440,7 +1443,144 @@
             </div>
         </div>
 
-    <!-- Edit Driver Modal -->
+        <!-- Vehicle Audit Tab -->
+        <div id="vehicle-audit" class="tab-section">
+            <div class="stage-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1>Vehicle <span class="text-accent">Audit</span></h1>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Per-vehicle analytics — fare collected, districts covered, users served, ride history and status breakdown.</p>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <button type="button" class="btn btn-primary" onclick="exportVehicleAuditCSV()">📊 Export CSV</button>
+                    <button type="button" class="btn" style="background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border-color);" onclick="exportVehicleAuditPDF()">📄 Export PDF</button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="data-table-container" style="margin-bottom: 2rem; padding: 1.5rem;">
+                <h4 style="margin:0 0 1rem 0; font-size:0.85rem; text-transform:uppercase; color:var(--primary); letter-spacing:1px; font-weight:800;">🚗 Vehicle Audit Filters</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; align-items: end;">
+                    <div>
+                        <label>Vehicle Type</label>
+                        <select id="va-filter-type" style="width:100%;">
+                            <option value="all">-- All Types --</option>
+                            <option value="sedan">Sedan (4+1)</option>
+                            <option value="hatchback">Hatchback (4+1)</option>
+                            <option value="suv">SUV (6+1)</option>
+                            <option value="auto">Auto (3+1)</option>
+                            <option value="bike">Bike / Moto</option>
+                            <option value="8plus1">Tempo Traveller (8+1)</option>
+                            <option value="van24">Omni Bus (24+1)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Car No. / Model</label>
+                        <input type="text" id="va-filter-car" placeholder="e.g. TN01 or Swift">
+                    </div>
+                    <div>
+                        <label>Driver / Pilot</label>
+                        <select id="va-filter-driver" style="width:100%;">
+                            <option value="all">-- All Drivers --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>From Date</label>
+                        <input type="date" id="va-filter-start">
+                    </div>
+                    <div>
+                        <label>To Date</label>
+                        <input type="date" id="va-filter-end">
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button type="button" class="btn btn-primary" onclick="loadVehicleAudit()" style="flex:1;">⚡ Search</button>
+                        <button type="button" class="btn" onclick="resetVehicleAuditFilters()" style="background: rgba(255,255,255,0.05); color: var(--text-muted);">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Stat Cards -->
+            <div class="stat-banner" id="va-stat-banner">
+                <div class="b-card">
+                    <h4>TOTAL RIDES</h4>
+                    <div class="val" id="va-card-total">0</div>
+                </div>
+                <div class="b-card">
+                    <h4>COMPLETED</h4>
+                    <div class="val" id="va-card-completed" style="color: var(--primary);">0</div>
+                </div>
+                <div class="b-card">
+                    <h4>REJECTED / CANCELLED</h4>
+                    <div class="val" id="va-card-cancelled" style="color: #EF4444;">0</div>
+                </div>
+                <div class="b-card">
+                    <h4>FARE COLLECTED</h4>
+                    <div class="val" id="va-card-fare" style="color: var(--primary);">₹0</div>
+                </div>
+                <div class="b-card">
+                    <h4>ACTIVE VEHICLES</h4>
+                    <div class="val" id="va-card-vehicles">0</div>
+                </div>
+                <div class="b-card">
+                    <h4>UNIQUE USERS</h4>
+                    <div class="val" id="va-card-users">0</div>
+                </div>
+            </div>
+
+            <!-- Per-Vehicle Summary Table -->
+            <div class="data-table-container" style="margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                    <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Per-Vehicle Performance</h3>
+                    <span id="va-vehicle-count" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">0 vehicles</span>
+                </div>
+                <table class="cityride-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Driver & Vehicle</th>
+                            <th>Plate / Model</th>
+                            <th>Type</th>
+                            <th>Total Rides</th>
+                            <th>Completed</th>
+                            <th>Cancelled</th>
+                            <th>Fare Collected</th>
+                            <th>Unique Users</th>
+                            <th>Covered Districts</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="va-vehicle-table-body">
+                        <tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 3rem;">Click Search to load vehicle audit data.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Ride History Table -->
+            <div class="data-table-container" id="va-rides-container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                    <h3 id="va-rides-title" style="margin: 0; font-size: 1.1rem; font-weight: 700;">Ride History</h3>
+                    <span id="va-ride-count" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">0 rides</span>
+                </div>
+                <table class="cityride-table">
+                    <thead>
+                        <tr>
+                            <th>Ride ID</th>
+                            <th>Date & Time</th>
+                            <th>Driver / Vehicle</th>
+                            <th>Customer</th>
+                            <th>Pickup</th>
+                            <th>Drop</th>
+                            <th>Distance</th>
+                            <th>Fare</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="va-rides-table-body">
+                        <tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 3rem;">Ride list will appear after search.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     <div id="edit-driver-modal" class="map-modal" style="display: none;">
         <div class="map-modal-content" style="max-width: 500px;">
             <div class="map-header">
@@ -1891,6 +2031,10 @@ if (tabId === 'offers') {
 }
 if (tabId === 'underground') {
     loadUndergroundReports();
+    return;
+}
+if (tabId === 'vehicle-audit') {
+    loadVehicleAudit();
     return;
 }
 if (tabId === 'radar') {
@@ -5558,6 +5702,240 @@ window.switchTab = function(tabId, el) {
     }
 };
 
+
+// ============================================================
+// VEHICLE AUDIT
+// ============================================================
+let _vaData = { summary: {}, vehicles: [], rides: [] };
+let _vaDriversLoaded = false;
+
+async function loadVehicleAudit() {
+    // Populate driver dropdown once
+    if (!_vaDriversLoaded) {
+        try {
+            const dr = await fetch(`${API_BASE_URL}/api/admin/drivers`);
+            if (dr.ok) {
+                const drivers = await dr.json();
+                const sel = document.getElementById('va-filter-driver');
+                if (sel) {
+                    sel.innerHTML = '<option value="all">-- All Drivers --</option>';
+                    (drivers || []).forEach(d => {
+                        const o = document.createElement('option');
+                        o.value = d.id;
+                        o.textContent = `${d.name} (${d.car_number || '?'})`;
+                        sel.appendChild(o);
+                    });
+                    _vaDriversLoaded = true;
+                }
+            }
+        } catch(e) { /* silently fail */ }
+    }
+
+    const vehicleType = document.getElementById('va-filter-type')?.value || 'all';
+    const carNumber   = document.getElementById('va-filter-car')?.value  || '';
+    const driverId    = document.getElementById('va-filter-driver')?.value || 'all';
+    const startDate   = document.getElementById('va-filter-start')?.value || '';
+    const endDate     = document.getElementById('va-filter-end')?.value   || '';
+
+    const params = new URLSearchParams();
+    if (vehicleType !== 'all') params.set('vehicleType', vehicleType);
+    if (carNumber.trim())      params.set('carNumber',   carNumber.trim());
+    if (driverId !== 'all')    params.set('driverId',    driverId);
+    if (startDate)             params.set('startDate',   startDate);
+    if (endDate)               params.set('endDate',     endDate);
+
+    const vtbody = document.getElementById('va-vehicle-table-body');
+    const rtbody = document.getElementById('va-rides-table-body');
+    if (vtbody) vtbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:2rem;">⏳ Loading vehicle data...</td></tr>';
+    if (rtbody) rtbody.innerHTML = '<tr><td colspan="9"  style="text-align:center;padding:2rem;">⏳ Loading ride data...</td></tr>';
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/admin/vehicle-audit?${params.toString()}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        _vaData = await res.json();
+
+        // --- Update summary cards ---
+        const s = _vaData.summary || {};
+        const fmt = v => parseFloat(v||0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+        document.getElementById('va-card-total').textContent     = s.total_rides     || 0;
+        document.getElementById('va-card-completed').textContent = s.completed_rides  || 0;
+        document.getElementById('va-card-cancelled').textContent = s.cancelled_rides  || 0;
+        document.getElementById('va-card-fare').textContent      = '\u20B9' + fmt(s.total_fare);
+        document.getElementById('va-card-vehicles').textContent  = s.active_vehicles  || 0;
+        document.getElementById('va-card-users').textContent     = s.unique_users     || 0;
+
+        // --- Per-vehicle table ---
+        const vehicles = _vaData.vehicles || [];
+        document.getElementById('va-vehicle-count').textContent = vehicles.length + ' vehicle' + (vehicles.length !== 1 ? 's' : '');
+        if (!vehicles.length) {
+            vtbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:3rem;">No vehicle data found for the selected filters.</td></tr>';
+        } else {
+            vtbody.innerHTML = vehicles.map((v, i) => {
+                const typeLabel = {'sedan':'Sedan','hatchback':'Hatchback','suv':'SUV','auto':'Auto','bike':'Bike','8plus1':'Tempo Traveller','van24':'Omni Bus'}[v.vehicle_type] || v.vehicle_type || '-';
+                const fare = parseFloat(v.fare_collected||0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+                const districts = v.covered_districts ? v.covered_districts.split(' | ').slice(0,3).join(', ') : '-';
+                const completedPct = v.total_rides > 0 ? Math.round((v.completed_rides/v.total_rides)*100) : 0;
+                return `<tr>
+                    <td style="font-weight:700;color:var(--text-muted);">${i+1}</td>
+                    <td>
+                        <div style="font-weight:700;">${v.driver_name||'-'}</div>
+                        <div style="font-size:0.78rem;color:var(--text-muted);">${v.driver_phone||''}</div>
+                        <div style="font-size:0.78rem;color:var(--text-muted);">${v.district||''}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight:700;font-family:monospace;">${v.car_number||'-'}</div>
+                        <div style="font-size:0.78rem;color:var(--text-muted);">${v.car_model||'-'}</div>
+                    </td>
+                    <td><span style="background:rgba(255,255,255,0.08);padding:3px 8px;border-radius:6px;font-size:0.78rem;">${typeLabel}</span></td>
+                    <td style="font-weight:700;">${v.total_rides}</td>
+                    <td><span style="color:var(--primary);font-weight:700;">${v.completed_rides}</span><br><span style="font-size:0.75rem;color:var(--text-muted);">${completedPct}%</span></td>
+                    <td><span style="color:#EF4444;font-weight:700;">${v.cancelled_rides}</span></td>
+                    <td style="font-weight:700;color:var(--primary);">\u20B9${fare}</td>
+                    <td>${v.unique_users}</td>
+                    <td style="font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${v.covered_districts||''}"><span style="color:var(--text-muted);">${districts}</span></td>
+                    <td>
+                        <button class="btn" style="padding:4px 10px;font-size:0.78rem;background:rgba(255,255,255,0.06);border:1px solid var(--border-color);" onclick="vaShowDriverRides(${v.driver_id},'${(v.driver_name||'').replace(/'/g,"\\'")}')">Rides</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        // --- Ride list table ---
+        _vaRenderRides(_vaData.rides || [], 'All Vehicles');
+
+    } catch(err) {
+        console.error('Vehicle Audit Error:', err);
+        if (vtbody) vtbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:#EF4444;padding:3rem;">❌ Failed to load: ${err.message}</td></tr>`;
+        if (rtbody) rtbody.innerHTML = `<tr><td colspan="9"  style="text-align:center;color:#EF4444;padding:3rem;">❌ Failed to load rides.</td></tr>`;
+    }
+}
+
+function _vaRenderRides(rides, title) {
+    const rtbody = document.getElementById('va-rides-table-body');
+    const rtitle = document.getElementById('va-rides-title');
+    const rcount = document.getElementById('va-ride-count');
+    if (rtitle) rtitle.textContent = 'Ride History — ' + title;
+    if (rcount) rcount.textContent = rides.length + ' ride' + (rides.length !== 1 ? 's' : '');
+    if (!rtbody) return;
+    if (!rides.length) {
+        rtbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:3rem;">No rides found for this selection.</td></tr>';
+        return;
+    }
+    const statusColor = s => ({'completed':'var(--primary)','cancelled':'#EF4444','pending':'#F59E0B','assigned':'#3B82F6'})[s] || 'var(--text-muted)';
+    rtbody.innerHTML = rides.map(r => {
+        const dt = r.created_at ? new Date(r.created_at).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '-';
+        const dist = r.actual_distance || r.distance || '-';
+        const fare = r.fare ? r.fare.toString().replace(/[^0-9.]/g,'') : '0';
+        const pickup = (r.pickup_loc||'-').split(',')[0];
+        const drop   = (r.drop_loc||'-').split(',')[0];
+        return `<tr>
+            <td style="font-family:monospace;font-weight:700;font-size:0.82rem;">#${r.id}</td>
+            <td style="font-size:0.82rem;">${dt}</td>
+            <td>
+                <div style="font-weight:600;">${r.driver_name||'-'}</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);font-family:monospace;">${r.car_number||''} ${r.car_model||''}</div>
+            </td>
+            <td>
+                <div style="font-weight:600;">${r.customer_name||'Guest'}</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);">${r.customer_phone||''}</div>
+            </td>
+            <td style="font-size:0.82rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.pickup_loc||''}">${pickup}</td>
+            <td style="font-size:0.82rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.drop_loc||''}">${drop}</td>
+            <td style="font-size:0.82rem;">${dist !== '-' ? dist + ' km' : '-'}</td>
+            <td style="font-weight:700;color:var(--primary);">${fare !== '0' ? '\u20B9'+parseFloat(fare).toFixed(2) : '-'}</td>
+            <td><span style="background:${statusColor(r.status)};color:#fff;padding:3px 9px;border-radius:20px;font-size:0.73rem;font-weight:700;text-transform:uppercase;">${r.status||'-'}</span></td>
+        </tr>`;
+    }).join('');
+    // Scroll to rides table
+    document.getElementById('va-rides-container')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function vaShowDriverRides(driverId, driverName) {
+    const rides = (_vaData.rides || []).filter(r => {
+        // Try to match by driver_name since rides don't carry driver_id directly in client
+        return r.driver_name === driverName;
+    });
+    _vaRenderRides(rides, driverName);
+}
+
+function resetVehicleAuditFilters() {
+    const ids = ['va-filter-type','va-filter-car','va-filter-driver','va-filter-start','va-filter-end'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.tagName === 'SELECT') el.value = 'all';
+        else el.value = '';
+    });
+    _vaData = { summary: {}, vehicles: [], rides: [] };
+    const vt = document.getElementById('va-vehicle-table-body');
+    const rt = document.getElementById('va-rides-table-body');
+    if (vt) vt.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:3rem;">Click Search to load vehicle audit data.</td></tr>';
+    if (rt) rt.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:3rem;">Ride list will appear after search.</td></tr>';
+    ['va-card-total','va-card-completed','va-card-cancelled','va-card-vehicles','va-card-users'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent='0'; });
+    const fc = document.getElementById('va-card-fare'); if(fc) fc.textContent='\u20B90.00';
+    document.getElementById('va-vehicle-count').textContent = '0 vehicles';
+    document.getElementById('va-ride-count').textContent    = '0 rides';
+    document.getElementById('va-rides-title').textContent   = 'Ride History';
+}
+
+function exportVehicleAuditCSV() {
+    const rides = _vaData.rides || [];
+    if (!rides.length) { showAlertBanner('No ride data to export. Run a search first.', 'error'); return; }
+    const headers = ['Ride ID','Date/Time','Driver','Car Number','Car Model','Customer','Customer Phone','Pickup','Drop','Distance (km)','Fare','Status'];
+    const rows = rides.map(r => [
+        r.id,
+        r.created_at ? new Date(r.created_at).toLocaleString('en-IN') : '',
+        r.driver_name||'',
+        r.car_number||'',
+        r.car_model||'',
+        r.customer_name||'',
+        r.customer_phone||'',
+        (r.pickup_loc||'').replace(/,/g,' '),
+        (r.drop_loc||'').replace(/,/g,' '),
+        r.actual_distance || r.distance || '',
+        r.fare ? r.fare.toString().replace(/[^0-9.]/g,'') : '0',
+        r.status||''
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vehicle_audit_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportVehicleAuditPDF() {
+    const rides = _vaData.rides || [];
+    if (!rides.length) { showAlertBanner('No ride data to export. Run a search first.', 'error'); return; }
+    const { jsPDF } = window.jspdf || {};
+    if (!jsPDF) { showAlertBanner('PDF library not loaded. Use CSV export instead.', 'error'); return; }
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    doc.setFontSize(16); doc.setFont('helvetica','bold');
+    doc.text('CityRide Taxi — Vehicle Audit Report', 14, 14);
+    doc.setFontSize(9); doc.setFont('helvetica','normal');
+    doc.text(`Generated: ${new Date().toLocaleString('en-IN')} | Total Rides: ${rides.length}`, 14, 22);
+    const tableData = rides.map(r => [
+        '#'+r.id,
+        r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN') : '',
+        (r.driver_name||'-').substring(0,15),
+        r.car_number||'-',
+        (r.customer_name||'Guest').substring(0,12),
+        (r.pickup_loc||'-').split(',')[0].substring(0,20),
+        (r.drop_loc||'-').split(',')[0].substring(0,20),
+        r.actual_distance || r.distance || '-',
+        r.fare ? '\u20B9'+(r.fare.toString().replace(/[^0-9.]/g,'')) : '-',
+        r.status||'-'
+    ]);
+    doc.autoTable({
+        head: [['ID','Date','Driver','Plate','Customer','Pickup','Drop','Dist','Fare','Status']],
+        body: tableData,
+        startY: 28, styles: {fontSize:7}, headStyles: {fillColor:[0,107,58], textColor:255},
+        alternateRowStyles: {fillColor:[245,245,245]}
+    });
+    doc.save(`vehicle_audit_${new Date().toISOString().slice(0,10)}.pdf`);
+}
 
 
 </script>
