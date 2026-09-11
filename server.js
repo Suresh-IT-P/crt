@@ -4574,17 +4574,7 @@ app.get('/api/driver/my-jobs/:driverId', authenticateJWT, (req, res, next) => {
 // 3. Admin Panel Stats
 app.get('/api/admin/stats', async (req, res) => {
     try {
-        const [
-            [totalBookings],
-            [activeBookings],
-            [totalRevenue],
-            [driverCount],
-            [userCount],
-            [pendingPilotsCount],
-            [pendingMissionsCount],
-            [cancelRequestsCount],
-            [dailyProfitRow]
-        ] = await Promise.all([
+        const results = await Promise.all([
             db.query("SELECT COUNT(*) as count FROM taxi_bookings"),
             db.query("SELECT COUNT(*) as count FROM taxi_bookings WHERE status IN ('pending', 'assigned')"),
             db.query("SELECT fare FROM taxi_bookings WHERE status = 'completed'"),
@@ -4596,30 +4586,40 @@ app.get('/api/admin/stats', async (req, res) => {
             db.query("SELECT SUM(amount) as profit FROM taxi_financial_ledger WHERE transaction_type = 'cityride_allocation' AND DATE(created_at) = CURDATE()")
         ]);
 
+        const totalBookings = results[0] ? results[0][0] : [];
+        const activeBookings = results[1] ? results[1][0] : [];
+        const totalRevenue = results[2] ? results[2][0] : [];
+        const driverCount = results[3] ? results[3][0] : [];
+        const userCount = results[4] ? results[4][0] : [];
+        const pendingPilotsCount = results[5] ? results[5][0] : [];
+        const pendingMissionsCount = results[6] ? results[6][0] : [];
+        const cancelRequestsCount = results[7] ? results[7][0] : [];
+        const dailyProfitRow = results[8] ? results[8][0] : [];
+
         let revenue = 0;
         let completedCount = 0;
-        totalRevenue.forEach(row => {
-            completedCount++;
-            if (row.fare) {
-                // Remove non-numeric characters except dot
-                const numericFare = row.fare.toString().replace(/[^0-9.]/g, '');
-                revenue += parseFloat(numericFare) || 0;
-            }
-        });
+        if (totalRevenue && Array.isArray(totalRevenue)) {
+            totalRevenue.forEach(row => {
+                completedCount++;
+                if (row.fare) {
+                    const numericFare = row.fare.toString().replace(/[^0-9.]/g, '');
+                    revenue += parseFloat(numericFare) || 0;
+                }
+            });
+        }
         
-        // Admin daily profit is dynamically calculated from the ledger
         const dailyProfit = dailyProfitRow && dailyProfitRow[0] && dailyProfitRow[0].profit ? dailyProfitRow[0].profit : 0; 
 
         res.json({
-            totalBookings: totalBookings[0].count,
-            activeBookings: activeBookings[0].count,
-            revenue: Math.round(revenue * 100) / 100, // Round to 2 decimal places
+            totalBookings: totalBookings && totalBookings[0] ? totalBookings[0].count : 0,
+            activeBookings: activeBookings && activeBookings[0] ? activeBookings[0].count : 0,
+            revenue: Math.round(revenue * 100) / 100,
             profit: dailyProfit,
-            totalDrivers: driverCount[0].count,
-            totalUsers: userCount[0].count,
-            pendingPilots: pendingPilotsCount[0].count,
-            pendingMissions: pendingMissionsCount[0].count,
-            cancelRequests: cancelRequestsCount[0].count
+            totalDrivers: driverCount && driverCount[0] ? driverCount[0].count : 0,
+            totalUsers: userCount && userCount[0] ? userCount[0].count : 0,
+            pendingPilots: pendingPilotsCount && pendingPilotsCount[0] ? pendingPilotsCount[0].count : 0,
+            pendingMissions: pendingMissionsCount && pendingMissionsCount[0] ? pendingMissionsCount[0].count : 0,
+            cancelRequests: cancelRequestsCount && cancelRequestsCount[0] ? cancelRequestsCount[0].count : 0
         });
     } catch (err) {
         console.error('CRITICAL: Admin Stats Failure:', err.message);
@@ -4811,7 +4811,7 @@ app.post('/api/admin/driver/assign', async (req, res) => {
         const [driver] = await db.query('SELECT name, phone FROM taxi_drivers WHERE id = ?', [driverId]);
         if (driver.length === 0) return res.status(404).json({ error: 'Driver not found.' });
         
-        await db.query('UPDATE taxi_bookings SET driver_id = ?, driver_name = ?, status = "assigned" WHERE id = ?', [driverId, driver[0].name, bookingId]);
+        await db.query('UPDATE taxi_bookings SET driver_id = ?, status = "assigned" WHERE id = ?', [driverId, bookingId]);
         
         if (io) {
             io.to(`driver:${driverId}`).emit('new_booking_assigned', { bookingId });
@@ -8129,7 +8129,7 @@ app.post('/api/association/driver/assign', authenticateJWT, requireRole(['associ
         const [booking] = await db.query('SELECT status FROM taxi_bookings WHERE id = ?', [bookingId]);
         if (booking.length === 0) return res.status(404).json({ error: 'Mission not found.' });
         
-        await db.query('UPDATE taxi_bookings SET driver_id = ?, driver_name = ?, status = "assigned" WHERE id = ?', [driverId, driver[0].name, bookingId]);
+        await db.query('UPDATE taxi_bookings SET driver_id = ?, status = "assigned" WHERE id = ?', [driverId, bookingId]);
         
         if (io) {
             io.to(`driver:${driverId}`).emit('new_booking_assigned', { bookingId });
