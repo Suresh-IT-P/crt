@@ -357,9 +357,13 @@
                     <h4>Total Revenue</h4>
                     <div class="val" id="stat-revenue">\u20B90</div>
                 </div>
-                <div class="b-card" style="border: 1px solid var(--primary-red); background: rgba(0, 107, 58, 0.02);">
+                <div class="b-card" style="border: 1px solid var(--primary); background: rgba(0, 107, 58, 0.02);">
+                    <h4>Today Ride Fare</h4>
+                    <div class="val" id="stat-today-fare" style="color: var(--primary);">\u20B90</div>
+                </div>
+                <div class="b-card" style="border: 1px solid var(--primary); background: rgba(0, 107, 58, 0.02);">
                     <h4>Daily Profit</h4>
-                    <div class="val" id="stat-profit" style="color: var(--primary-red);">\u20B90</div>
+                    <div class="val" id="stat-profit" style="color: var(--primary);">\u20B90</div>
                 </div>
                 <div class="b-card">
                     <h4>Live Missions</h4>
@@ -1908,6 +1912,7 @@ const res = await fetch(`${API_BASE_URL}/api/admin/stats`);
 if (!res.ok) throw new Error('Stats Fetch Failed');
 const stats = await res.json();
 const rev = document.getElementById('stat-revenue');
+const todayF = document.getElementById('stat-today-fare');
 const pro = document.getElementById('stat-profit');
 const act = document.getElementById('stat-active');
 const dri = document.getElementById('stat-drivers');
@@ -1916,8 +1921,9 @@ const updPilots = document.getElementById('upd-pilots');
 const updMissions = document.getElementById('upd-missions');
 const updCancels = document.getElementById('upd-cancels');
 
-if (rev) rev.textContent = stats && stats.revenue !== undefined ? `\u20B9${stats.revenue.toLocaleString()}` : '\u20B90';
-if (pro) pro.textContent = stats && stats.profit !== undefined ? `\u20B9${stats.profit.toLocaleString()}` : '\u20B90';
+if (rev) rev.textContent = stats && stats.revenue !== undefined ? `\u20B9${parseFloat(stats.revenue).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '\u20B90.00';
+if (todayF) todayF.textContent = stats && stats.todayFare !== undefined ? `\u20B9${parseFloat(stats.todayFare).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '\u20B90.00';
+if (pro) pro.textContent = stats && stats.profit !== undefined ? `\u20B9${parseFloat(stats.profit).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '\u20B90.00';
 if (act) act.textContent = stats ? stats.activeBookings : '0';
 if (dri) dri.textContent = stats ? stats.totalDrivers : '0';
 if (usr) usr.textContent = stats ? stats.totalUsers : '0';

@@ -4583,7 +4583,8 @@ app.get('/api/admin/stats', async (req, res) => {
             db.query("SELECT COUNT(*) as count FROM taxi_driver_applications WHERE status = 'pending'"),
             db.query("SELECT COUNT(*) as count FROM taxi_bookings WHERE status = 'pending'"),
             db.query("SELECT COUNT(*) as count FROM taxi_bookings WHERE status = 'cancel_requested'"),
-            db.query("SELECT SUM(amount) as profit FROM taxi_financial_ledger WHERE transaction_type = 'cityride_allocation' AND DATE(created_at) = CURDATE()")
+            db.query("SELECT SUM(amount) as profit FROM taxi_financial_ledger WHERE transaction_type = 'cityride_allocation' AND DATE(created_at) = CURDATE()"),
+            db.query("SELECT fare FROM taxi_bookings WHERE status = 'completed' AND DATE(COALESCE(journey_end_time, created_at)) = CURDATE()")
         ]);
 
         const totalBookings = results[0] ? results[0][0] : [];
@@ -4595,15 +4596,24 @@ app.get('/api/admin/stats', async (req, res) => {
         const pendingMissionsCount = results[6] ? results[6][0] : [];
         const cancelRequestsCount = results[7] ? results[7][0] : [];
         const dailyProfitRow = results[8] ? results[8][0] : [];
+        const todayFareRow = results[9] ? results[9][0] : [];
 
         let revenue = 0;
-        let completedCount = 0;
         if (totalRevenue && Array.isArray(totalRevenue)) {
             totalRevenue.forEach(row => {
-                completedCount++;
                 if (row.fare) {
                     const numericFare = row.fare.toString().replace(/[^0-9.]/g, '');
                     revenue += parseFloat(numericFare) || 0;
+                }
+            });
+        }
+        
+        let todayFare = 0;
+        if (todayFareRow && Array.isArray(todayFareRow)) {
+            todayFareRow.forEach(row => {
+                if (row.fare) {
+                    const numericFare = row.fare.toString().replace(/[^0-9.]/g, '');
+                    todayFare += parseFloat(numericFare) || 0;
                 }
             });
         }
@@ -4614,6 +4624,7 @@ app.get('/api/admin/stats', async (req, res) => {
             totalBookings: totalBookings && totalBookings[0] ? totalBookings[0].count : 0,
             activeBookings: activeBookings && activeBookings[0] ? activeBookings[0].count : 0,
             revenue: Math.round(revenue * 100) / 100,
+            todayFare: Math.round(todayFare * 100) / 100,
             profit: dailyProfit,
             totalDrivers: driverCount && driverCount[0] ? driverCount[0].count : 0,
             totalUsers: userCount && userCount[0] ? userCount[0].count : 0,
