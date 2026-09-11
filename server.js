@@ -4636,8 +4636,7 @@ app.get('/api/admin/vehicle-audit', async (req, res) => {
                 SUM(CASE WHEN b.status IN ('completed','finished') THEN
                     CAST(REGEXP_REPLACE(REGEXP_REPLACE(COALESCE(b.fare,'0'), '[^0-9.]', ''), '^[.]+', '0') AS DECIMAL(10,2))
                 ELSE 0 END) as fare_collected,
-                COUNT(DISTINCT COALESCE(b.passenger_name, b.user_id)) as unique_users,
-                d.district as covered_districts
+                COUNT(DISTINCT COALESCE(b.passenger_name, b.user_id)) as unique_users
             FROM taxi_bookings b
             JOIN taxi_drivers d ON b.driver_id = d.id
             ${whereClause}
@@ -4656,8 +4655,7 @@ app.get('/api/admin/vehicle-audit', async (req, res) => {
                 SUM(CASE WHEN b.status IN ('completed','finished') THEN
                     CAST(REGEXP_REPLACE(REGEXP_REPLACE(COALESCE(b.fare,'0'), '[^0-9.]', ''), '^[.]+', '0') AS DECIMAL(10,2))
                 ELSE 0 END) as total_fare,
-                COUNT(DISTINCT COALESCE(b.passenger_name, b.user_id)) as unique_users,
-                GROUP_CONCAT(DISTINCT d.district SEPARATOR ' | ') as covered_districts
+                COUNT(DISTINCT COALESCE(b.passenger_name, b.user_id)) as unique_users
             FROM taxi_bookings b
             JOIN taxi_drivers d ON b.driver_id = d.id
             ${whereClause}
@@ -4682,6 +4680,56 @@ app.get('/api/admin/vehicle-audit', async (req, res) => {
             ORDER BY b.created_at DESC
             LIMIT 300
         `, ridesParams);
+        const [allLocs] = await db.query(`
+            SELECT b.pickup_loc, b.drop_loc, d.id as driver_id 
+            FROM taxi_bookings b 
+            JOIN taxi_drivers d ON b.driver_id = d.id 
+            ${whereClause}
+        `, params);
+
+        const TN_DISTRICT_MAP = {
+            'mettur': 'Salem', 'salem': 'Salem', 'mathur': 'Krishnagiri', 'pochampalli': 'Krishnagiri',
+            'krishnagiri': 'Krishnagiri', 'papanasam': 'Thanjavur', 'thanjavur': 'Thanjavur', 'chennai': 'Chennai',
+            'coimbatore': 'Coimbatore', 'dharmapuri': 'Dharmapuri', 'erode': 'Erode', 'bhavani': 'Erode',
+            'hosur': 'Krishnagiri', 'thangamapuripatinam': 'Salem'
+        };
+        const ALL_DISTRICTS = [
+            'ariyalur', 'chengalpattu', 'chennai', 'coimbatore', 'cuddalore', 'dharmapuri', 'dindigul', 'erode',
+            'kallakurichi', 'kanchipuram', 'kanyakumari', 'karur', 'krishnagiri', 'madurai', 'mayiladuthurai', 'nagapattinam',
+            'namakkal', 'nilgiris', 'perambalur', 'pudukkottai', 'ramanathapuram', 'ranipet', 'salem', 'sivaganga', 'tenkasi',
+            'thanjavur', 'theni', 'thoothukudi', 'tiruchirappalli', 'tirunelveli', 'tirupathur', 'tiruppur', 'tiruvallur',
+            'tiruvannamalai', 'tiruvarur', 'vellore', 'viluppuram', 'virudhunagar'
+        ];
+
+        let globalDistricts = new Set();
+        let vehicleDistricts = {}; // driver_id -> Set of districts
+
+        allLocs.forEach(r => {
+            const locStr = (r.pickup_loc || '') + ' ' + (r.drop_loc || '');
+            const lowerLoc = locStr.toLowerCase();
+            let foundForRide = [];
+            
+            ALL_DISTRICTS.forEach(d => {
+                if (lowerLoc.includes(d)) foundForRide.push(d.charAt(0).toUpperCase() + d.slice(1));
+            });
+            for (const [town, dist] of Object.entries(TN_DISTRICT_MAP)) {
+                if (lowerLoc.includes(town)) foundForRide.push(dist);
+            }
+            
+            foundForRide.forEach(dist => {
+                globalDistricts.add(dist);
+                if (!vehicleDistricts[r.driver_id]) vehicleDistricts[r.driver_id] = new Set();
+                vehicleDistricts[r.driver_id].add(dist);
+            });
+        });
+
+        if (totals[0]) {
+            totals[0].covered_districts = Array.from(globalDistricts).sort().join(' | ') || '-';
+        }
+
+        vehicleSummary.forEach(v => {
+            v.covered_districts = vehicleDistricts[v.driver_id] ? Array.from(vehicleDistricts[v.driver_id]).sort().join(' | ') : '-';
+        });
 
         res.json({
             summary: totals[0] || {},
