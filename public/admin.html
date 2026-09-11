@@ -5634,7 +5634,10 @@ async function submitAssignment() {
     try {
         const res = await fetch(`${API_BASE_URL}/api/admin/driver/assign`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
+            },
             body: JSON.stringify({ bookingId, driverId })
         });
         const data = await res.json();
