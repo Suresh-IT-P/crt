@@ -4957,6 +4957,181 @@ app.get('/api/admin/vehicle-audit', async (req, res) => {
     }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// DISTRICT LEVEL AUDIT  –  /api/admin/district-audit
+// Returns per-district ride stats + date-wise daily breakdown
+// Uses the same TN geo-parser as vehicle audit for accuracy.
+// ─────────────────────────────────────────────────────────────────────────────
+app.get('/api/admin/district-audit', authenticateJWT, async (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admins only' });
+    try {
+        const { startDate, endDate } = req.query;
+        const conditions = [];
+        const params = [];
+
+        if (startDate) { conditions.push('DATE(b.created_at) >= ?'); params.push(startDate); }
+        if (endDate)   { conditions.push('DATE(b.created_at) <= ?'); params.push(endDate); }
+        const whereClause = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+
+        // Pull every ride's locations + status + fare + date
+        const [rides] = await db.query(`
+            SELECT
+                b.id,
+                b.pickup_loc,
+                b.drop_loc,
+                b.status,
+                b.fare,
+                DATE(b.created_at) as ride_date,
+                b.created_at
+            FROM taxi_bookings b
+            ${whereClause}
+            ORDER BY b.created_at DESC
+        `, params);
+
+        // ── Re-use the same comprehensive geo-parser ──────────────────────────
+        const TN_GEO_DISTRICTS_DA = [
+            { district:'Ariyalur',        keywords:['ariyalur','udayarpalayam','sendurai','jayankondam','andimadam'] },
+            { district:'Chengalpattu',    keywords:['chengalpattu','chengalpet','tambaram','chrompet','pallavaram','guduvanchery','vandalur','urapakkam','tiruporur','madurantakam','singaperumal koil','uthiramerur','thirukalukundram','kovalam','akkarai','potheri','selaiyur','kilambakkam','maraimalai nagar'] },
+            { district:'Chennai',         keywords:['chennai','madras','adyar','anna nagar','t nagar','mylapore','velachery','kodambakkam','nungambakkam','egmore','perambur','kolathur','ambattur','avadi','manali','tondiarpet','sowcarpet','george town','fort st george','marina','triplicane','washermanpet','royapettah','kilpauk','chetpet','teynampet','mandaveli','saidapet','guindy','alandur','meenambakkam','besant nagar','thiruvanmiyur','palavakkam','injambakkam','sholinganallur','perungudi','thoraipakkam','pallikaranai','nanganallur','madipakkam','medavakkam','chromepet','poonamallee','ayanavaram','villivakkam','virugambakkam','ashok nagar','mugalivakkam','porur','iyyapanthangal','valasaravakkam','ramapuram','koyambedu','arumbakkam','mogappair','aminjikarai','choolai','pursaiwalkam','royapuram'] },
+            { district:'Coimbatore',      keywords:['coimbatore','kovai','pollachi','mettupalayam','annur','sulur','kinathukadavu','perur','palladam','udumalaipettai','valparai','anaimalai','karamadai','thondamuthur','saravanampatti','ganapathy','singanallur','peelamedu','gandhipuram','rs puram'] },
+            { district:'Cuddalore',       keywords:['cuddalore','chidambaram','panruti','virudhachalam','tittagudi','neyveli','kurinjipadi','kattumannarkoil','srimushnam','annamalainagar','pichavaram','parangipettai','kollidam'] },
+            { district:'Dharmapuri',      keywords:['dharmapuri','palacode','pennagaram','nallampalli','harur','karimangalam','morappur','pappireddipatti','kambainallur','bommidi'] },
+            { district:'Dindigul',        keywords:['dindigul','palani','kodaikanal','oddanchatram','natham','vedasandur','nilakottai','athoor','gujiliamparai','shanarpatti'] },
+            { district:'Erode',           keywords:['erode','bhavani','perundurai','gobichettipalayam','sathyamangalam','anthiyur','nambiyur','kodumudi','kavindapadi','kavundapadi','thalavadi','bhavanisagar'] },
+            { district:'Kallakurichi',    keywords:['kallakurichi','sankarapuram','ulundurpet','tirukoilur','chinnasalem','rishivandiyam','vanapuram'] },
+            { district:'Kanchipuram',     keywords:['kanchipuram','kancheepuram','uthiramerur','wallajabad','sriperumbudur','padappai','oragadam','vikravandi','walajabad'] },
+            { district:'Kanyakumari',     keywords:['kanyakumari','nagercoil','marthandam','padmanabhapuram','colachel','kulasekaram','vilavancode','thuckalay','eraniel','kuzhithurai','suchindram','agastheeswaram','thiruvattar'] },
+            { district:'Karur',           keywords:['karur','kulithalai','aravakurichi','krishnarayapuram','thanthoni','manmangalam','pugalur','kadavur'] },
+            { district:'Krishnagiri',     keywords:['krishnagiri','hosur','bargur','shoolagiri','uthangarai','pochampalli','mathur','denkanikottai','kaveripattinam','veppanapalli','rayakottah','kaveripatnam','kelamangalam','anchetti','thally','natrampalayam'] },
+            { district:'Madurai',         keywords:['madurai','melur','thirumangalam','usilampatti','peraiyur','tiruparankundram','sholavandan','vadipatti','alanganallur','thirumogur','othakadai','paravai','vilangudi','anaiyur','thiruppuvanam'] },
+            { district:'Mayiladuthurai',  keywords:['mayiladuthurai','mayavaram','sirkali','kuthalam','thalainayar','kollidam'] },
+            { district:'Nagapattinam',    keywords:['nagapattinam','vedaranyam','kilvelur','thirumarugal','keelaiyur','nagore'] },
+            { district:'Namakkal',        keywords:['namakkal','rasipuram','tiruchengodu','tiruchencode','kumarapalayam','paramathi','velur','sendamangalam','kollihills','mohanur'] },
+            { district:'Nilgiris',        keywords:['nilgiris','ooty','ootacamund','udagamandalam','coonoor','kotagiri','gudalur','mudumalai','masinagudi','kothagiri'] },
+            { district:'Perambalur',      keywords:['perambalur','kunnam','veppanthattai','veppur'] },
+            { district:'Pudukkottai',     keywords:['pudukkottai','karaikudi','tirumayam','alangudi','gandarvakottai','aranthangi','illuppur','manamelkudi','annavasal'] },
+            { district:'Ramanathapuram',  keywords:['ramanathapuram','ramnad','rameswaram','pamban','mandapam','keelakarai','paramakudi','mudukulathur','tiruvadanai','sayalkudi','devipattinam'] },
+            { district:'Ranipet',         keywords:['ranipet','walajapet','arcot','sholinghur','nemili','kaveripakkam'] },
+            { district:'Salem',           keywords:['salem','mettur','mettur dam','omalur','edappadi','yercaud','attur','idappadi','magudanchavadi','gangavalli','thalaivasal','vazhapadi','suramangalam','fairlands','gugai','ammapet','dasanaickenpatty','kondalampatti','ethapur','shevapet','senderampatty','malikipuram','veerapandi','thangamapuripatinam'] },
+            { district:'Sivaganga',       keywords:['sivaganga','devakottai','ilayankudi','tirupuvanam','singampunari','manamadurai','kallal'] },
+            { district:'Tenkasi',         keywords:['tenkasi','alangulam','sankarankovil','kadayanallur','veerakeralampudur','surandai','shencottah','courtallam'] },
+            { district:'Thanjavur',       keywords:['thanjavur','papanasam','kumbakonam','thiruvaiyaru','pattukottai','orathanadu','peravurani','thiruvidaimaruthur','tiruvidaimarudur','needamangalam','budalur'] },
+            { district:'Theni',           keywords:['theni','periyakulam','uthamapalayam','bodinayakanur','bodi','andipatti','cumbum'] },
+            { district:'Thoothukudi',     keywords:['thoothukudi','tuticorin','tuticorn','kovilpatti','ottapidaram','vilathikulam','kayalpatnam','eral','thiruchendur','srivaikuntam'] },
+            { district:'Tiruchirappalli', keywords:['tiruchirappalli','trichy','tiruchi','srirangam','thuvakudi','lalgudi','manachanallur','tiruverumbur','ariyamangalam','musiri','thuraiyur','manapparai','pullambadi'] },
+            { district:'Tirunelveli',     keywords:['tirunelveli','nellai','palayamkottai','ambasamudram','cheranmahadevi','valliyur','nanguneri','mundanthurai'] },
+            { district:'Tirupathur',      keywords:['tirupathur','tirupattur','ambur','vaniyambadi','jolarpet','natrampalli','kandili'] },
+            { district:'Tiruppur',        keywords:['tiruppur','tirupur','dharapuram','udumalpet','kangeyam','avinashi','uthukuli','mulanur','vellakoil'] },
+            { district:'Tiruvallur',      keywords:['tiruvallur','tiruvallore','ponneri','gummidipoondi','redhills','red hills','thiruvalangadu','uthukottai','ennore','manali new town','madhavaram','sholavaram'] },
+            { district:'Tiruvannamalai',  keywords:['tiruvannamalai','arani','chengam','polur','vandavasi','kalasapakkam','vembakkam','kilpennathur'] },
+            { district:'Tiruvarur',       keywords:['tiruvarur','nannilam','mannargudi','thiruthuraipoondi','valangaiman','kodavasal'] },
+            { district:'Vellore',         keywords:['vellore','katpadi','gudiyatham','pernambut','jolarpettai','anaicut','alangayam'] },
+            { district:'Viluppuram',      keywords:['viluppuram','tindivanam','gingee','gingi','marakanam','tirukoilur','mugaiyur','olakkur','vanur','vikkiravandi'] },
+            { district:'Virudhunagar',    keywords:['virudhunagar','srivilliputhur','rajapalayam','sivakasi','sattur','aruppukkottai','vembakottai','watrap','kariapatti'] }
+        ];
+
+        const PINCODE_DIST_DA = {};
+        // Pincode prefix mapping for fast lookup
+        const PINCODE_PREFIX_MAP = {
+            '600':'Chennai','601':'Tiruvallur','603':'Chengalpattu','604':'Viluppuram','606':'Tiruvannamalai',
+            '607':'Cuddalore','609':'Mayiladuthurai','610':'Tiruvarur','611':'Nagapattinam','613':'Thanjavur',
+            '614':'Thanjavur','620':'Tiruchirappalli','621':'Ariyalur','622':'Pudukkottai','623':'Ramanathapuram',
+            '624':'Dindigul','625':'Madurai','626':'Virudhunagar','627':'Tirunelveli','628':'Thoothukudi',
+            '629':'Kanyakumari','630':'Sivaganga','631':'Kanchipuram','632':'Vellore','633':'Tiruvannamalai',
+            '634':'Chengalpattu','635':'Krishnagiri','636':'Salem','637':'Namakkal','638':'Erode',
+            '639':'Karur','641':'Coimbatore','643':'Nilgiris','627[8-9]':'Tenkasi'
+        };
+
+        function detectDistrictDA(locStr) {
+            if (!locStr) return null;
+            const lower = locStr.toLowerCase();
+            // Pincode check
+            const pm = locStr.match(/\b(6[0-4][0-9])\d{3}\b/g);
+            if (pm) {
+                for (const pin of pm) {
+                    const prefix = pin.substring(0, 3);
+                    if (PINCODE_PREFIX_MAP[prefix]) return PINCODE_PREFIX_MAP[prefix];
+                }
+            }
+            // Keyword check with word-boundary
+            for (const entry of TN_GEO_DISTRICTS_DA) {
+                for (const kw of entry.keywords) {
+                    const idx = lower.indexOf(kw);
+                    if (idx === -1) continue;
+                    const before = idx === 0 ? ' ' : lower[idx - 1];
+                    const after = idx + kw.length >= lower.length ? ' ' : lower[idx + kw.length];
+                    if (/[^a-z]/.test(before) && /[^a-z]/.test(after)) return entry.district;
+                }
+            }
+            return null;
+        }
+
+        // ── Aggregate per-district stats ──────────────────────────────────────
+        const districtMap = {}; // district -> { total, completed, cancelled, pending, fare, dates: {date -> {rides, fare}} }
+
+        rides.forEach(r => {
+            const pickup  = detectDistrictDA(r.pickup_loc);
+            const drop    = detectDistrictDA(r.drop_loc);
+            const targets = new Set();
+            if (pickup) targets.add(pickup);
+            if (drop)   targets.add(drop);
+            if (!targets.size) targets.add('Unknown / Out of TN');
+
+            const fareAmt = parseFloat((r.fare || '0').toString().replace(/[^0-9.]/g, '')) || 0;
+            const isCompleted = ['completed','finished'].includes(r.status);
+            const isCancelled = r.status === 'cancelled';
+            const dateStr = r.ride_date ? new Date(r.ride_date).toISOString().slice(0, 10) : 'Unknown';
+
+            targets.forEach(dist => {
+                if (!districtMap[dist]) {
+                    districtMap[dist] = { total: 0, completed: 0, cancelled: 0, pending: 0, fare: 0, dates: {} };
+                }
+                const d = districtMap[dist];
+                d.total++;
+                if (isCompleted) { d.completed++; d.fare += fareAmt; }
+                else if (isCancelled) d.cancelled++;
+                else d.pending++;
+
+                // Daily breakdown
+                if (!d.dates[dateStr]) d.dates[dateStr] = { rides: 0, fare: 0 };
+                d.dates[dateStr].rides++;
+                if (isCompleted) d.dates[dateStr].fare += fareAmt;
+            });
+        });
+
+        // ── Format response ───────────────────────────────────────────────────
+        const districtSummary = Object.entries(districtMap)
+            .map(([district, s]) => ({
+                district,
+                total_rides:     s.total,
+                completed_rides: s.completed,
+                cancelled_rides: s.cancelled,
+                pending_rides:   s.pending,
+                fare_collected:  s.fare.toFixed(2),
+                success_rate:    s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0,
+                daily_breakdown: Object.entries(s.dates)
+                    .sort((a, b) => a[0].localeCompare(b[0]))
+                    .map(([date, v]) => ({ date, rides: v.rides, fare: v.fare.toFixed(2) }))
+            }))
+            .sort((a, b) => b.fare_collected - a.fare_collected);
+
+        // Grand totals
+        const grandTotal = districtSummary.reduce((acc, d) => {
+            acc.total_rides     += d.total_rides;
+            acc.completed_rides += d.completed_rides;
+            acc.cancelled_rides += d.cancelled_rides;
+            acc.fare_collected  += parseFloat(d.fare_collected);
+            return acc;
+        }, { total_rides: 0, completed_rides: 0, cancelled_rides: 0, fare_collected: 0 });
+        grandTotal.fare_collected = grandTotal.fare_collected.toFixed(2);
+
+        res.json({ summary: grandTotal, districts: districtSummary });
+    } catch (err) {
+        console.error('District Audit Error:', err);
+        res.status(500).json({ error: 'District audit failed', details: err.message });
+    }
+});
+
 // 3. Admin Panel Stats
 app.get('/api/admin/stats', async (req, res) => {
     try {

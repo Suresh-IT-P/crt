@@ -317,6 +317,9 @@
                     <div class="nav-item" onclick="switchTab('vehicle-audit', this)" title="Vehicle Audit">
                         <span class="nav-icon">🚗</span><span class="nav-label">Vehicle Audit</span>
                     </div>
+                    <div class="nav-item" onclick="switchTab('district-audit', this)" title="District Audit">
+                        <span class="nav-icon">🗺️</span><span class="nav-label">District Audit</span>
+                    </div>
                 </div>
 
                 <!-- Configuration Group -->
@@ -1585,6 +1588,125 @@
             </div>
         </div>
 
+        <!-- ═══════════════════════════════════════════════════════════════════
+             DISTRICT AUDIT TAB
+             ═══════════════════════════════════════════════════════════════════ -->
+        <div id="district-audit" class="tab-section">
+            <!-- Header -->
+            <div class="stage-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;">
+                <div>
+                    <h1>District <span class="text-accent">Audit</span></h1>
+                    <p style="color:var(--text-muted);font-size:0.9rem;margin-top:0.25rem;">
+                        Location-aware ride analytics by Tamil Nadu district — rides, fare, success rate, and daily breakdown.
+                    </p>
+                </div>
+                <div style="display:flex;gap:1rem;align-items:center;">
+                    <button type="button" class="btn btn-primary" onclick="exportDistrictAuditCSV()">📊 Export CSV</button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="data-table-container" style="margin-bottom:2rem;padding:1.5rem;">
+                <h4 style="margin:0 0 1rem 0;font-size:0.85rem;text-transform:uppercase;color:var(--primary);letter-spacing:1px;font-weight:800;">🗺️ District Audit Filters</h4>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;align-items:end;">
+                    <div>
+                        <label>From Date</label>
+                        <input type="date" id="da-filter-start">
+                    </div>
+                    <div>
+                        <label>To Date</label>
+                        <input type="date" id="da-filter-end">
+                    </div>
+                    <div style="display:flex;gap:0.5rem;">
+                        <button type="button" class="btn btn-primary" onclick="loadDistrictAudit()" style="flex:1;">⚡ Analyse</button>
+                        <button type="button" class="btn" onclick="resetDistrictAuditFilters()" style="background:rgba(255,255,255,0.05);color:var(--text-muted);">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grand Summary Cards -->
+            <div class="stat-banner" id="da-stat-banner" style="margin-bottom:2rem;">
+                <div class="b-card">
+                    <h4>TOTAL RIDES</h4>
+                    <div class="val" id="da-card-total">0</div>
+                </div>
+                <div class="b-card">
+                    <h4>COMPLETED</h4>
+                    <div class="val" id="da-card-completed" style="color:var(--primary);">0</div>
+                </div>
+                <div class="b-card">
+                    <h4>CANCELLED</h4>
+                    <div class="val" id="da-card-cancelled" style="color:#EF4444;">0</div>
+                </div>
+                <div class="b-card">
+                    <h4>FARE COLLECTED</h4>
+                    <div class="val" id="da-card-fare" style="color:var(--primary);">₹0</div>
+                </div>
+                <div class="b-card">
+                    <h4>DISTRICTS ACTIVE</h4>
+                    <div class="val" id="da-card-districts">0</div>
+                </div>
+            </div>
+
+            <!-- District Table -->
+            <div class="data-table-container" style="margin-bottom:2rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+                    <h3 id="da-table-title" style="margin:0;font-size:1.1rem;">District Performance</h3>
+                    <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                        <label style="font-size:0.8rem;color:var(--text-muted);">Sort by:</label>
+                        <select id="da-sort-select" onchange="renderDistrictAuditTable()" style="font-size:0.82rem;padding:4px 8px;background:var(--admin-bg);color:var(--text-main);border:1px solid var(--border-color);border-radius:6px;">
+                            <option value="fare">Fare Collected ↓</option>
+                            <option value="rides">Total Rides ↓</option>
+                            <option value="completed">Completed ↓</option>
+                            <option value="rate">Success Rate ↓</option>
+                            <option value="alpha">District A–Z</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>District</th>
+                                <th>Total Rides</th>
+                                <th>Completed</th>
+                                <th>Cancelled</th>
+                                <th>Pending</th>
+                                <th>Fare Collected</th>
+                                <th>Success Rate</th>
+                                <th>Daily Detail</th>
+                            </tr>
+                        </thead>
+                        <tbody id="da-district-tbody">
+                            <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:3rem;">Click Analyse to load district data.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Daily Breakdown Panel (shown when a district row is expanded) -->
+            <div id="da-daily-panel" style="display:none;" class="data-table-container" style="margin-bottom:2rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                    <h3 id="da-daily-title" style="margin:0;font-size:1.05rem;color:var(--primary);">Daily Breakdown</h3>
+                    <button type="button" onclick="document.getElementById('da-daily-panel').style.display='none'" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.2rem;">✕</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Date</th>
+                                <th>Total Rides</th>
+                                <th>Fare Collected</th>
+                            </tr>
+                        </thead>
+                        <tbody id="da-daily-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div><!-- end district-audit tab -->
+
     <div id="edit-driver-modal" class="map-modal" style="display: none;">
         <div class="map-modal-content" style="max-width: 500px;">
             <div class="map-header">
@@ -2039,6 +2161,10 @@ if (tabId === 'underground') {
 }
 if (tabId === 'vehicle-audit') {
     loadVehicleAudit(true);
+    return;
+}
+if (tabId === 'district-audit') {
+    loadDistrictAudit(true);
     return;
 }
 if (tabId === 'radar') {
@@ -5967,6 +6093,160 @@ function exportVehicleAuditPDF() {
         alternateRowStyles: {fillColor:[245,245,245]}
     });
     doc.save(`vehicle_audit_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+// ============================================================================
+// DISTRICT AUDIT LOGIC
+// ============================================================================
+let _daLastData = null; // store to allow client-side sorting without refetching
+
+function resetDistrictAuditFilters() {
+    document.getElementById('da-filter-start').value = '';
+    document.getElementById('da-filter-end').value = '';
+    loadDistrictAudit();
+}
+
+async function loadDistrictAudit(isTabSwitch = false) {
+    if (isTabSwitch && _daLastData) return; // avoid unnecessary reload on tab switch if already loaded
+
+    const start = document.getElementById('da-filter-start').value;
+    const end = document.getElementById('da-filter-end').value;
+
+    const url = new URL('/api/admin/district-audit', API_BASE_URL);
+    if (start) url.searchParams.append('startDate', start);
+    if (end) url.searchParams.append('endDate', end);
+
+    const tbody = document.getElementById('da-district-tbody');
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:3rem;"><div class="loading-spinner" style="margin:auto;"></div></td></tr>`;
+
+    try {
+        const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') } });
+        const data = await res.json();
+        
+        if (data.error) throw new Error(data.error);
+
+        _daLastData = data;
+        
+        // Update summary cards
+        document.getElementById('da-card-total').innerText = data.summary.total_rides;
+        document.getElementById('da-card-completed').innerText = data.summary.completed_rides;
+        document.getElementById('da-card-cancelled').innerText = data.summary.cancelled_rides;
+        document.getElementById('da-card-fare').innerText = '₹' + data.summary.fare_collected;
+        document.getElementById('da-card-districts').innerText = data.districts.length;
+
+        renderDistrictAuditTable();
+
+    } catch (err) {
+        console.error('District Audit load failed', err);
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#ef4444;padding:2rem;">Failed to load District data: ${err.message}</td></tr>`;
+    }
+}
+
+function renderDistrictAuditTable() {
+    if (!_daLastData) return;
+
+    const sortBy = document.getElementById('da-sort-select').value;
+    let dists = [..._daLastData.districts];
+
+    if (sortBy === 'fare') dists.sort((a,b) => parseFloat(b.fare_collected) - parseFloat(a.fare_collected));
+    else if (sortBy === 'rides') dists.sort((a,b) => b.total_rides - a.total_rides);
+    else if (sortBy === 'completed') dists.sort((a,b) => b.completed_rides - a.completed_rides);
+    else if (sortBy === 'rate') dists.sort((a,b) => b.success_rate - a.success_rate);
+    else if (sortBy === 'alpha') dists.sort((a,b) => a.district.localeCompare(b.district));
+
+    const tbody = document.getElementById('da-district-tbody');
+    tbody.innerHTML = '';
+
+    if (dists.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:3rem;">No rides found in this period.</td></tr>';
+        return;
+    }
+
+    dists.forEach((d, i) => {
+        const rateColor = d.success_rate >= 80 ? 'var(--primary)' : (d.success_rate >= 50 ? '#F59E0B' : '#EF4444');
+        const rateBar = `
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="width:35px;text-align:right;font-weight:600;font-size:0.85rem;color:${rateColor}">${d.success_rate}%</span>
+                <div style="flex:1;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;min-width:60px;">
+                    <div style="width:${d.success_rate}%;height:100%;background:${rateColor};border-radius:3px;"></div>
+                </div>
+            </div>`;
+
+        // Store daily breakdown as JSON string in button data attribute
+        const dailyJson = escapeHTML(JSON.stringify(d.daily_breakdown));
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${i + 1}</td>
+            <td style="font-weight:bold;color:var(--text-main);">${d.district}</td>
+            <td>${d.total_rides}</td>
+            <td style="color:var(--primary);font-weight:600;">${d.completed_rides}</td>
+            <td style="color:#EF4444;">${d.cancelled_rides}</td>
+            <td>${d.pending_rides}</td>
+            <td style="font-weight:bold;color:var(--text-main);">₹${d.fare_collected}</td>
+            <td>${rateBar}</td>
+            <td>
+                <button type="button" class="btn" style="padding:4px 8px;font-size:0.75rem;background:rgba(255,255,255,0.1);color:var(--text-main);" 
+                    onclick="showDaDailyBreakdown('${d.district}', '${dailyJson}')">
+                    📅 View Days
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function showDaDailyBreakdown(districtName, jsonStr) {
+    const dailyData = JSON.parse(jsonStr || '[]');
+    const panel = document.getElementById('da-daily-panel');
+    const title = document.getElementById('da-daily-title');
+    const tbody = document.getElementById('da-daily-tbody');
+
+    title.innerHTML = `Daily Breakdown: <span style="color:var(--text-main);">${districtName}</span>`;
+    tbody.innerHTML = '';
+
+    if (dailyData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No daily data available.</td></tr>';
+    } else {
+        dailyData.forEach((row, i) => {
+            // format date
+            const dObj = new Date(row.date);
+            const dFmt = isNaN(dObj) ? row.date : dObj.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${i+1}</td>
+                <td>${dFmt}</td>
+                <td>${row.rides}</td>
+                <td style="color:var(--primary);font-weight:600;">₹${row.fare}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    panel.style.display = 'block';
+    panel.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function exportDistrictAuditCSV() {
+    if (!_daLastData || !_daLastData.districts.length) {
+        return alert("No data to export. Analyse first.");
+    }
+    
+    let csv = "District,Total Rides,Completed,Cancelled,Pending,Fare Collected,Success Rate (%)\n";
+    _daLastData.districts.forEach(d => {
+        csv += `"${d.district}",${d.total_rides},${d.completed_rides},${d.cancelled_rides},${d.pending_rides},${d.fare_collected},${d.success_rate}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', `district_audit_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 }
 
 
